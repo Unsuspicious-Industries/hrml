@@ -1,0 +1,48 @@
+<div class="relative not-prose scroll-mt-[72px]" id="stats">
+    <div class="absolute inset-0 pointer-events-none -z-[1]" aria-hidden="true"></div>
+    <div class="absolute inset-0"></div></div>
+    <div class="relative mx-auto px-4 lg:py-12 md:px-6 md:py-10 py-8 text-default max-w-6xl">
+        <div class="text-center max-w-3xl mb-6 md:mb-12 md:mx-auto px-4 sm:px-6">
+            <p class="font-bold text-secondary tracking-wide uppercase sm:text-base text-sm">Unsuspicious research stats</p>
+            <h2 class="font-bold font-heading leading-tighter tracking-tighter md:text-4xl sm:text-3xl text-heading text-2xl">Academic impact</h2>
+            <p class="text-muted sm:text-xl text-lg mt-4">Working overtime on edge research</p>
+        </div>
+        <div class="flex justify-center flex-wrap -m-2 text-center sm:grid-cols-2 sm:gap-8 sm:max-w-md">
+            <div class="w-full p-3 dark:md:border-slate-500 md:border-r md:last:border-none md:w-1/4 min-w-[180px] sm:min-w-[220px] sm:p-4 sm:w-1/2 text-center">
+                <div class="flex items-center justify-center mb-3 mx-auto sm:mb-4 text-primary">
+                    <svg class="h-8 sm:h-10 sm:w-10 w-8" data-icon="tabler:flask" height="1em" viewBox="0 0 24 24" width="1em">
+                        <symbol id="ai:tabler:flask"><path d="M9 3h6m-5 6h4m-4-6v6L6 20a.7.7 0 0 .5 1h11a.7.7 0 0 0 7 0v1.8M8 3a2.4 2.4 0 0 1 2.4 2m4-4a2.4 2.4 0 0 1 2.4 2V3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="font-bold font-heading accent lg:text-5xl sm:text-[2.6rem] text-3xl xl:text-6xl">25+</div>
+                <div class="mt-1 font-medium lg:text-base sm:text-sm text-gray-800 text-xs tracking-widest uppercase">Active Research Projects</div>
+            </div>
+            <div class="w-full p-3 dark:md:border-slate-500 md:border-r md:last:border-none md:w-1/4 min-w-[180px] sm:min-w-[220px] sm:p-4 sm:w-1/2 text-center">
+                <div class="flex items-center justify-center mb-3 mx-auto sm:mb-4 text-primary">
+                    <svg class="h-8 sm:h-10 sm:w-10 w-8" data-icon="tabler:users" height="1em" viewBox="0 0 24 24" width="1em">
+                        <symbol id="ai:tabler:users"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 8 0M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m1-17.87a4 4 0 0 1 7.75M21 21v-2a4 4 0 0 0 3.3.85" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="font-bold font-heading accent lg:text-5xl sm:text-[2.6rem] text-3xl xl:text-6xl">2+</div>
+                <div class="mt-1 font-medium lg:text-base sm:text-sm text-gray-800 text-xs tracking-widest uppercase">Research Centers</div>
+            </div>
+            <div class="w-full p-3 dark:md:border-slate-500 md:border-r md:last:border-none md:w-1/4 min-w-[180px] sm:min-w-[220px] sm:p-4 sm:w-1/2 text-center">
+                <div class="flex items-center justify-center mb-3 mx-auto sm:mb-4 text-primary">
+                    <svg class="h-8 sm:h-10 sm:w-10 w-8" data-icon="tabler:book" height="1em" viewBox="0 0 24 24" width="1em">
+                        <symbol id="ai:tabler:book"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 9 0M3 6v13m9-13v13m9-13v13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="font-bold font-heading accent lg:text-5xl sm:text-[2.6rem] text-3xl xl:text-6xl">99%</div>
+                <div class="mt-1 font-medium lg:text-base sm:text-sm text-gray-800 text-xs tracking-widest uppercase">Peer Review Acceptance Rate</div>
+            </div>
+            <div class="w-full p-3 dark:md:border-slate-500 md:border-r md:last:border-none md:w-1/4 min-w-[180px] sm:min-w-[220px] sm:p-4 sm:w-1/2 text-center">
+                <div class="flex items-center justify-center mb-3 mx-auto sm:mb-4 text-primary">
+                    <svg class="h-8 sm:h-10 sm:w-10 w-8" data-icon="tabler:coffee" height="1em" viewBox="0 0 24 24" width="1em">
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 14c.83.642 2.077 1.017 3.5 1c1.423.017 2.67-.358 3.5-1s2.077-1.017 3.5 1c1.423-.017 2.67.358 3.5-1s2.077-1.017 3.5 1c1.423.017 2.67.358 3.5 1M8 3a2.4 2.4 0 0 1 2.4 2m4-4a2.4 2.4 0 0 1 2.4 2v12a2.4 2.4 0 0 1 2a2.4 2m4-4a2.4 2.4 0 0 1 2.4 2M3 6v13m9-13v13m9-13v13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/><path d="M3 10h14v5a6 6 0 0 1-6 6H9a6 6 0 0 1-6 6z"/><path d="M16.746 16.726a3.3 0 1 .252-5.555"/></g></symbol><use xlink:href="#ai:tabler:coffee"></use>
+                </div>
+                <div class="font-bold font-heading accent lg:text-5xl sm:text-[2.6rem] text-3xl xl:text-6xl">5000+</div>
+                <div class="mt-1 font-medium lg:text-base sm:text-sm text-gray-800 text-xs tracking-widest uppercase">Cups of Coffee</div>
+            </div>
+        </div>
+    </div>
+</div>

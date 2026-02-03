@@ -1,0 +1,15 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    <div class="relative mx-auto px-4 lg:py-12 md:px-6 md:py-10 py-8 text-default max-w-7xl">
+        <div class="text-center max-w-3xl mb-6 md:pb-4">
+            <h1 class="font-bold font-heading leading-tighter tracking-tighter md:text-4xl sm:text-3xl text-heading text-2xl">About Us</h1>
+            <p class="text-muted sm:text-xl text-lg mt-4">Unsuspicious Industries is a multidisciplinary tech company that specializes in creating innovative solutions for the modern world.</p>
+        </div>
+        <div class="text-center max-w-3xl md:mb-12 md:mx-auto px-4 sm:px-6 mb-0">
+            <h2 class="font-bold font-heading leading-tighter tracking-tighter md:text-4xl sm:text-3xl text-heading text-2xl mb-4">Our Mission</h2>
+            <p class="text-muted sm:text-xl text-lg">We operate at the convergence of theoretical computer science, machine learning, and complex systems. Our research spans from lambda-calculus and interaction combinators to Large Language Models and molecular dynamics.</p>
+            <p class="text-muted sm:text-xl text-lg mt-4">We pursue fundamental questions in type systems, proof synthesis, and the Happy Fly project, which virtualizes 10^6 Drosophila neurons using interaction net architectures.</p>
+        </div>
+    </div>
+</?block?>

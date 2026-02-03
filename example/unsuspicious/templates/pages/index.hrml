@@ -1,0 +1,27 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    <div class="hacker-bg-container" data-astro-cid="26d62bpf">
+        <canvas class="loss-canvas" data-astro-cid="26d62bpf id="lossLandscape"></canvas>
+        <div class="scanlines" data-astro-cid="26d62bpf"></div>
+    </div>
+
+    <div class="relative not-prose md:-mt-[76px] pt-10">
+        <div class="relative mx-auto px-4 lg:py-12 md:px-6 md:py-10 py-8 text-default max-w-7xl">
+            <div class="pointer-events-none md:pt-[76px] pt-4"></div>
+            <div class="pt-10 md:pT-16">
+                <div class="mx-auto text-center max-w-5xl md:pb-4 pb-2">
+                    <p class="font-bold text-secondary tracking-wide uppercase text-base">Advancing Human knowledge through stochastic epistemology</p>
+                    <h1 class="font-bold font-heading leading-tighter tracking-tighter mb-4 text-4xl md:text-6xl">
+                        Forging formal methods with <span class="text-accent glitch-hover" data-text="informal vibes">informal vibes</span>
+                    </h1>
+                    <div class="mx-auto max-w-3xl px-2 sm:px-0">
+                        <p class="text-muted sm:text-xl text-lg mb-6">
+                            <span class="text-accent glitch-hover" data-text="Unsuspicious Industries">Unsuspicious Industries</span> operates at the convergence of theoretical computer science, machine learning, and complex systems. Our research spans from <span class="text-accent glitch-hover" data-text="lambda-calculus">lambda-calculus</span> and interaction combinators to Large Language Models and <span class="text-accent glitch-hover" data-text="molecular dynamics">molecular dynamics</span>. We pursue fundamental questions in type systems, proof synthesis, and <span class="text-accent glitch-hover" data-text="computational limits of knowability">computational limits of knowability</span>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</?block?>

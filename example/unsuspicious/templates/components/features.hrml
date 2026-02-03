@@ -1,0 +1,117 @@
+<div class="relative not-prose scroll-mt-[72px]" id="features">
+    <div class="absolute inset-0 pointer-events-none -z-[1]" aria-hidden="true"></div>
+    <div class="absolute inset-0"></div></div>
+    <div class="relative mx-auto px-4 lg:py-12 md:px-6 md:py-10 py-8 text-default max-w-7xl">
+        <div class="text-center max-w-3xl mb-6 md:mb-12 md:mx-auto px-4 sm:px-6">
+            <p class="font-bold text-secondary tracking-wide uppercase sm:text-base text-sm">Research Divisions</p>
+            <h2 class="font-bold font-heading leading-tighter tracking-tighter md:text-4xl sm:text-3xl text-heading text-2xl">Multidisciplinary Curiosity</h2>
+            <p class="text-muted sm:text-xl text-lg mt-4">Six core research areas that define our institutional mission and scholarly contributions</p>
+        </div>
+        <div class="aspect-h-7 aspect-w-16" aria-hidden="true"></div>
+        <div class="flex justify-center sm:px-6 px-4">
+            <div class="flex justify-center mx-auto flex-wrap gap-6 grid grid-cols-1 lg:grid-cols-3 md:gap-y-12 mt-6 px-4 sm:gap-8 sm:grid-cols-2 sm:px-0 w-full">
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:code" height="1em" viewBox="0 0 24 24" width="1em">
+                                <symbol id="ai:tabler:code"><path d="m7 8l-4 4l4 4m10-8l4 4M14 4l-4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                            </symbol>
+                            <use xlink:href="#ai:tabler:code"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">Dynamic Formal Systems</h3>
+                            <p class="text-muted mt-0.5">Investigating interaction combinators, optimal reduction strategies, and System F type theory. Current research focused on guided program and proof synthesis through a <span class="text-accent highlight">lot of typing.</span></p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">philosophy courses should teach how to use proof assistants</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">Alcuin</span><span class="quote-citation-mini">𝕏, @scheminglunatic</span></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:cpu" height="1em" viewBox="0 0 24 24" width="1em">
+                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1 1 1H6a1 1 0 0 1 1-1z"/><path d="M9 9h6v6H9zm-6 1h2m-2 4h2m5-11v2m4-2v2m7 5h-2m2 4h2m5-7v2m4 3a1 1 0 1 0 7 0v10"/></g></symbol><                            <use xlink:href="#ai:tabler:cpu"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">Axiomatic Elaboration Laboratory</h3>
+                            <p class="text-muted mt-0.5">Finding <span class="text-accent highlight">good</span> and <span class="text-accent highlight">beautiful</span> bases for rational thinking. We explore the world to find coherence outside of rationality. Grounding technology in <span class="glitch-hover" data-text="vibes">vibes</span>.</p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">Ethics and aesthetics are one</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">L. Wittgenstein</span><span class="quote-citation-mini">6.421</span></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:brain" height="1em" viewBox="0 0 24 24" width="1em">
+                                <symbol id="ai:tabler:brain"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5v1a3.5 3.5 0 0 0 7 0v1.8M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1-7 0v-1.8"/></g></symbol><                            <use xlink:href="#ai:tabler:brain"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">Artificial Intelligence Research</h3>
+                            <p class="text-muted mt-0.5">Training transformer architectures with formal constraints. Exploring the intersection of probabilistic reasoning and symbolic AI through type-theoretic frameworks and proof-carrying code generation.</p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">To build machines that think,<br>we must first build machines that compute what cannot be thought.</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">PKD</span><span class="quote-citation-mini">Thoughts on thinking</span></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:chart-line" height="1em" viewBox="0 0 24 24" width="1em"><symbol id="ai:tabler:chart-line"><path d="M4 19h16M4 15l4-6l4 2l4 5l4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></symbol><                            <use xlink:href="#ai:tabler:chart-line"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">Macroeconomics Formalisation Department</h3>
+                            <p class="text-muted mt-0.5">Rewriting advanced economics research using High Performance Computing and formal systems. Modelling emergent market behavior from first principles. Formalising structural social shifts in topological spaces.</p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">In the long run we are all dead.</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">J.M. Keynes</span><span class="quote-citation-mini">A Tract on Monetary Reform (1923)</span></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:leaf" height="1em" viewBox="0 0 24 24" width="1em"><symbol id="ai:tabler:leaf"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 21c.5-4.5 2.5-8 7-10"/><path d="M9 18c6.218 0 10.5-3.288 11-12V4h-4.014c-9 0-11.986 4-12 9c0 1 0 3 2.5h3z"/></g></symbol><                            <use xlink:href="#ai:tabler:leaf"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">Computational Biology Division</h3>
+                            <p class="text-muted mt-0.5">Understanding the nature of consciousness through pluridisciplinary approaches and distributed compute. The Happy Fly project: virtualizing 10^16 Drosophila neurons using interaction net architectures.</p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">I think I might have been stupid in some respects,<br>if it weren't for my psychedelic experiences.</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">Kary Mullis</span><span class="quote-citation-mini">MAPS</span></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-row max-w-full p-2 sm:max-w-xs">
+                        <div class="flex justify-center">
+                            <svg class="mt-1 flex-shrink-0 h-6 mr-2 rtl:ml-2 rtl:mr-0 text-primary w-6" data-icon="tabler:palette" height="1em" viewBox="0 0 24 24" width="1em"><symbol id="ai:tabler:palette"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 21a9 9 0 0 1 9 0a9 9 0 1 9 0M3 6a9 9 0 0 1 9 0a9 9 0 1 9 0M3 21v-2a9 9 0 0 1 9 0a9 9 0 1 9 0M9 18c6.218 0 10.5-3.288 11-12V4h-4.014c-9 0-11.986 4-12 9c0 1 0 3 2.5h3z"/></g></symbol><                            <use xlink:href="#ai:tabler:palette"></use>
+                        </div>
+                        <div class="mt-0.5">
+                            <h3 class="text-lg font-semibold">LSH research division</h3>
+                            <p class="text-muted mt-0.5">The "Les Lettres et Sciences Humaines" division explores beauty, art and philosophy towards a deeper understanding of humanity's ever-lasting quest of the divine. Thinking hard and slowly, sometimes on acid.</p>
+                        </div>
+                    </div>
+                    <div class="floating-quote mt-2">
+                        <div class="quote-ornament-mini">‹</div>
+                        <blockquote class="quote-text-mini">Kant et la monade de l'aporie : une poesie de l'impératif</blockquote>
+                        <div class="quote-attribution-mini"><span class="quote-author-mini">P.M. Pédrot</span><span class="quote-citation-mini">LSH Generator (tm) 3000®</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

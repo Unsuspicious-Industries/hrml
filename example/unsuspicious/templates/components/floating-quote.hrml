@@ -1,0 +1,19 @@
+<div class="quote-container">
+    <div class="relative">
+        <div class="absolute top-[-50px] left-0 w-full h-full overflow-hidden">
+            <div class="absolute left-[10%] right-0 bottom-0 w-full h-full" style="background-image: url('/static/images/grid.svg'); opacity: 0.03;"></div>
+        </div>
+        <div class="relative">
+            <div class="quote-ornament-mini absolute top-[-30px] left-[10%] text-primary opacity-20" style="text-shadow: 0 0 10px rgba(0,0,0,0.05);">‹</div>
+            <div class="bg-white rounded-lg p-8 shadow-xl relative">
+                <blockquote class="quote-text-mini max-w-4xl">
+                    <p class="font-medium mb-4">Ethics and aesthetics are one</p>
+                </blockquote>
+                <div class="quote-attribution-mini flex items-center justify-end gap-2">
+                    <span class="quote-author-mini text-gray-700">L. Wittgenstein</span>
+                    <span class="quote-citation-mini text-gray-500">6.421</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,55 @@
+<footer class="relative not-prose border-gray-200 border-t">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+    <div class="relative mx-auto px-4 max-w-7xl sm:px-6">
+        <div class="gap-4 gap-y-6 grid grid-cols-12 md:py-6 py-4 sm:gap-4">
+            <div class="col-span-12 lg:col-span-4">
+                <a class="font-bold text-xl inline-block" href="/">Unsuspicious Industries</a>
+                <div class="text-muted text-sm">
+                    <a class="text-muted block duration-150 ease-in-out hover:text-gray-700 hover:underline mb-1 mr-3 rtl:ml-3 rtl:mr-0 sm:inline-block sm:mb-0 transition" href="/ethics">Research Ethics</a>
+                    <a class="text-muted block duration-150 ease-in-out hover:text-gray-700 hover:underline mb-1 mr-3 rtl:ml-3 rtl:mr-0 sm:inline-block sm:mb-0 transition" href="/privacy">Privacy Policy</a>
+                    <a class="text-muted block duration-150 ease-in-out hover:text-gray-700 hover:underline mb-1 mr-3 rtl:ml-3 rtl:mr-0 sm:inline-block sm:mb-0 transition" href="/contact">Contact</a>
+                </div>
+            </div>
+            <div class="flex items-center w-full md:w-auto flex-row gap-2 md:gap-0 md:items-center md:justify-between md:py-4 py-6">
+                <div class="md:mr-4 md:order-1 order-2 text-sm">
+                    <span class="rtl:mr-0 mr-3 bg-[url(/static/images/short.png)] bg-cover float-left h-5 md:-mt-0.5 md:h-6 md:w-6 rounded-sm rtl:float-right w-5"></span> 
+                    <a class="text-blue-600 underline" href="/"><span class="md:hidden">USI</span> <span class="md:inline hidden">Unsuspicious Industries</span> </a>· Established 2023 · All rights reserved.</div>
+                <div class="flex items-center w-full md:w-auto flex-row gap-2 md:gap-3 md:ml-auto md:order-2 order-1">
+                    <ul class="flex items-center gap-2 flex-nowrap mb-0 md:gap-2 ml-auto rtl:-mr-2 rtl:ml-0">
+                        <li class="md:mb-0">
+                            <a class="text-muted text-sm focus:outline-none focus:ring-4 focus:ring-gray-200 hover:bg-gray-100 inline-flex items-center p-2.5 rounded-lg" href="https://linkedin.com/company/unsuspicious" aria-label="LinkedIn">
+                                <svg class="h-5 w-5" data-icon="tabler:brand-linkedin" height="1em" viewBox="0 0 24 24" width="1em">
+                                    <symbol id="ai:tabler:brand-linkedin"><path d="M4 6a2 2 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 2 2H6a2 2 0 0 1 2 2zm4 5v5m0-8v.01M12 16v-5"/>
+                                </symbol>
+                                <use xlink:href="#ai:tabler:brand-linkedin"></use>
+                            </a>
+                        </li>
+                        <li class="md:mb-0">
+                            <a class="text-muted text-sm focus:outline-none focus:ring-4 focus:ring-gray-200 hover:bg-gray-100 inline-flex items-center p-2.5 rounded-lg" href="https://github.com/Unsuspicious-Industries" aria-label="Github">
+                                <svg class="h-5 w-5" data-icon="tabler:brand-github" height="1em" viewBox="0 0 24 24" width="1em">
+                                    <path d="M9 19c-4.3 1.4-4.3-2.5 6-3m12 5v-3.5c0-1 .1-1.4-.5-2c2.8-.3 5.5-1.4-5.5 6a4.6 4.6 0 0 1.3.3.2a4.2 4.2 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0-.1-3.2A4.6 4.6 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6c-.6.6-1.2-.5 2V21" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                                </symbol>
+                                <use xlink:href="#ai:tabler:brand-github"></use>
+                            </a>
+                        </li>
+                        <li class="md:mb-0">
+                            <a class="text-muted text-sm focus:outline-none focus:ring-4 focus:ring-gray-200 hover:bg-gray-100 inline-flex items-center p-2.5 rounded-lg" href="https://x.com/unsuspiciousind" aria-label="X">
+                                <svg class="h-5 w-5" data-icon="tabler:brand-twitter" height="1em" viewBox="0 0 24 24" width="1em">
+                                    <symbol id="ai:tabler:brand-twitter"><path d="M22 4.01c-1 .49-1.98.689-3 .99c-1.121-1.265-2.783-1.335-4.38-.737S11.977 6.323 12 8v1c-3.245.083-6.135-1.395-8-4c0 0-4.182 7.433 4.11c-1.872 1.247-3.739 2.088-6 2c3.308 1.803 6.913 2.423 10.034 1.517c3.58-1.04 6.522-3.723 7.651-7.742a13.8 0 0 .497-3.753c0-.249 1.51-2.772 1.818-4.013z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                                </symbol>
+                                <use xlink:href="#ai:tabler:brand-twitter"></use>
+                            </a>
+                        </li>
+                        <li class="md:mb-0">
+                            <a class="text-muted text-sm focus:outline-none focus:ring-4 focus:ring-gray-200 hover:bg-gray-100 inline-flex items-center p-2.5 rounded-lg" href="https://huggingface.co/dfslab" aria-label="Hugging Face">
+                                <svg class="h-5 w-5" data-icon="tabler:mood-smile-beam" height="1em" viewBox="0 0 24 24" width="1em">
+                                    <path d="M12 21a9 9 0 1 1 0 18"/><path d="M10 10c-.5-1-2.5-1-3 0m10 0c-.5-1-2.5-1-3 0m.5 5a3.5 3.5 0 0 1-5 0"/></g></symbol>
+                                <use xlink:href="#ai:tabler:mood-smile-beam"></use>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,17 @@
+[project]
+name = "Unsuspicious Industries"
+version = "1.0.0"
+
+[server]
+host = "127.0.0.1"
+port = 8080
+
+[paths]
+templates = "unsuspicious/templates"
+endpoints = "unsuspicious/endpoints"
+static = "unsuspicious/static"
+
+[site]
+name = "Unsuspicious Industries"
+description = "A multidisciplinary tech company specializing in innovative solutions for modern world"
+favicon = "/static/images/unsuspicious.svg"
