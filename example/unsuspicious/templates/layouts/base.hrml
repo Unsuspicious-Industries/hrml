@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?get id="site_name"?></title>
+    <link rel="stylesheet" href="/static/css/unsuspicious.css">
+    <script src="/hrml.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/static/images/unsuspicious.svg">
+</head>
+<body>
+    <?load file="components/nav.hrml"?>
+    
+    <main class="container">
+        <?slot id="content"?>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 <?get id="site_name"?></p>
+    </footer>
+</body>
+</html>
