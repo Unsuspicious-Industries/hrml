@@ -1,0 +1,34 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    <div class="counter-demo">
+        <h1>Interactive Counter</h1>
+        <p>Click the button to increment - using clean HRML syntax!</p>
+        
+        <div id="counter-display" class="counter-box">
+            <?set id="count"?>0</?set?>
+            <div class="count-value"><?get id="count"?></div>
+            <?btn post="/api/counter/increment" target="#counter-display" swap="innerHTML"?>
+                Increment +1
+            </?btn?>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>How it works</h3>
+        <ol>
+            <li>HRML <code>&lt;?btn?&gt;</code> tag generates HTMX button</li>
+            <li>Python endpoint updates counter in database</li>
+            <li>Server returns fresh HTML</li>
+            <li>HTMX swaps content - no page reload!</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h3>HRML Syntax</h3>
+        <pre><code>&lt;?btn post="/endpoint" target="#id"&gt;
+    Button Text
+&lt;/?btn?&gt;</code></pre>
+        <p>Simple, clean, and powerful!</p>
+    </div>
+</?block?>

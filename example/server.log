@@ -1,0 +1,5 @@
+Starting HRML server on 0.0.0.0:8080
+Server running at http://0.0.0.0:8080
+[REQUEST] POST /counter/increment - calling Python endpoint
+[DEBUG] Form data: Object {}
+[ERROR] POST /counter/increment - endpoint error: Python error: ModuleNotFoundError: No module named 'endpoints.counter'

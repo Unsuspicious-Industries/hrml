@@ -1,0 +1,2 @@
+fn(axum::extract::State<AppState>, std::path::Path) -> impl Future<Output = Response<Body>> {api_get_handler}
+fn(axum::extract::State<AppState>, std::path::Path) -> impl Future<Output = Response<Body>> {api_get_handler}: Handler<_, _>

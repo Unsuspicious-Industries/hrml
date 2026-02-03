@@ -1,0 +1,48 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    <div class="hero">
+        <h1>Welcome to HRML</h1>
+        <p>A minimal web framework combining Rust, Python, and custom JavaScript</p>
+    </div>
+
+    <?set id="greeting"?>Hello from HRML!</?set?>
+    
+    <div class="card">
+        <h2><?get id="greeting"?></h2>
+        <p>This is a simple template demonstrating basic features:</p>
+        <ul>
+            <li>Template composition with &lt;?load?&gt;</li>
+            <li>Data binding with &lt;?set?&gt; and &lt;?get?&gt;</li>
+            <li>Conditionals with &lt;?if?&gt;</li>
+            <li>Loops with &lt;?for?&gt;</li>
+            <li>HTMX integration for interactivity</li>
+        </ul>
+    </div>
+
+    <?set id="show_features"?>true</?set?>
+    
+    <?if cond="show_features"?>
+        <div class="features">
+            <h3>Key Features</h3>
+            <div class="feature-grid">
+                <div class="feature">
+                    <h4>Rust Performance</h4>
+                    <p>Fast HTTP server and template rendering</p>
+                </div>
+                <div class="feature">
+                    <h4>Python Flexibility</h4>
+                    <p>Write business logic in Python</p>
+                </div>
+                <div class="feature">
+                    <h4>HTMX Interactivity</h4>
+                    <p>Dynamic updates without JavaScript</p>
+                </div>
+            </div>
+        </div>
+    </?if?>
+
+    <div class="cta">
+        <a href="/counter" class="btn">Try Interactive Counter →</a>
+    </div>
+</?block?>

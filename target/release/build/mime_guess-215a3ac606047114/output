@@ -1,0 +1,1 @@
+cargo:rustc-env=MIME_TYPES_GENERATED_PATH=/root/hrml/target/release/build/mime_guess-215a3ac606047114/out/mime_types_generated.rs

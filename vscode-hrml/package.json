@@ -1,0 +1,32 @@
+{
+  "name": "hrml-syntax",
+  "displayName": "HRML Syntax Highlighting",
+  "description": "Syntax highlighting for HRML template files",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "hrml",
+        "aliases": ["HRML", "hrml"],
+        "extensions": [".hrml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hrml",
+        "scopeName": "text.html.hrml",
+        "path": "./syntaxes/hrml.tmLanguage.json",
+        "embeddedLanguages": {
+          "text.html": "html",
+          "source.css": "css",
+          "source.js": "javascript"
+        }
+      }
+    ]
+  }
+}

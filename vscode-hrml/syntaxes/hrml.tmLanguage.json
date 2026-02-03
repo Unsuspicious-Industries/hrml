@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "HRML",
+  "scopeName": "text.html.hrml",
+  "patterns": [
+    { "include": "#hrml-processing-instructions" },
+    { "include": "text.html.basic" }
+  ],
+  "repository": {
+    "hrml-processing-instructions": {
+      "patterns": [
+        {
+          "name": "meta.tag.template.hrml",
+          "begin": "(<\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script)\\b",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.hrml" },
+            "2": { "name": "entity.name.tag.hrml" }
+          },
+          "end": "(\\?>)",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.hrml" }
+          },
+          "patterns": [
+            {
+              "name": "entity.other.attribute-name.hrml",
+              "match": "\\b(file|id|as|cond|in|item|index|endpoint|method|cache|target|swap|post|get|scoped|global)\\b"
+            },
+            {
+              "name": "string.quoted.double.hrml",
+              "begin": "\"",
+              "end": "\"",
+              "patterns": [
+                {
+                  "name": "constant.character.escape.hrml",
+                  "match": "\\\\."
+                }
+              ]
+            },
+            {
+              "name": "string.quoted.single.hrml",
+              "begin": "'",
+              "end": "'",
+              "patterns": [
+                {
+                  "name": "constant.character.escape.hrml",
+                  "match": "\\\\."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "meta.tag.template.close.hrml",
+          "begin": "(<\\/\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.hrml" },
+            "2": { "name": "entity.name.tag.hrml" }
+          },
+          "end": "(\\?>)",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.hrml" }
+          }
+        },
+        {
+          "name": "meta.embedded.block.css",
+          "begin": "(<\\?style(?:\\s+scoped|\\s+global)?\\s*\\?>)",
+          "beginCaptures": {
+            "1": { "name": "meta.tag.template.hrml" }
+          },
+          "end": "(<\\/\\?style\\?>)",
+          "endCaptures": {
+            "1": { "name": "meta.tag.template.hrml" }
+          },
+          "patterns": [
+            { "include": "source.css" }
+          ]
+        },
+        {
+          "name": "meta.embedded.block.javascript",
+          "begin": "(<\\?script\\s*\\?>)",
+          "beginCaptures": {
+            "1": { "name": "meta.tag.template.hrml" }
+          },
+          "end": "(<\\/\\?script\\?>)",
+          "endCaptures": {
+            "1": { "name": "meta.tag.template.hrml" }
+          },
+          "patterns": [
+            { "include": "source.js" }
+          ]
+        }
+      ]
+    }
+  }
+}

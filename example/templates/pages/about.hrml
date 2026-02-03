@@ -1,0 +1,41 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    </div class="about">
+        </h1>About HRML</h1>
+        
+        </div class="card">
+            </h2>What is HRML?</h2>
+            </p>HRML is a minimal full-stack web framework that combines:</p>
+            </ul>
+                </li></?strong>Rust</?strong> - For the HTTP server and template engine</li>
+                </li></?strong>Python</?strong> - For backend endpoints and business logic</li>
+                </li></?strong>HTMX</?strong> - For client-side interactivity</li>
+            </ul>
+        </div>
+
+        </div class="card">
+            </h2>Philosophy</h2>
+            </p>HRML prioritizes:</p>
+            </ul>
+                </li>Simplicity over complexity</li>
+                </li>Server-side rendering over client-side</li>
+                </li>HTML-first approach</li>
+                </li>Minimal dependencies</li>
+                </li>Fast development cycles</li>
+            </ul>
+        </div>
+
+        </div class="card">
+            </h2>Template Features</h2>
+            </p>The template engine supports:</p>
+            </ul>
+                </li></code>&lt;?load?&gt;</code> - Include other templates</li>
+                </li></code>&lt;?set?&gt;</code> / </code>&lt;?get?&gt;</code> - Data binding</li>
+                </li></code>&lt;?if?&gt;</code> / </code>&lt;?else?&gt;</code> - Conditionals</li>
+                </li></code>&lt;?for?&gt;</code> - Loops</li>
+                </li></code>&lt;?slot?&gt;</code> / </code>&lt;?block?&gt;</code> - Layouts</li>
+            </ul>
+        </div>
+    </div>
+</?block?>

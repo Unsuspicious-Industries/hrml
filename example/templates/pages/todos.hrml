@@ -1,0 +1,64 @@
+<?load file="layouts/base.hrml"?>
+
+<?block slot="content"?>
+    <div class="todo-app">
+        <h1>Todo List</h1>
+        <p>Simple todo app with database persistence</p>
+        
+        <div class="card">
+            <form id="todo-form" data-post="/api/todos/create" data-target="#todo-list" data-swap="innerHTML">
+                <div class="form-group">
+                    <input type="text" name="title" placeholder="New todo..." required class="form-input" id="todo-input">
+                    <button type="submit" class="btn btn-primary">Add Todo</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="todo-list" 
+             class="todo-list"
+             data-get="/api/todos"
+             data-trigger="load"
+             data-swap="innerHTML">
+            <p class="loading">Loading todos...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Reload todos after form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('todo-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const input = document.getElementById('todo-input');
+                    
+                    fetch('/api/todos/create', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    })
+                    .then(response => response.text())
+                    .then(() => {
+                        input.value = ''; // Clear input
+                        // Reload todo list
+                        fetch('/api/todos')
+                            .then(r => r.text())
+                            .then(html => {
+                                document.getElementById('todo-list').innerHTML = html;
+                            });
+                    });
+                });
+            }
+        });
+    </script>
+
+    <div class="card">
+        <h3>HRML Features Used</h3>
+        <ul>
+            <li>Form wrapper with &lt;?form?&gt;</li>
+            <li>Interactive buttons with &lt;?btn?&gt;</li>
+            <li>Database handled by Rust runtime</li>
+            <li>Python for simple business logic</li>
+        </ul>
+    </div>
+</?block?>

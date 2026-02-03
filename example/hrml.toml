@@ -1,0 +1,8 @@
+host = "0.0.0.0"
+port = 8080
+templates_path = "templates"
+endpoints_path = "endpoints"
+static_path = "static"
+site_name = "HRML Framework"
+site_description = "A minimal web framework combining Rust, Python, and custom JavaScript"
+favicon = "/static/favicon.ico"

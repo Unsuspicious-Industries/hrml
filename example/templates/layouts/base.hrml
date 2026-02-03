@@ -1,0 +1,11 @@
+<?load file="components/nav.hrml"?>
+
+<main class="container">
+    <?slot id="content"?>
+        <p>No content provided</p>
+    </?slot?>
+</main>
+
+<footer>
+    <p>&copy; 2026 HRML Framework</p>
+</footer>
