@@ -1,2 +1,0 @@
-fn(axum::extract::State<AppState>, std::path::Path, axum::http::Request<Body>) -> impl Future<Output = Response<Body>> {endpoint_handler}
-fn(axum::extract::State<AppState>, std::path::Path, axum::http::Request<Body>) -> impl Future<Output = Response<Body>> {endpoint_handler}: Handler<_, _>
