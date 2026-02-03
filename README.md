@@ -2,6 +2,8 @@
 
 A minimal, production-ready web framework combining Rust performance with Python flexibility. Create server-rendered web applications with dynamic interactivity using a simple HTML-first approach.
 
+It was thought as a replacement for [HCML](https://github.com/Unsuspicious-Industries/hcml) but now has many more featuresL
+
 ## Philosophy
 
 HRML follows these principles:
@@ -58,7 +60,7 @@ myapp/
     └── js/
 ```
 
-For complete documentation of the project structure and all behaviors, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+For complete documentation of the project structure and all behaviors, see [spec](spec.md).
 
 ## CLI Commands
 
