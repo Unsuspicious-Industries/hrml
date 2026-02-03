@@ -6,24 +6,24 @@
         
         <div class="card">
             <h2>Create New Post</h2>
-            <?form post="/api/blog/create" target="#posts-list" swap="afterbegin"?>
+            <form id="blog-form" action="/api/blog/create" method="post">
                 <div class="form-group">
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" placeholder="Post title..." required class="form-input">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" placeholder="Post title..." required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="author">Author</label>
-                    <input type="text" id="author" name="author" placeholder="Your name..." value="Admin" class="form-input">
+                    <label for="author">Author:</label>
+                    <input type="text" id="author" name="author" placeholder="Your name..." value="Admin">
                 </div>
                 
                 <div class="form-group">
-                    <label for="content">Content</label>
-                    <textarea id="content" name="content" placeholder="Write your post content..." required class="form-textarea" rows="6"></textarea>
+                    <label for="content">Content:</label>
+                    <textarea id="content" name="content" placeholder="Write your post content..." required rows="6"></textarea>
                 </div>
                 
                 <button type="submit" class="btn btn-primary">Publish Post</button>
-            </?form?>
+            </form>
         </div>
 
         <div id="posts-list" 
@@ -36,12 +36,61 @@
     </div>
     
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('blog-form');
+            const postsList = document.getElementById('posts-list');
+            
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    
+                    const title = form.querySelector('input[name="title"]').value.trim();
+                    const author = form.querySelector('input[name="author"]').value.trim();
+                    const content = form.querySelector('textarea[name="content"]').value.trim();
+                    
+                    if (!title || !content) return;
+                    
+                    fetch('/api/blog/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({title: title, author: author, content: content})
+                    })
+                    .then(response => response.text())
+                    .then(html => {
+                        if (html.trim()) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = html;
+                            const newPost = tempDiv.firstElementChild;
+                            postsList.insertBefore(newPost, postsList.firstChild);
+                        }
+                        form.reset();
+                    })
+                    .catch(err => console.error('Error:', err));
+                });
+            }
+            
+            // Load initial posts
+            fetch('/api/blog')
+                .then(r => r.text())
+                .then(html => {
+                    postsList.innerHTML = html;
+                });
+        });
+        
         function toggleContent(postId) {
-            const content = document.getElementById('content-' + postId);
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-            } else {
-                content.style.display = 'none';
+            const preview = document.getElementById('preview-' + postId);
+            const full = document.getElementById('full-' + postId);
+            if (preview && full) {
+                if (full.style.display === 'none') {
+                    preview.style.display = 'none';
+                    full.style.display = 'block';
+                } else {
+                    preview.style.display = 'block';
+                    full.style.display = 'none';
+                }
             }
         }
     </script>

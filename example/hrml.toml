@@ -3,6 +3,7 @@ port = 8080
 templates_path = "templates"
 endpoints_path = "endpoints"
 static_path = "static"
+database_path = "hrml.db"
 site_name = "HRML Framework"
 site_description = "A minimal web framework combining Rust, Python, and custom JavaScript"
 favicon = "/static/favicon.ico"
