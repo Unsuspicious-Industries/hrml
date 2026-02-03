@@ -1,153 +1,536 @@
-# HRML
+# HRML - Minimal Web Framework
 
-HRML is a Rust-first web framework focused on server-rendered HTML, small runtime JS, and file-based endpoints.
+A minimal, production-ready web framework combining Rust performance with Python flexibility. Create server-rendered web applications with dynamic interactivity using a simple HTML-first approach.
 
-## Highlights
+It was thought as a replacement for [HCML](https://github.com/Unsuspicious-Industries/hcml) but now has many more featuresL
 
-- Rust-native backend runtime (no Python)
-- HTML templates with layout/slot/block directives
-- File-based API endpoints (`.xrml`, `.html`, `.json`)
-- Built-in lightweight frontend runtime at `/xrml.js`
-- WebAssembly window directive for embeddable WASM spaces
+## Philosophy
 
-## Install and Run
+HRML follows these principles:
+
+- **Server-side first** - HTML rendered on the server for fast initial loads and SEO
+- **Minimal JavaScript** - Only 3KB runtime for dynamic updates, no heavy frameworks
+- **Simple templates** - HTML with clean, readable processing instructions
+- **Python for logic** - Familiar scripting language for backend development
+- **Rust for speed** - Fast HTTP handling and template rendering
+- **Zero configuration** - Sensible defaults that just work
+
+## Quick Start
+
+### Installation
 
 ```bash
+# Build from source
 cargo build --release
-./target/release/xrml new myapp
-cd myapp
-../target/release/xrml dev
+
+# The binary will be at target/release/hrml
 ```
+
+### Create a New Project
+
+```bash
+hrml new myapp
+cd myapp
+hrml dev
+```
+
+Visit http://localhost:8080
 
 ## Project Structure
 
-```text
+HRML enforces a strict project structure for consistency:
+
+```
 myapp/
-├── xrml.toml
+├── hrml.toml              # Configuration
 ├── templates/
 │   ├── layouts/
-│   │   └── base.xrml
-│   ├── components/
+│   │   └── base.hrml     # Base layout (required)
+│   ├── components/       # Reusable components
+│   │   └── nav.hrml
 │   └── pages/
-│       └── index.xrml
+│       ├── index.hrml    # Home page (required)
+│       └── about.hrml
 ├── endpoints/
-│   └── api/
-│       └── hello.xrml
+│   └── api/              # Python endpoints
+│       └── hello.py
 └── static/
     ├── css/
+    │   └── style.css
     └── js/
 ```
 
-## Templates
+For complete documentation of the project structure and all behaviors, see [spec](spec.md).
 
-Supported directives:
+## CLI Commands
 
-- `<?load file="..."?>`
-- `<?slot id="..."?>...<?/slot?>`
-- `<?block slot="..."?>...<?/block?>`
-- `<?set id="..."?>...<?/set?>`
-- `<?get id="..."?>`
-- `<?if cond="..."?>...<?else?>...<?/if?>`
-- `<?for in="item in data.items"?>...<?/for?>`
-- `<?component id="..."?>...<?/component?>`
-- `<?use id="..."?>...<?/use?>`
-- `<?compose op="sum|product"?>...<?then?>...<?/compose?>`
-- `<?bind var="x" from="..."?>...<?/bind?>`
-- `<?pure value="..."?>`
-- `<?mdx file="..."?>`
-- `<?markdown file="..."?>`
-- `<?markdownfm file="..." as="..."?>`
-- `<?latex formula="..." mode="inline|block"?>`
-- `<?title value="..."?>`
-- `<?meta ...?>`, `<?linktag ...?>`, `<?og ...?>`, `<?twitter ...?>`
-- `<?charset?>`, `<?viewport?>`, `<?canonical ...?>`, `<?description ...?>`, `<?robots ...?>`
-- `<?stylesheet href="..."?>`, `<?script src="..." defer?>`
-- `<?btn ...?>...<?/btn?>`
-- `<?form ...?>...<?/form?>`
-- `<?wasm module="..." export="mount" props='{}'?>`
+### `hrml new <name>`
 
-Tag library reference and extension guide: `docs/taglib.md`
+Creates a new HRML project with the complete directory structure, configuration file, and sample files.
 
-Rust-native composable HTML utilities (OXML) are available under `src/features/oxml.rs`.
+**Created structure:**
+- `hrml.toml` - Configuration with sensible defaults
+- `templates/layouts/base.hrml` - Base HTML layout
+- `templates/components/nav.hrml` - Navigation component
+- `templates/pages/index.hrml` - Home page
+- `templates/pages/about.hrml` - About page
+- `endpoints/api/hello.py` - Sample Python endpoint
+- `static/css/style.css` - Default stylesheet
+- `.gitignore` - Standard ignore patterns
+- `README.md` - Project documentation
 
-## Rust Backend Endpoints
+### `hrml dev [path]`
 
-API requests map to files under `endpoints/api`:
+Runs the development server with the following behaviors:
+- Serves the application on the configured host and port
+- Watches for file changes
+- Provides detailed error messages in the browser
+- Logs all requests to stderr
+- Uses the configuration from `hrml.toml`
 
-- `/api/todos` -> `endpoints/api/todos.xrml` (or `.html`, `.json`)
-- `/api/todos/create` -> `endpoints/api/todos/create.xrml`
-- `/api/todos/create` also supports flat fallback `endpoints/api/todos_create.xrml`
+**Default behavior:** Uses current directory if no path specified
 
-`.xrml` endpoints are rendered as fragments with request context:
+### `hrml serve [path]`
 
-- `id` (if present in path)
-- `action` (if present in path)
-- `data` (request JSON/form payload)
+Runs the production server:
+- Optimized for production use
+- Serves static files efficiently
+- Handles concurrent requests
+- Cleaner logging than dev mode
 
-Example endpoint file:
+### `hrml check [path]`
+
+Validates the project structure:
+- Verifies `hrml.toml` exists and is valid
+- Checks that required templates exist (base.hrml, index.hrml)
+- Ensures template engine can be initialized
+- Validates static directory exists
+- Attempts to render index template
+- Reports any warnings or errors
+
+### `hrml version`
+
+Displays the HRML version.
+
+### `hrml help`
+
+Shows command usage and examples.
+
+## Template System
+
+HRML uses a powerful but simple template system with the following directives:
+
+### Layout System
+
+**Base Layout** (`templates/layouts/base.hrml`):
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><?get id="site_name"?></title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/hrml.js"></script>
+</head>
+<body>
+    <?load file="components/nav.hrml"?>
+    <main class="container">
+        <?slot id="content"?>
+    </main>
+</body>
+</html>
+```
+
+**Page Template** (`templates/pages/index.hrml`):
+```html
+<?load file="layouts/base.hrml"?>
+<?block slot="content"?>
+    <h1>Welcome</h1>
+    <p>This is the home page.</p>
+<?/block?>
+```
+
+### Template Directives
+
+- `<?load file="path"?>` - Include another template
+- `<?slot id="name"?>` - Define a content placeholder
+- `<?block slot="name"?>...<?/block?>` - Fill a slot
+- `<?set id="name"?>value<?/set?>` - Set a variable
+- `<?get id="name"?>` - Get a variable value
+
+## Python Endpoints
+
+Create dynamic functionality with Python endpoints:
+
+**File:** `endpoints/api/todos.py`
+```python
+def handler(req):
+    """
+    Handle API requests.
+    
+    req dict contains:
+    - 'id': Resource ID (e.g., "123" for /api/todos/123)
+    - 'action': Action name (e.g., "create" for /api/todos/create)
+    - 'data': Form data as dictionary
+    
+    Returns: HTML string to be inserted into the page
+    """
+    import db
+    import json
+    
+    action = req.get('action', '')
+    data = req.get('data', {})
+    
+    if action == 'create':
+        title = data.get('title', '')
+        # Insert into database
+        todo_id = db.table_insert('todos', json.dumps({'title': title, 'done': 0}))
+        return f'<div id="todo-{todo_id}">{title}</div>'
+    
+    # Get all todos
+    result = db.table_find_all('todos')
+    todos = json.loads(result)
+    
+    html = ''
+    for todo in todos:
+        html += f'<div>{todo["title"]}</div>'
+    return html
+```
+
+### Database API
+
+HRML provides a built-in SQLite database with a simple API:
+
+```python
+import db
+import json
+
+# Create table
+db.table_create('todos', 'id INTEGER PRIMARY KEY, title TEXT, done INTEGER')
+
+# Insert
+todo_id = db.table_insert('todos', json.dumps({'title': 'Buy milk', 'done': 0}))
+
+# Find by ID
+result = db.table_find('todos', todo_id)
+item = json.loads(result)
+
+# Get all
+results = db.table_find_all('todos')
+items = json.loads(results)
+
+# Update
+db.table_update('todos', todo_id, json.dumps({'done': 1}))
+
+# Delete
+db.table_delete('todos', todo_id)
+```
+
+## Client-Side Interactivity
+
+HRML provides a 3KB JavaScript runtime at `/hrml.js` that enables dynamic updates:
+
+### AJAX Buttons
 
 ```html
-<div class="card">
-  Action: <?get id="action"?>
-  Title: <?get id="data.title"?>
+<button data-post="/api/counter/increment" 
+        data-target="#counter-display"
+        data-swap="innerHTML">
+    Increment
+</button>
+```
+
+**Behavior:** POSTs to the endpoint and replaces the target element's innerHTML with the response.
+
+### AJAX Links
+
+```html
+<a href="/about" 
+   data-get="/api/content/about"
+   data-target="#content"
+   data-swap="innerHTML">
+   Load About
+</a>
+```
+
+### Auto-Loading Content
+
+```html
+<div data-get="/api/todos" 
+     data-trigger="load"
+     data-swap="innerHTML">
+    Loading...
 </div>
 ```
 
-## WebAssembly Windows
+**Behavior:** Automatically fetches content when the page loads.
 
-Use the template directive:
+### AJAX Forms
 
 ```html
-<?wasm module="/static/js/my_wasm_app.mjs" export="mount" props='{"scene":"main"}'?>
+<form data-post="/api/todos/create"
+      data-target="#todo-list"
+      data-swap="beforeend">
+    <input name="title" required>
+    <button type="submit">Add Todo</button>
+</form>
 ```
 
-This renders a WASM window placeholder. On page load, `/xrml.js` mounts the module export into that window.
+**Behavior:** Submits form via AJAX, inserts response before the end of target element, resets form on success.
 
-## OXML — Oxidized Markup Language
+## Configuration
 
-OXML is a type-safe, closed algebraic system for constructing valid HTML in Rust.
+Configure your application in `hrml.toml`:
 
-- Void elements cannot have children (enforced by type system)
-- Composition (`cat2` / `+`) of valid nodes is always valid
-- Deterministic attribute ordering via `BTreeMap`
-- Typed tag registry with compile-time void/content classification
+```toml
+[project]
+name = "my-app"
+version = "1.0.0"
 
-```rust
-use xrml::oxml::{doc, tags, ONode};
+[server]
+host = "127.0.0.1"
+port = 8080
 
-let html = doc(
-    ONode::content(tags::TITLE).text("My Page").build(),
-    ONode::content(tags::MAIN)
-        .child(ONode::content(tags::H1).text("Hello").build())
-        .child(ONode::void(tags::BR).build())
-        .build(),
-);
+[paths]
+templates = "templates"
+endpoints = "endpoints"
+static = "static"
+
+[site]
+name = "My Application"
+description = "A great web app"
+favicon = "/static/favicon.ico"
 ```
 
-See `docs/oxml.md` for the full specification.
+**Behavior:** If `hrml.toml` is missing, HRML uses sensible defaults:
+- Host: 127.0.0.1
+- Port: 8080
+- All paths as shown above
 
-## Native Rust HTML Utils
+## URL Routing
 
-- `app_shell(site_name, body)`
-- `card(title, body)`
-- `wasm_window(module, export, props_json)`
+HRML automatically routes requests based on the URL structure:
 
-## CLI
+### Pages
 
-- `xrml new <name>`
-- `xrml dev [path]`
-- `xrml serve [path]`
-- `xrml check [path]`
-- `xrml build [path]` (placeholder)
-- `xrml version`
-- `xrml help`
+- `GET /` → Renders `templates/pages/index.hrml`
+- `GET /about` → Renders `templates/pages/about.hrml`
+- `GET /contact` → Renders `templates/pages/contact.hrml`
 
-## Publish to crates.io
+### API Endpoints
 
-1. Ensure metadata in `Cargo.toml` is complete.
-2. Run:
-   - `cargo test`
-   - `cargo package`
-   - `cargo publish`
+- `GET /api/todos` → Calls `endpoints/api/todos.py::handler()`
+- `GET /api/todos/123` → Calls handler with `id="123"`
+- `POST /api/todos/create` → Calls handler with `action="create"`
+- `POST /api/todos/123/toggle` → Calls handler with `id="123"`, `action="toggle"`
+- `DELETE /api/todos/123/delete` → Calls handler with `id="123"`, `action="delete"`
 
-The crate is configured as a standalone executable binary (`xrml`).
+### Static Files
+
+- `GET /static/css/style.css` → Serves `static/css/style.css`
+- `GET /static/js/app.js` → Serves `static/js/app.js`
+
+## Error Handling
+
+### Development Mode
+
+In development (`hrml dev`):
+- Detailed error messages in browser
+- Stack traces logged to stderr
+- Template rendering errors show line numbers
+- Python endpoint errors show full traceback
+
+### Production Mode
+
+In production (`hrml serve`):
+- Generic error messages in browser
+- Detailed errors logged to stderr only
+- No stack traces exposed to clients
+
+## Examples
+
+### Todo List Application
+
+**templates/pages/todos.hrml:**
+```html
+<?load file="layouts/base.hrml"?>
+<?block slot="content"?>
+    <h1>Todo List</h1>
+    
+    <form data-post="/api/todos/create"
+          data-target="#todo-list"
+          data-swap="beforeend">
+        <input name="title" placeholder="New todo" required>
+        <button type="submit">Add</button>
+    </form>
+    
+    <div id="todo-list"
+         data-get="/api/todos"
+         data-trigger="load"
+         data-swap="innerHTML">
+        Loading...
+    </div>
+<?/block?>
+```
+
+**endpoints/api/todos.py:**
+```python
+def handler(req):
+    import db
+    import json
+    
+    action = req.get('action', '')
+    data = req.get('data', {})
+    
+    if action == 'create':
+        title = data.get('title', '')
+        if title:
+            todo_id = db.table_insert('todos', 
+                json.dumps({'title': title, 'done': 0}))
+            return f'<div id="todo-{todo_id}">{title}</div>'
+        return ''
+    
+    # Return all todos
+    result = db.table_find_all('todos')
+    todos = json.loads(result)
+    
+    html = ''
+    for todo in todos:
+        checked = 'checked' if todo['done'] else ''
+        html += f'''
+        <div id="todo-{todo['id']}">
+            <input type="checkbox" {checked} 
+                   data-post="/api/todos/{todo['id']}/toggle"
+                   data-target="#todo-{todo['id']}">
+            {todo['title']}
+        </div>
+        '''
+    return html
+```
+
+## Performance
+
+HRML is designed for performance:
+
+- **Templates** - Compiled and cached in memory
+- **Static files** - Served efficiently with proper caching headers
+- **Database** - Connection pooling and prepared statements
+- **Minimal JavaScript** - 3KB runtime vs 100KB+ frameworks
+- **Rust foundation** - Fast HTTP handling and concurrent request processing
+
+## Security
+
+HRML includes security best practices:
+
+- **SQL Injection Protection** - All database queries use parameterized statements
+- **XSS Prevention** - Template system escapes HTML by default
+- **Static File Serving** - Proper MIME types and security headers
+- **Input Validation** - Form data is properly parsed and validated
+
+## Deployment
+
+### Option 1: Binary + Project Files
+
+```bash
+# Build the binary
+cargo build --release
+
+# Copy binary and project to server
+cp target/release/hrml /usr/local/bin/
+cp -r myapp /var/www/
+
+# Run on server
+cd /var/www/myapp
+hrml serve
+```
+
+### Option 2: Systemd Service
+
+Create `/etc/systemd/system/hrml.service`:
+```ini
+[Unit]
+Description=HRML Web Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/myapp
+ExecStart=/usr/local/bin/hrml serve
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+systemctl enable hrml
+systemctl start hrml
+```
+
+## Development
+
+### Running Tests
+
+```bash
+cd /root/hrml/example
+hrml check          # Validate project
+hrml dev            # Start dev server
+```
+
+### Project Validation
+
+Before deploying, always validate:
+
+```bash
+hrml check
+```
+
+This ensures:
+- All required files exist
+- Templates are valid
+- Configuration is correct
+- Static directories exist
+
+## Troubleshooting
+
+### "No hrml.toml found"
+
+Run `hrml check` to verify you're in the correct directory.
+
+### "Template not found"
+
+Check that the template file exists in the correct subdirectory of `templates/`.
+
+### "Module not found" in Python
+
+Ensure `__init__.py` files exist in `endpoints/` and `endpoints/api/`.
+
+### Changes not appearing
+
+- Restart the dev server: `hrml dev`
+- Check browser cache (Ctrl+Shift+R to hard reload)
+- Verify file was saved
+
+### Port already in use
+
+Change the port in `hrml.toml`:
+```toml
+[server]
+port = 3000  # Use a different port
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+## Documentation
+
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Complete project structure documentation
+- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
+- [API.md](API.md) - Detailed API documentation (coming soon)
