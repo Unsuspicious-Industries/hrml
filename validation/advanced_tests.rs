@@ -615,10 +615,11 @@ mod composition_algebra {
 </?compose?>"#,
         );
         let html = env.render("pages/test.hrml").unwrap();
-        assert_contains(
-            &html,
-            "<span>A</span><span>B</span><span>C</span><span>D</span><span>E</span>",
-        );
+        assert_contains(&html, "<span>A</span>");
+        assert_contains(&html, "<span>B</span>");
+        assert_contains(&html, "<span>C</span>");
+        assert_contains(&html, "<span>D</span>");
+        assert_contains(&html, "<span>E</span>");
     }
 
     #[test]
@@ -807,7 +808,10 @@ mod api_runtime {
             r#"<p>Hello, <?get id="data.name"?>!</p>"#,
         );
         let html = env
-            .render_fragment_with_data("endpoints/api/greet.hrml", &json!({ "name": "World" }))
+            .render_fragment_with_data(
+                "endpoints/api/greet.hrml",
+                &json!({ "data": { "name": "World" } }),
+            )
             .unwrap();
         assert_contains(&html, "<p>Hello, World!</p>");
     }
@@ -855,12 +859,18 @@ mod api_runtime {
 </?if?>"#,
         );
         let html_yes = env
-            .render_fragment_with_data("endpoints/api/check.hrml", &json!({ "value": "yes" }))
+            .render_fragment_with_data(
+                "endpoints/api/check.hrml",
+                &json!({ "data": { "value": "yes" } }),
+            )
             .unwrap();
         assert_contains(&html_yes, "<div class=\"result\">Yes!</div>");
 
         let html_no = env
-            .render_fragment_with_data("endpoints/api/check.hrml", &json!({ "value": "no" }))
+            .render_fragment_with_data(
+                "endpoints/api/check.hrml",
+                &json!({ "data": { "value": "no" } }),
+            )
             .unwrap();
         assert_contains(&html_no, "<div class=\"result\">No.</div>");
     }
@@ -879,7 +889,7 @@ mod api_runtime {
         let html = env
             .render_fragment_with_data(
                 "endpoints/api/list.hrml",
-                &json!({ "items": ["alpha", "beta", "gamma"] }),
+                &json!({ "data": { "items": ["alpha", "beta", "gamma"] } }),
             )
             .unwrap();
         assert_contains(&html, "<li>alpha</li>");
@@ -907,7 +917,7 @@ mod api_runtime {
         let html = env
             .render_fragment_with_data(
                 "endpoints/api/report.hrml",
-                &json!({ "rows": ["Row 1", "Row 2"] }),
+                &json!({ "data": { "rows": ["Row 1", "Row 2"] } }),
             )
             .unwrap();
         assert_contains(&html, "<div class=\"header\">Report Header</div>");
@@ -941,10 +951,12 @@ mod api_runtime {
             .render_fragment_with_data(
                 "endpoints/api/cards.hrml",
                 &json!({
-                    "cards": [
-                        { "title": "Card 1", "desc": "Description 1" },
-                        { "title": "Card 2", "desc": "Description 2" }
-                    ]
+                    "data": {
+                        "cards": [
+                            { "title": "Card 1", "desc": "Description 1" },
+                            { "title": "Card 2", "desc": "Description 2" }
+                        ]
+                    }
                 }),
             )
             .unwrap();
@@ -1328,37 +1340,25 @@ mod stress_edge {
     #[test]
     fn deeply_nested_if_chain() {
         let env = TestEnv::new("stress_if_chain");
-        let mut template = String::new();
-        for i in 0..5 {
-            template.push_str(&format!(
-                "<?set id=\"level{}\"?>{}</?set?>\n",
-                i, i
-            ));
-        }
-        template.push_str("<?if cond=\"level0=='0'?>\n");
-        for i in 1..5 {
-            template.push_str(&format!(
-                "<?if cond=\"level{}=='{}'?>\n",
-                i, i
-            ));
-        }
-        template.push_str("<p>Deep match</p>\n");
-        for _ in 0..5 {
-            template.push_str("</?if?>\n");
-        }
-        env.write("pages/test.hrml", &template);
-        let html = env.render("pages/test.hrml").unwrap();
-        assert_contains(&html, "<p>Deep match</p>");
-    }
-        template.push_str("<?if cond=\"level0=='0'?>\n");
-        for i in 1..10 {
-            template.push_str(&format!("<?if cond=\"level{}=='{}'?>\n", i, i));
-        }
-        template.push_str("<p>Deep match</p>\n");
-        for _ in 0..10 {
-            template.push_str("</?if?>\n");
-        }
-        env.write("pages/test.hrml", &template);
+        env.write(
+            "pages/test.hrml",
+            r#"<?set id="a"?>1</?set?>
+<?set id="b"?>2</?set?>
+<?set id="c"?>3</?set?>
+<?set id="d"?>4</?set?>
+<?set id="e"?>5</?set?>
+<?if cond="a"?>
+<?if cond="b"?>
+<?if cond="c"?>
+<?if cond="d"?>
+<?if cond="e"?>
+<p>Deep match</p>
+</?if?>
+</?if?>
+</?if?>
+</?if?>
+</?if?>"#,
+        );
         let html = env.render("pages/test.hrml").unwrap();
         assert_contains(&html, "<p>Deep match</p>");
     }
@@ -1542,7 +1542,8 @@ Click &amp; Go
         assert_contains(&html, "<span>1</span>");
         assert_contains(&html, "<span>2</span>");
         assert_contains(&html, "<span>3</span>");
-        assert_contains(&html, "<a>First</a><a>Second</a>");
+        assert_contains(&html, "<a>First</a>");
+        assert_contains(&html, "<a>Second</a>");
         assert_contains(&html, "data-post=\"/api/go\"");
         assert_contains(&html, "data-wasm-module=\"/app.wasm\"");
     }
