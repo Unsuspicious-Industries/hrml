@@ -1,0 +1,13 @@
+<?load file="layouts/base.hrml"?>
+<?block slot="content"?>
+    <div class="hero">
+        <h1>Welcome to <?get id="site_name"?></h1>
+        <p>Your new HRML application is ready!</p>
+    </div>
+    
+    <div class="card">
+        <h2>Getting Started</h2>
+        <p>Edit <code>templates/pages/index.hrml</code> to customize this page.</p>
+        <p>Add endpoint templates in <code>endpoints/api/</code> for dynamic functionality.</p>
+    </div>
+</?block?>

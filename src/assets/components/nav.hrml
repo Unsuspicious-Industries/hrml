@@ -1,0 +1,9 @@
+<nav class="navbar">
+    <div class="nav-brand">
+        <a href="/"><?get id="site_name"?></a>
+    </div>
+    <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+    </ul>
+</nav>
