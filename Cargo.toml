@@ -21,6 +21,10 @@ path = "validation/comprehensive_tests.rs"
 name = "advanced_tests"
 path = "validation/advanced_tests.rs"
 
+[[test]]
+name = "formal_properties"
+path = "validation/formal_properties.rs"
+
 [dependencies]
 # Minimal tokio instead of full
 tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
