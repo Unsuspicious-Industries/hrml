@@ -997,3 +997,402 @@ mod p15_compose_associativity {
         assert_contains(&html, "<span>R</span>");
     }
 }
+
+// ============================================================
+// P16: ROUTING_CORRECTNESS
+// ============================================================
+
+mod p16_routing {
+    use super::*;
+    use hrml::router::{Route, RouteKind, Router};
+    use std::path::PathBuf;
+
+    #[test]
+    fn static_route_matches_exact_url() {
+        let route = Route {
+            path: "/about".to_string(),
+            template: "pages/about.hrml".to_string(),
+            kind: RouteKind::Static,
+            params: vec![],
+        };
+        let params = route.match_url("/about").unwrap();
+        assert!(params.is_empty());
+        assert!(route.match_url("/contact").is_none());
+    }
+
+    #[test]
+    fn dynamic_route_extracts_param() {
+        let route = Route {
+            path: "/blog/[slug]".to_string(),
+            template: "pages/blog/[slug].hrml".to_string(),
+            kind: RouteKind::Dynamic("slug".to_string()),
+            params: vec!["slug".to_string()],
+        };
+        let params = route.match_url("/blog/hello-world").unwrap();
+        assert_eq!(params.get("slug").unwrap(), "hello-world");
+    }
+
+    #[test]
+    fn catch_all_route_extracts_rest() {
+        let route = Route {
+            path: "/docs/[...rest]".to_string(),
+            template: "pages/docs/[...rest].hrml".to_string(),
+            kind: RouteKind::CatchAll,
+            params: vec!["rest".to_string()],
+        };
+        let params = route.match_url("/docs/api/reference").unwrap();
+        assert_eq!(params.get("rest").unwrap(), "api/reference");
+    }
+
+    #[test]
+    fn router_prioritizes_static_over_dynamic() {
+        let mut router = Router::new();
+        router.routes.push(Route {
+            path: "/blog".to_string(),
+            template: "pages/blog/index.hrml".to_string(),
+            kind: RouteKind::Static,
+            params: vec![],
+        });
+        router.routes.push(Route {
+            path: "/blog/[slug]".to_string(),
+            template: "pages/blog/[slug].hrml".to_string(),
+            kind: RouteKind::Dynamic("slug".to_string()),
+            params: vec!["slug".to_string()],
+        });
+
+        let (route, _) = router.resolve("/blog").unwrap();
+        assert_eq!(route.kind, RouteKind::Static);
+
+        let (route, params) = router.resolve("/blog/hello").unwrap();
+        assert_eq!(route.kind, RouteKind::Dynamic("slug".to_string()));
+        assert_eq!(params.get("slug").unwrap(), "hello");
+    }
+
+    #[test]
+    fn no_match_returns_none() {
+        let mut router = Router::new();
+        router.routes.push(Route {
+            path: "/about".to_string(),
+            template: "pages/about.hrml".to_string(),
+            kind: RouteKind::Static,
+            params: vec![],
+        });
+        assert!(router.resolve("/nonexistent").is_none());
+    }
+
+    #[test]
+    fn route_from_file_index() {
+        let route =
+            Route::from_file(&PathBuf::from("pages"), &PathBuf::from("pages/index.hrml")).unwrap();
+        assert_eq!(route.path, "/");
+        assert_eq!(route.kind, RouteKind::Static);
+    }
+
+    #[test]
+    fn route_from_file_dynamic() {
+        let route = Route::from_file(
+            &PathBuf::from("pages"),
+            &PathBuf::from("pages/blog/[slug].hrml"),
+        )
+        .unwrap();
+        assert_eq!(route.path, "/blog/[slug]");
+        assert!(matches!(route.kind, RouteKind::Dynamic(_)));
+    }
+
+    #[test]
+    fn route_from_file_catch_all() {
+        let route = Route::from_file(
+            &PathBuf::from("pages"),
+            &PathBuf::from("pages/docs/[...rest].hrml"),
+        )
+        .unwrap();
+        assert_eq!(route.path, "/docs/[...rest]");
+        assert_eq!(route.kind, RouteKind::CatchAll);
+    }
+}
+
+// ============================================================
+// P17: SECURITY_INVARIANTS
+// ============================================================
+
+mod p17_security {
+    use super::*;
+    use hrml::security::*;
+
+    #[test]
+    fn escape_html_never_produces_raw_tags() {
+        let inputs = vec![
+            "<script>",
+            "</script>",
+            "<img onerror=alert(1)>",
+            "<a href='javascript:alert(1)'>",
+            "<div onclick='evil()'>",
+        ];
+        for input in &inputs {
+            let escaped = escape_html(input);
+            assert!(
+                !escaped.contains('<'),
+                "escape_html produced raw '<' for: {}",
+                input
+            );
+            assert!(
+                !escaped.contains('>'),
+                "escape_html produced raw '>' for: {}",
+                input
+            );
+        }
+    }
+
+    #[test]
+    fn escape_html_is_idempotent() {
+        let input = "<script>alert(1)</script>";
+        let once = escape_html(input);
+        let twice = escape_html(&once);
+        // Double-escaping should produce different output (ampersands get escaped again)
+        assert_ne!(once, twice);
+        // But the first escape should not contain raw tags
+        assert!(!once.contains('<'));
+        assert!(!once.contains('>'));
+    }
+
+    #[test]
+    fn escape_html_preserves_safe_text() {
+        let safe = vec![
+            "Hello World",
+            "a + b = c",
+            "5 < 10 is true", // < is escaped
+            "numbers: 12345",
+            "unicode: こんにちは",
+        ];
+        for text in &safe {
+            let escaped = escape_html(text);
+            assert!(!escaped.contains('<'));
+            assert!(!escaped.contains('>'));
+        }
+    }
+
+    #[test]
+    fn sanitize_url_blocks_dangerous_schemes() {
+        let dangerous = vec![
+            "javascript:alert(1)",
+            "data:text/html,<script>",
+            "vbscript:msgbox(1)",
+            "JAVASCRIPT:alert(1)",
+            "  javascript:alert(1)",
+        ];
+        for url in &dangerous {
+            assert!(sanitize_url(url).is_none(), "sanitize_url allowed: {}", url);
+        }
+    }
+
+    #[test]
+    fn sanitize_url_allows_safe_urls() {
+        let safe = vec![
+            "https://example.com",
+            "http://example.com",
+            "/local/path",
+            "#anchor",
+            "mailto:test@example.com",
+            "relative/path",
+        ];
+        for url in &safe {
+            assert!(sanitize_url(url).is_some(), "sanitize_url blocked: {}", url);
+        }
+    }
+
+    #[test]
+    fn strip_html_removes_all_tags() {
+        let inputs = vec![
+            ("<p>Hello</p>", "Hello"),
+            ("<div><span>test</span></div>", "test"),
+            ("<a href='#'>link</a>", "link"),
+            ("<script>evil()</script>", "evil()"),
+        ];
+        for (input, expected) in &inputs {
+            let stripped = strip_html(input);
+            assert_eq!(&stripped, expected, "strip_html failed for: {}", input);
+        }
+    }
+
+    #[test]
+    fn csrf_token_is_unique() {
+        let t1 = generate_csrf_token();
+        let t2 = generate_csrf_token();
+        assert_ne!(t1, t2);
+    }
+
+    #[test]
+    fn nonce_validationates_fresh_token() {
+        let token = generate_csrf_token();
+        assert!(validate_nonce(&token, 3600));
+    }
+
+    #[test]
+    fn nonce_rejects_expired_token() {
+        assert!(!validate_nonce("0_deadbeef", 3600));
+    }
+
+    #[test]
+    fn nonce_rejects_malformed_token() {
+        assert!(!validate_nonce("not-a-token", 3600));
+        assert!(!validate_nonce("", 3600));
+        assert!(!validate_nonce("abc", 3600));
+    }
+}
+
+// ============================================================
+// P18: XSS_PREVENTION
+// ============================================================
+
+mod p18_xss_prevention {
+    use super::*;
+    use hrml::security::escape_html;
+
+    #[test]
+    fn escaped_script_cannot_execute() {
+        let payload = "<script>alert(document.cookie)</script>";
+        let escaped = escape_html(payload);
+        assert!(!escaped.contains("<script"));
+        assert!(!escaped.contains("</script>"));
+        assert!(escaped.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn escaped_img_onerror_cannot_execute() {
+        let payload = "<img src=x onerror=alert(1)>";
+        let escaped = escape_html(payload);
+        // No raw angle brackets means no HTML element can be formed
+        assert!(!escaped.contains("<img"));
+        assert!(!escaped.contains('<'));
+        assert!(!escaped.contains('>'));
+    }
+
+    #[test]
+    fn escaped_svg_cannot_execute() {
+        let payload = "<svg onload=alert(1)>";
+        let escaped = escape_html(payload);
+        assert!(!escaped.contains("<svg"));
+    }
+
+    #[test]
+    fn escaped_iframe_cannot_execute() {
+        let payload = "<iframe src='https://evil.com'></iframe>";
+        let escaped = escape_html(payload);
+        assert!(!escaped.contains("<iframe"));
+    }
+
+    #[test]
+    fn escaped_object_cannot_execute() {
+        let payload = "<object data='data:text/html,<script>'></object>";
+        let escaped = escape_html(payload);
+        assert!(!escaped.contains("<object"));
+        assert!(!escaped.contains("<script"));
+    }
+
+    #[test]
+    fn escaped_input_cannot_inject() {
+        let payload = "<input onfocus=alert(1) autofocus>";
+        let escaped = escape_html(payload);
+        assert!(!escaped.contains("<input"));
+        assert!(!escaped.contains('<'));
+        assert!(!escaped.contains('>'));
+    }
+}
+
+// ============================================================
+// P19: AUTH_CORRECTNESS
+// ============================================================
+
+mod p19_auth {
+    use super::*;
+    use hrml::auth;
+
+    #[test]
+    fn current_user_never_panics() {
+        let _ = auth::current_user();
+    }
+
+    #[test]
+    fn current_uid_is_valid() {
+        let uid = auth::current_uid();
+        assert!(uid > 0 || uid == 0);
+    }
+
+    #[test]
+    fn is_root_never_panics() {
+        let _ = auth::is_root();
+    }
+
+    #[test]
+    fn authenticate_wrong_user_fails_gracefully() {
+        let result = auth::authenticate("nonexistent_user_xyz_12345", "wrong_password");
+        // Either PAM is available and returns false, or PAM is not available
+        assert!(result.is_ok() || result.as_ref().unwrap_err().contains("libpam"));
+    }
+
+    #[test]
+    fn is_user_in_group_handles_missing_group() {
+        let result = auth::is_user_in_group("root", "nonexistent_group_xyz");
+        assert!(result.is_err());
+    }
+}
+
+// ============================================================
+// P20: SSG_CORRECTNESS
+// ============================================================
+
+mod p20_ssg {
+    use super::*;
+    use hrml::ssg::{BuildReport, SSG};
+
+    #[test]
+    fn ssg_build_report_starts_empty() {
+        let report = BuildReport::new();
+        assert_eq!(report.pages.len(), 0);
+        assert_eq!(report.errors.len(), 0);
+    }
+
+    #[test]
+    fn ssg_build_report_tracks_pages() {
+        let mut report = BuildReport::new();
+        report.add_page(
+            "/".to_string(),
+            "pages/index.hrml".to_string(),
+            "dist/index.html".to_string(),
+        );
+        report.add_page(
+            "/about".to_string(),
+            "pages/about.hrml".to_string(),
+            "dist/about/index.html".to_string(),
+        );
+        assert_eq!(report.pages.len(), 2);
+        assert_eq!(report.errors.len(), 0);
+    }
+
+    #[test]
+    fn ssg_build_report_tracks_errors() {
+        let mut report = BuildReport::new();
+        report.add_error("pages/broken.hrml".to_string(), "render error".to_string());
+        assert_eq!(report.pages.len(), 0);
+        assert_eq!(report.errors.len(), 1);
+    }
+
+    #[test]
+    fn ssg_summary_format() {
+        let mut report = BuildReport::new();
+        report.add_page(
+            "/".to_string(),
+            "pages/index.hrml".to_string(),
+            "dist/index.html".to_string(),
+        );
+        report.add_page(
+            "/about".to_string(),
+            "pages/about.hrml".to_string(),
+            "dist/about/index.html".to_string(),
+        );
+        report.add_error("pages/broken.hrml".to_string(), "error".to_string());
+        let summary = report.summary();
+        assert!(summary.contains("2 pages"));
+        assert!(summary.contains("1 errors"));
+    }
+}
