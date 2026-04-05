@@ -167,6 +167,7 @@ name = "hrml"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "libc",
  "pulldown-cmark",
  "regex",
  "serde",

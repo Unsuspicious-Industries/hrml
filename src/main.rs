@@ -6,10 +6,14 @@ use std::process;
 
 mod algebra;
 mod assets;
+mod auth;
 mod backend;
 mod config;
 mod features;
 mod oxml;
+mod router;
+mod security;
+mod ssg;
 mod template;
 
 use axum::{
@@ -37,6 +41,7 @@ fn print_help() {
     println!("  serve [path]        Run production server");
     println!("  build [path]        Build static site for deployment");
     println!("  check [path]        Validate templates and configuration");
+    println!("  auth <user>         Authenticate user via PAM (reads password from stdin)");
     println!("  version             Show version information");
     println!("  help                Show this help message");
     println!();
@@ -117,6 +122,70 @@ fn validate_project(path: &Path) -> Result<(), String> {
     
     println!("[OK] Project validation complete");
     Ok(())
+}
+
+fn check_project(path: &Path) -> Result<(), String> {
+    if let Err(e) = env::set_current_dir(path) {
+        return Err(format!("Cannot access '{}': {}", path.display(), e));
+    }
+
+    let config = config::Config::load("hrml.toml").unwrap_or_default();
+    let templates_path = PathBuf::from(&config.templates_path);
+
+    if !templates_path.exists() {
+        return Err(format!("Templates dir not found: {}", templates_path.display()));
+    }
+
+    // Build router and check routes
+    let pages_dir = templates_path.join("pages");
+    let rt = router::Router::from_pages_dir(&pages_dir);
+    println!("Routes found: {}", rt.routes.len());
+    for route in &rt.routes {
+        println!("  {} -> {} ({:?})", route.path, route.template, route.kind);
+    }
+
+    // Validate all static routes render
+    let engine = template::Engine::new(&templates_path.to_string_lossy());
+    let mut errors = 0;
+    let mut ok = 0;
+
+    for route in rt.static_routes() {
+        match engine.render(&route.template, &serde_json::json!({})) {
+            Ok(html) => {
+                // Check for directive leakage
+                if html.contains("<?") || html.contains("?>") {
+                    eprintln!("[WARN] {} has unprocessed directives", route.path);
+                }
+                // Check HTML structure
+                if html.contains("<!DOCTYPE") {
+                    if html.matches("<html").count() != 1 {
+                        eprintln!("[WARN] {} has malformed HTML", route.path);
+                    }
+                }
+                ok += 1;
+            }
+            Err(e) => {
+                eprintln!("[ERROR] {} failed: {}", route.path, e);
+                errors += 1;
+            }
+        }
+    }
+
+    println!("\nCheck complete: {} ok, {} errors", ok, errors);
+    if errors > 0 {
+        Err(format!("{} templates failed to render", errors))
+    } else {
+        Ok(())
+    }
+}
+
+fn read_password() -> String {
+    use std::io::{self, BufRead};
+    // Read from stdin, strip trailing newline
+    let stdin = io::stdin();
+    let mut line = String::new();
+    stdin.lock().read_line(&mut line).unwrap_or(0);
+    line.trim_end_matches(&['\n', '\r'][..]).to_string()
 }
 
 #[derive(Clone)]
@@ -387,6 +456,36 @@ async fn main() {
             if let Err(e) = build_site(&path) {
                 eprintln!("Build failed: {}", e);
                 process::exit(1);
+            }
+        }
+        "check" => {
+            let path = args.get(2).map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+            if let Err(e) = check_project(&path) {
+                eprintln!("Check failed: {}", e);
+                process::exit(1);
+            }
+        }
+        "auth" => {
+            if args.len() < 3 {
+                eprintln!("Error: Username required");
+                eprintln!("Usage: hrml auth <user>");
+                process::exit(1);
+            }
+            let username = &args[2];
+            let password = read_password();
+            match auth::authenticate(username, &password) {
+                Ok(true) => {
+                    println!("Authentication successful for '{}'", username);
+                    process::exit(0);
+                }
+                Ok(false) => {
+                    eprintln!("Authentication failed for '{}'", username);
+                    process::exit(1);
+                }
+                Err(e) => {
+                    eprintln!("PAM error: {}", e);
+                    process::exit(2);
+                }
             }
         }
         _ => {

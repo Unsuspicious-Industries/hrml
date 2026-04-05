@@ -1,282 +1,397 @@
+// HRML Validation Harness
+//
+// This module provides utilities to chain-test hundreds of HRML templates
+// against expected HTML results. It supports:
+//
+// 1. Fixture-based testing: Load .hrml templates from validation/fixtures/,
+//    render them, and compare against expected HTML in validation/expected/
+//
+// 2. Chain testing: Render sequences of templates where output from one
+//    becomes input to another, verifying end-to-end pipelines
+//
+// 3. Bulk validation: Walk entire directory trees of fixtures and validate
+//    all templates in a single test run
+//
+// 4. Property-based assertions: Verify invariants like "no directive leakage",
+//    "valid HTML structure", "no crashes", etc.
+//
+// Usage:
+//   - Place .hrml files in validation/fixtures/pages/
+//   - Place expected .html files in validation/expected/pages/
+//   - Run: cargo test --test validation_harness
+//
+// The harness automatically discovers all fixtures and validates them.
+
 use hrml::template::Engine;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Test harness for HRML validation suite.
-/// Provides utilities to load fixtures, render templates, and compare against expected HTML.
-pub struct ValidationHarness {
-    pub fixture_root: PathBuf,
-    pub expected_root: PathBuf,
-    pub temp_dir: PathBuf,
+// ============================================================
+// Test Environment
+// ============================================================
+
+pub struct TestEnv {
+    pub dir: String,
 }
 
-impl ValidationHarness {
-    pub fn new() -> Self {
-        let fixture_root = PathBuf::from("validation/fixtures");
-        let expected_root = PathBuf::from("validation/expected");
-        let temp_dir = PathBuf::from(format!("/tmp/hrml_validation_{}", std::process::id()));
-
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).expect("Failed to create temp dir");
-
-        Self {
-            fixture_root,
-            expected_root,
-            temp_dir,
-        }
-    }
-
-    /// Setup a test environment by copying fixtures into an isolated temp directory.
-    /// Returns the path to the isolated test directory and an Engine configured for it.
-    pub fn setup_test(&self, test_name: &str) -> (PathBuf, Engine) {
-        let test_dir = self.temp_dir.join(test_name);
-        let _ = fs::remove_dir_all(&test_dir);
-
-        // Copy all fixture subdirectories
-        let subdirs = [
+impl TestEnv {
+    pub fn new(name: &str) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = format!("/tmp/hrml_val_{}_{}", name, now);
+        let dirs = [
             "layouts",
             "components",
             "pages",
             "content",
             "sections",
             "chrome",
+            "partials",
             "static",
+            "endpoints/api",
         ];
-        for subdir in &subdirs {
-            let src = self.fixture_root.join(subdir);
-            let dst = test_dir.join(subdir);
-            if src.exists() {
-                copy_dir_all(&src, &dst).expect(&format!("Failed to copy {}", subdir));
-            }
+        for d in &dirs {
+            let _ = fs::create_dir_all(format!("{}/{}", dir, d));
         }
-
-        // Create missing directories
-        for subdir in &subdirs {
-            let _ = fs::create_dir_all(test_dir.join(subdir));
-        }
-
-        let engine = Engine::new(&test_dir.to_string_lossy());
-        (test_dir, engine)
+        TestEnv { dir }
     }
 
-    /// Setup test with custom site configuration.
-    pub fn setup_test_with_config(
-        &self,
-        test_name: &str,
-        site_name: &str,
-        description: Option<&str>,
-        favicon: Option<&str>,
-    ) -> (PathBuf, Engine) {
-        let (test_dir, engine) = self.setup_test(test_name);
-        let engine = engine.with_site_name(site_name.to_string());
-        let engine = match description {
-            Some(d) => engine.with_description(Some(d.to_string())),
-            None => engine,
-        };
-        let engine = match favicon {
-            Some(f) => engine.with_favicon(Some(f.to_string())),
-            None => engine,
-        };
-        (test_dir, engine)
-    }
-
-    /// Render a template and compare against expected HTML file.
-    /// The expected file should be at `validation/expected/{category}/{test_name}.html`.
-    pub fn assert_render(
-        &self,
-        test_name: &str,
-        template_path: &str,
-        category: &str,
-        data: &Value,
-    ) -> String {
-        let (_test_dir, engine) = self.setup_test(test_name);
-
-        let result = engine.render(template_path, data);
-
-        match result {
-            Ok(html) => {
-                let expected_path = self
-                    .expected_root
-                    .join(category)
-                    .join(format!("{}.html", test_name));
-                if expected_path.exists() {
-                    let expected = fs::read_to_string(&expected_path).expect(&format!(
-                        "Failed to read expected file: {}",
-                        expected_path.display()
-                    ));
-
-                    assert_eq!(
-                        normalize_html(&html),
-                        normalize_html(&expected),
-                        "\n\n=== RENDER MISMATCH: {} ===\n\n--- Expected ---\n{}\n\n--- Got ---\n{}\n",
-                        test_name,
-                        expected,
-                        html
-                    );
-                }
-                html
-            }
-            Err(e) => panic!("Template '{}' failed to render: {}", template_path, e),
-        }
-    }
-
-    /// Render a template and return the HTML without comparing to expected.
-    pub fn render(&self, test_name: &str, template_path: &str, data: &Value) -> String {
-        let (_test_dir, engine) = self.setup_test(test_name);
-        engine
-            .render(template_path, data)
-            .expect(&format!("Template '{}' failed to render", template_path))
-    }
-
-    /// Render with custom engine configuration.
-    pub fn render_with_config(
-        &self,
-        test_name: &str,
-        template_path: &str,
-        data: &Value,
-        site_name: &str,
-        description: Option<&str>,
-        favicon: Option<&str>,
-    ) -> String {
-        let (_test_dir, engine) =
-            self.setup_test_with_config(test_name, site_name, description, favicon);
-        engine
-            .render(template_path, data)
-            .expect(&format!("Template '{}' failed to render", template_path))
-    }
-
-    /// Write additional test-specific templates.
-    pub fn write_template(&self, test_dir: &Path, path: &str, content: &str) {
-        let full_path = test_dir.join(path);
-        if let Some(parent) = full_path.parent() {
+    pub fn write(&self, path: &str, content: &str) {
+        let full = format!("{}/{}", self.dir, path);
+        if let Some(parent) = Path::new(&full).parent() {
             let _ = fs::create_dir_all(parent);
         }
-        fs::write(&full_path, content).expect(&format!("Failed to write template: {}", path));
+        fs::write(&full, content).unwrap();
     }
 
-    /// Clean up all temporary test directories.
-    pub fn cleanup(&self) {
-        let _ = fs::remove_dir_all(&self.temp_dir);
+    pub fn read(&self, path: &str) -> String {
+        fs::read_to_string(format!("{}/{}", self.dir, path)).unwrap()
+    }
+
+    pub fn engine(&self) -> Engine {
+        Engine::new(&self.dir)
+    }
+
+    pub fn engine_with_config(
+        &self,
+        site_name: &str,
+        description: Option<&str>,
+        favicon: Option<&str>,
+    ) -> Engine {
+        let mut e = Engine::new(&self.dir).with_site_name(site_name.to_string());
+        if let Some(d) = description {
+            e = e.with_description(Some(d.to_string()));
+        }
+        if let Some(f) = favicon {
+            e = e.with_favicon(Some(f.to_string()));
+        }
+        e
+    }
+
+    pub fn render(&self, path: &str) -> Result<String, String> {
+        self.engine().render(path, &json!({}))
+    }
+
+    pub fn render_with_data(&self, path: &str, data: &Value) -> Result<String, String> {
+        self.engine().render(path, data)
+    }
+
+    pub fn render_fragment(&self, path: &str) -> Result<String, String> {
+        self.engine().render_fragment(path, &json!({}))
+    }
+
+    pub fn render_fragment_with_data(&self, path: &str, data: &Value) -> Result<String, String> {
+        self.engine().render_fragment(path, data)
     }
 }
 
-impl Default for ValidationHarness {
+impl Drop for TestEnv {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.dir);
+    }
+}
+
+// ============================================================
+// Fixture Loader
+// ============================================================
+
+pub struct FixtureLoader {
+    pub fixtures_dir: PathBuf,
+    pub expected_dir: PathBuf,
+}
+
+impl FixtureLoader {
+    pub fn new() -> Self {
+        Self {
+            fixtures_dir: PathBuf::from("validation/fixtures"),
+            expected_dir: PathBuf::from("validation/expected"),
+        }
+    }
+
+    /// Load all .hrml files from a subdirectory of fixtures/
+    pub fn load_fixtures(&self, subdir: &str) -> Vec<(String, String)> {
+        let dir = self.fixtures_dir.join(subdir);
+        if !dir.exists() {
+            return Vec::new();
+        }
+        let mut fixtures = Vec::new();
+        for entry in fs::read_dir(&dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.extension().map(|e| e == "hrml").unwrap_or(false) {
+                let name = path.file_stem().unwrap().to_string_lossy().to_string();
+                let content = fs::read_to_string(&path).unwrap();
+                fixtures.push((name, content));
+            }
+        }
+        fixtures.sort_by(|a, b| a.0.cmp(&b.0));
+        fixtures
+    }
+
+    /// Load expected HTML for a fixture
+    pub fn load_expected(&self, subdir: &str, name: &str) -> Option<String> {
+        let path = self
+            .expected_dir
+            .join(subdir)
+            .join(format!("{}.html", name));
+        if path.exists() {
+            Some(fs::read_to_string(&path).unwrap())
+        } else {
+            None
+        }
+    }
+
+    /// Load all expected HTML files from a subdirectory
+    pub fn load_expected_all(&self, subdir: &str) -> HashMap<String, String> {
+        let dir = self.expected_dir.join(subdir);
+        if !dir.exists() {
+            return HashMap::new();
+        }
+        let mut expected = HashMap::new();
+        for entry in fs::read_dir(&dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.extension().map(|e| e == "html").unwrap_or(false) {
+                let name = path.file_stem().unwrap().to_string_lossy().to_string();
+                let content = fs::read_to_string(&path).unwrap();
+                expected.insert(name, content);
+            }
+        }
+        expected
+    }
+}
+
+impl Default for FixtureLoader {
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// Chain test: renders a sequence of templates and verifies the final output.
+// ============================================================
+// Chain Tester
+// ============================================================
+
 pub struct ChainTest {
-    harness: ValidationHarness,
-    test_name: String,
-    test_dir: PathBuf,
-    engine: Engine,
+    env: TestEnv,
+    steps: Vec<(String, String)>,
 }
 
 impl ChainTest {
-    pub fn new(harness: ValidationHarness, test_name: &str) -> Self {
-        let (test_dir, engine) = harness.setup_test(test_name);
+    pub fn new(name: &str) -> Self {
         Self {
-            harness,
-            test_name: test_name.to_string(),
-            test_dir,
-            engine,
+            env: TestEnv::new(name),
+            steps: Vec::new(),
         }
     }
 
-    /// Add a template to the chain.
+    /// Add a template to the chain
     pub fn add_template(&mut self, path: &str, content: &str) -> &mut Self {
-        self.harness.write_template(&self.test_dir, path, content);
+        self.env.write(path, content);
+        self.steps.push((path.to_string(), content.to_string()));
         self
     }
 
-    /// Render the entry template and return the result.
-    pub fn render(&self, entry: &str, data: &Value) -> Result<String, String> {
-        self.engine.render(entry, data)
+    /// Render the entry point and return the result
+    pub fn render(&self, entry: &str) -> Result<String, String> {
+        self.env.render(entry)
     }
 
-    /// Render and assert against expected output.
-    pub fn assert(&self, entry: &str, data: &Value, category: &str) -> String {
-        let result = self.render(entry, data).expect(&format!(
-            "Chain test '{}' failed to render '{}'",
-            self.test_name, entry
-        ));
-
-        let expected_path = self
-            .harness
-            .expected_root
-            .join(category)
-            .join(format!("{}.html", &self.test_name));
-        if expected_path.exists() {
-            let expected = fs::read_to_string(&expected_path).expect(&format!(
-                "Failed to read expected: {}",
-                expected_path.display()
-            ));
-
-            assert_eq!(
-                normalize_html(&result),
-                normalize_html(&expected),
-                "\n\n=== CHAIN TEST MISMATCH: {} ===\n\n--- Expected ---\n{}\n\n--- Got ---\n{}\n",
-                self.test_name,
-                expected,
-                result
-            );
-        }
-
-        result
+    /// Render with data
+    pub fn render_with_data(&self, entry: &str, data: &Value) -> Result<String, String> {
+        self.env.render_with_data(entry, data)
     }
 
-    /// Render and assert that the output contains specific strings.
-    pub fn assert_contains(&self, entry: &str, data: &Value, expected_strings: &[&str]) -> String {
-        let result = self.render(entry, data).expect(&format!(
-            "Chain test '{}' failed to render '{}'",
-            self.test_name, entry
-        ));
+    /// Render and compare against expected HTML
+    pub fn assert_output(&self, entry: &str, expected: &str) {
+        let html = self.render(entry).unwrap();
+        assert_eq!(
+            normalize(&html),
+            normalize(expected),
+            "\nExpected:\n{}\n\nGot:\n{}\n",
+            expected,
+            html
+        );
+    }
 
-        for s in expected_strings {
+    /// Render and assert contains/not_contains
+    pub fn assert_contains(&self, entry: &str, needles: &[&str]) {
+        let html = self.render(entry).unwrap();
+        for needle in needles {
             assert!(
-                result.contains(s),
-                "Chain test '{}': expected output to contain '{}'\n\n--- Output ---\n{}\n",
-                self.test_name,
-                s,
-                result
+                html.contains(needle),
+                "\nExpected to contain: {}\n\nGot:\n{}\n",
+                needle,
+                html
             );
         }
-
-        result
     }
 
-    /// Render and assert that the output does NOT contain specific strings.
-    pub fn assert_not_contains(
-        &self,
-        entry: &str,
-        data: &Value,
-        forbidden_strings: &[&str],
-    ) -> String {
-        let result = self.render(entry, data).expect(&format!(
-            "Chain test '{}' failed to render '{}'",
-            self.test_name, entry
-        ));
-
-        for s in forbidden_strings {
+    pub fn assert_not_contains(&self, entry: &str, needles: &[&str]) {
+        let html = self.render(entry).unwrap();
+        for needle in needles {
             assert!(
-                !result.contains(s),
-                "Chain test '{}': expected output NOT to contain '{}'\n\n--- Output ---\n{}\n",
-                self.test_name,
-                s,
-                result
+                !html.contains(needle),
+                "\nExpected NOT to contain: {}\n\nGot:\n{}\n",
+                needle,
+                html
             );
         }
-
-        result
     }
 }
 
-/// Normalize HTML for comparison: collapse whitespace, trim lines, remove empty lines.
-pub fn normalize_html(html: &str) -> String {
+// ============================================================
+// Bulk Validator
+// ============================================================
+
+pub struct BulkValidator {
+    pub results: Vec<(String, bool, String)>,
+}
+
+impl BulkValidator {
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+
+    /// Validate all fixtures in a subdirectory
+    pub fn validate_fixtures(
+        &mut self,
+        subdir: &str,
+        render_fn: impl Fn(&str) -> Result<String, String>,
+    ) {
+        let loader = FixtureLoader::new();
+        let fixtures = loader.load_fixtures(subdir);
+        let expected_map = loader.load_expected_all(subdir);
+
+        for (name, content) in &fixtures {
+            // Write fixture to temp env
+            let env = TestEnv::new(&format!("bulk_{}_{}", subdir, name));
+            env.write(&format!("pages/{}.hrml", name), content);
+
+            match render_fn(&format!("pages/{}.hrml", name)) {
+                Ok(html) => {
+                    if let Some(expected) = expected_map.get(name) {
+                        if normalize(&html) == normalize(expected) {
+                            self.results.push((name.clone(), true, String::new()));
+                        } else {
+                            self.results.push((
+                                name.clone(),
+                                false,
+                                format!("Output mismatch\nExpected:\n{}\nGot:\n{}", expected, html),
+                            ));
+                        }
+                    } else {
+                        // No expected file, just check it renders without error
+                        self.results.push((name.clone(), true, String::new()));
+                    }
+                }
+                Err(e) => {
+                    self.results
+                        .push((name.clone(), false, format!("Render error: {}", e)));
+                }
+            }
+        }
+    }
+
+    /// Print summary
+    pub fn summary(&self) -> String {
+        let total = self.results.len();
+        let passed = self.results.iter().filter(|(_, ok, _)| *ok).count();
+        let failed = total - passed;
+
+        let mut out = format!(
+            "\n=== Bulk Validation Summary ===\nTotal: {}\nPassed: {}\nFailed: {}\n",
+            total, passed, failed
+        );
+
+        if failed > 0 {
+            out.push_str("\nFailures:\n");
+            for (name, ok, msg) in &self.results {
+                if !ok {
+                    out.push_str(&format!("  - {}: {}\n", name, msg));
+                }
+            }
+        }
+
+        out
+    }
+
+    /// Assert all passed
+    pub fn assert_all_passed(&self) {
+        let failed: Vec<_> = self.results.iter().filter(|(_, ok, _)| !ok).collect();
+        assert!(
+            failed.is_empty(),
+            "{} fixtures failed:\n{}",
+            failed.len(),
+            self.summary()
+        );
+    }
+}
+
+impl Default for BulkValidator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ============================================================
+// Assertion Helpers
+// ============================================================
+
+pub fn assert_contains(html: &str, needle: &str) {
+    assert!(
+        html.contains(needle),
+        "\nExpected to contain: {}\n\nGot:\n{}\n",
+        needle,
+        html
+    );
+}
+
+pub fn assert_not_contains(html: &str, needle: &str) {
+    assert!(
+        !html.contains(needle),
+        "\nExpected NOT to contain: {}\n\nGot:\n{}\n",
+        needle,
+        html
+    );
+}
+
+pub fn assert_count(html: &str, needle: &str, expected: usize) {
+    let count = html.matches(needle).count();
+    assert_eq!(
+        count, expected,
+        "\nExpected {} occurrences of '{}', found {}\n\nGot:\n{}\n",
+        expected, needle, count, html
+    );
+}
+
+pub fn normalize(html: &str) -> String {
     html.lines()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
@@ -284,139 +399,72 @@ pub fn normalize_html(html: &str) -> String {
         .join("\n")
 }
 
-/// Recursively copy a directory.
-pub fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
-    fs::create_dir_all(dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        let dst_path = dst.join(entry.file_name());
-        if ty.is_dir() {
-            copy_dir_all(&entry.path(), &dst_path)?;
-        } else {
-            fs::copy(entry.path(), &dst_path)?;
+// ============================================================
+// HTML Validation
+// ============================================================
+
+pub fn validate_html_structure(html: &str) -> Result<(), String> {
+    // Check for basic HTML structure
+    if html.contains("<!DOCTYPE html") {
+        if html.matches("<html").count() != 1 {
+            return Err("Expected exactly one <html> tag".to_string());
+        }
+        if html.matches("<head>").count() != 1 {
+            return Err("Expected exactly one <head> tag".to_string());
+        }
+        if html.matches("</head>").count() != 1 {
+            return Err("Expected exactly one </head> tag".to_string());
+        }
+        if html.matches("<body").count() != 1 {
+            return Err("Expected exactly one <body> tag".to_string());
+        }
+        if html.matches("</body>").count() != 1 {
+            return Err("Expected exactly one </body> tag".to_string());
+        }
+        if html.matches("</html>").count() != 1 {
+            return Err("Expected exactly one </html> tag".to_string());
         }
     }
+
+    // Check for directive leakage
+    if html.contains("<?") {
+        return Err("Found unprocessed HRML directive: <?".to_string());
+    }
+    if html.contains("?>") {
+        return Err("Found unprocessed HRML directive: ?>".to_string());
+    }
+
     Ok(())
 }
 
-/// Write a fixture file to the fixtures directory.
-pub fn write_fixture(relative_path: &str, content: &str) {
-    let path = PathBuf::from("validation/fixtures").join(relative_path);
+// ============================================================
+// Fixture Writers (for generating test data)
+// ============================================================
+
+pub fn write_fixture(subdir: &str, name: &str, content: &str) {
+    let path = PathBuf::from("validation/fixtures")
+        .join(subdir)
+        .join(format!("{}.hrml", name));
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    fs::write(&path, content).expect(&format!("Failed to write fixture: {}", path.display()));
+    fs::write(&path, content).unwrap();
 }
 
-/// Write an expected output file.
-pub fn write_expected(category: &str, test_name: &str, content: &str) {
+pub fn write_expected(subdir: &str, name: &str, content: &str) {
     let path = PathBuf::from("validation/expected")
-        .join(category)
-        .join(format!("{}.html", test_name));
+        .join(subdir)
+        .join(format!("{}.html", name));
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    fs::write(&path, content).expect(&format!("Failed to write expected: {}", path.display()));
+    fs::write(&path, content).unwrap();
 }
 
-/// Bulk test runner: loads all .hrml files from a fixture subdirectory,
-/// renders each, and compares against corresponding .html in expected/{category}/.
-pub fn run_bulk_tests(fixture_subdir: &str, category: &str) {
-    let harness = ValidationHarness::new();
-    let fixture_path = harness.fixture_root.join(fixture_subdir);
+// ============================================================
+// Test Report
+// ============================================================
 
-    if !fixture_path.exists() {
-        eprintln!("Fixture directory not found: {}", fixture_path.display());
-        return;
-    }
-
-    let mut passed = 0;
-    let mut failed = 0;
-    let mut errors = Vec::new();
-
-    for entry in walk_hrml_files(&fixture_path) {
-        let stem = entry.file_stem().unwrap().to_string_lossy().to_string();
-        let rel_path = entry
-            .strip_prefix(&harness.fixture_root)
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-
-        let test_name = format!("{}_{}", category, stem);
-        let (test_dir, engine) = harness.setup_test(&test_name);
-
-        // Also copy the specific file if it's in a custom location
-        if let Some(parent) = entry.parent() {
-            let rel_parent = parent.strip_prefix(&harness.fixture_root).unwrap();
-            let dst_parent = test_dir.join(rel_parent);
-            let _ = fs::create_dir_all(&dst_parent);
-            let _ = fs::copy(&entry, dst_parent.join(entry.file_name().unwrap()));
-        }
-
-        match engine.render(&rel_path, &serde_json::json!({})) {
-            Ok(html) => {
-                let expected_path = harness
-                    .expected_root
-                    .join(category)
-                    .join(format!("{}.html", stem));
-                if expected_path.exists() {
-                    let expected = fs::read_to_string(&expected_path).unwrap();
-                    if normalize_html(&html) == normalize_html(&expected) {
-                        passed += 1;
-                    } else {
-                        failed += 1;
-                        errors.push(format!(
-                            "MISMATCH: {}\nExpected:\n{}\nGot:\n{}",
-                            rel_path, expected, html
-                        ));
-                    }
-                } else {
-                    // No expected file, just check it renders without error
-                    passed += 1;
-                }
-            }
-            Err(e) => {
-                failed += 1;
-                errors.push(format!("ERROR: {} - {}", rel_path, e));
-            }
-        }
-    }
-
-    println!("\n=== Bulk Test Results: {} ===", category);
-    println!("Passed: {}", passed);
-    println!("Failed: {}", failed);
-
-    if !errors.is_empty() {
-        println!("\nFailures:");
-        for err in &errors {
-            println!("  {}", err);
-        }
-    }
-
-    assert_eq!(
-        failed, 0,
-        "{} tests failed in category '{}'",
-        failed, category
-    );
-}
-
-fn walk_hrml_files(dir: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                files.extend(walk_hrml_files(&path));
-            } else if path.extension().map(|e| e == "hrml").unwrap_or(false) {
-                files.push(path);
-            }
-        }
-    }
-    files
-}
-
-/// Test result summary for reporting.
 pub struct TestReport {
     pub total: usize,
     pub passed: usize,
@@ -450,6 +498,16 @@ impl TestReport {
             "\n=== Test Report ===\nTotal: {}\nPassed: {}\nFailed: {}\n",
             self.total, self.passed, self.failed
         )
+    }
+
+    pub fn assert_all_passed(&self) {
+        assert_eq!(
+            self.failed,
+            0,
+            "{} tests failed:\n{}",
+            self.failed,
+            self.summary()
+        );
     }
 }
 
