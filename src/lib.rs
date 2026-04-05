@@ -4,4 +4,8 @@ pub mod backend;
 pub mod config;
 pub mod features;
 pub mod oxml;
+pub mod router;
+pub mod ssg;
+pub mod security;
+pub mod auth;
 pub mod template;
