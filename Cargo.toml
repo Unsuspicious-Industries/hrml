@@ -2,6 +2,24 @@
 name = "hrml"
 version = "0.1.0"
 edition = "2021"
+description = "Minimal server-rendered web framework with Rust-native endpoints"
+license = "MIT"
+readme = "README.md"
+documentation = "https://docs.rs/hrml"
+keywords = ["web", "framework", "html", "server", "axum"]
+categories = ["web-programming", "command-line-utilities"]
+
+[[bin]]
+name = "hrml"
+path = "src/main.rs"
+
+[[test]]
+name = "comprehensive_tests"
+path = "validation/comprehensive_tests.rs"
+
+[[test]]
+name = "advanced_tests"
+path = "validation/advanced_tests.rs"
 
 [dependencies]
 # Minimal tokio instead of full
@@ -14,11 +32,8 @@ tower-http = { version = "0.5", default-features = false, features = ["fs"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 urlencoding = "2.1"
-# Python integration
-pyo3 = { version = "0.20", features = ["auto-initialize"] }
-# Database
-rusqlite = "0.32"
-once_cell = "1.21"
-# Template processing
-regex = "1.10"
 toml = "0.8"
+pulldown-cmark = "0.12"
+
+[dev-dependencies]
+regex = "1"

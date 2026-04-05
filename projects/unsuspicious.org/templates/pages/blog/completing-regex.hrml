@@ -1,0 +1,4 @@
+<?load file="layouts/site.hrml"?>
+<?block slot="extra_head"?><?load file="content/heads/blog/completing-regex.hrml"?></?block?>
+<?block slot="body_attrs"?>class="tracking-tight antialiased bg-page text-default"</?block?>
+<?block slot="content"?><?mdx file="content/blog/completing-regex.mdx"?></?block?>

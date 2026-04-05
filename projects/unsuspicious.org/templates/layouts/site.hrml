@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html class="2xl:text-[20px]" dir="ltr" lang="en">
+<head>
+<?component id="site-meta-base"?>
+<meta charset="UTF-8">
+<meta content="width=device-width,initial-scale=1" name="viewport">
+<link href="/sitemap.xml" rel="sitemap">
+<link href="/graphics/favicon.jpg" rel="shortcut icon">
+<link href="/graphics/favicon.jpg" rel="icon">
+<link href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" rel="stylesheet" crossorigin="anonymous" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV">
+</?component?>
+
+<?load file="components/head-meta.hrml"?>
+
+<?use id="site-meta-base"?>
+</?use?>
+
+<?slot id="extra_head"?></?slot?>
+</head>
+<body <?slot id="body_attrs"?>class="tracking-tight antialiased bg-page text-default"</?slot?>>
+<?slot id="content"?></?slot?>
+</body>
+</html>
