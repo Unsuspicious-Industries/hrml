@@ -1,0 +1,2 @@
+<?load file="layouts/base.hrml"?>
+<?block slot="content"?><p>Layout Content</p></?block?>
