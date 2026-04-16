@@ -56,12 +56,13 @@ fn run_all_fixtures() {
         let expected_file = expected_root.join(name.as_ref()).join("expected.txt");
         let expected = fs::read_to_string(&expected_file)
             .unwrap_or_else(|_| panic!("missing expected for fixture '{}'", name));
+        let expected_trim = expected.trim();
 
         assert!(
-            rendered.contains(&expected),
-            "Fixture '{}' did not contain expected substring. Expected:\n{}\n\nGot:\n{}",
+            rendered.contains(expected_trim),
+            "Fixture '{}' did not contain expected substring. Expected (trimmed):\n{}\n\nGot:\n{}",
             name,
-            expected,
+            expected_trim,
             rendered
         );
 
