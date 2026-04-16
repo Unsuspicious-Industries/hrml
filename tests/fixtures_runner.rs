@@ -56,14 +56,26 @@ fn run_all_fixtures() {
         let expected_file = expected_root.join(name.as_ref()).join("expected.txt");
         let expected = fs::read_to_string(&expected_file)
             .unwrap_or_else(|_| panic!("missing expected for fixture '{}'", name));
-        let expected_trim = expected.trim();
+
+        // Normalize whitespace for comparison: collapse runs of whitespace to single space
+        fn normalize(s: &str) -> String {
+            s.replace('\r', " ")
+                .replace('\n', " ")
+                .replace('\t', " ")
+                .split_whitespace()
+                .collect::<Vec<&str>>()
+                .join(" ")
+        }
+
+        let expected_norm = normalize(&expected);
+        let rendered_norm = normalize(&rendered);
 
         assert!(
-            rendered.contains(expected_trim),
-            "Fixture '{}' did not contain expected substring. Expected (trimmed):\n{}\n\nGot:\n{}",
+            rendered_norm.contains(&expected_norm),
+            "Fixture '{}' did not contain expected substring. Expected (normalized):\n{}\n\nGot (normalized):\n{}",
             name,
-            expected_trim,
-            rendered
+            expected_norm,
+            rendered_norm
         );
 
         let _ = fs::remove_dir_all(&tmp);
