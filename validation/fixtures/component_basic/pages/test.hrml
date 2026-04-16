@@ -1,0 +1,2 @@
+<?component id="x"?><span>FX</span></?component?>
+<?use id="x"?></?use?>
