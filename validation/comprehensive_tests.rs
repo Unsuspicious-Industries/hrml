@@ -75,6 +75,7 @@ impl TestEnv {
         self.engine().render_fragment(path, &json!({}))
     }
 
+    #[allow(dead_code)]
     fn render_fragment_with_data(
         &self,
         path: &str,
@@ -311,7 +312,7 @@ mod parser_tests {
         let env = TestEnv::new("loop_guard");
         // Create deeply nested elements that trigger the iteration counter
         let content = (0..5000)
-            .map(|i| format!("<?if cond=\"x\"?>a<?else?>b</?if?>"))
+            .map(|_| format!("<?if cond=\"x\"?>a<?else?>b</?if?>"))
             .collect::<Vec<_>>()
             .join("");
         env.write("pages/test.hrml", &content);
