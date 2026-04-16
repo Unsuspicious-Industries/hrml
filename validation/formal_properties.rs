@@ -119,6 +119,7 @@ impl TestEnv {
         self.engine().render(path, data)
     }
 
+    #[allow(dead_code)]
     fn render_fragment(&self, path: &str) -> Result<String, String> {
         self.engine().render_fragment(path, &json!({}))
     }
@@ -173,7 +174,7 @@ mod p1_parsing_termination {
 
     #[test]
     fn terminates_on_malformed_directives() {
-        let env = TestEnv::new("p1_malformed");
+        let _env = TestEnv::new("p1_malformed");
         let inputs = vec![
             "<?",
             "<??",
@@ -1003,7 +1004,6 @@ mod p15_compose_associativity {
 // ============================================================
 
 mod p16_routing {
-    use super::*;
     use hrml::router::{Route, RouteKind, Router};
     use std::path::PathBuf;
 
@@ -1116,7 +1116,6 @@ mod p16_routing {
 // ============================================================
 
 mod p17_security {
-    use super::*;
     use hrml::security::*;
 
     #[test]
@@ -1245,7 +1244,6 @@ mod p17_security {
 // ============================================================
 
 mod p18_xss_prevention {
-    use super::*;
     use hrml::security::escape_html;
 
     #[test]
@@ -1304,7 +1302,6 @@ mod p18_xss_prevention {
 // ============================================================
 
 mod p19_auth {
-    use super::*;
     use hrml::auth;
 
     #[test]
@@ -1342,8 +1339,7 @@ mod p19_auth {
 // ============================================================
 
 mod p20_ssg {
-    use super::*;
-    use hrml::ssg::{BuildReport, SSG};
+    use hrml::ssg::BuildReport;
 
     #[test]
     fn ssg_build_report_starts_empty() {
