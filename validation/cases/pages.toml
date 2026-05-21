@@ -1,0 +1,8 @@
+name = "pages"
+type = "structure"
+hrml = '''
+<p>Pages Fixture</p>
+'''
+expected = '''
+Pages Fixture
+'''

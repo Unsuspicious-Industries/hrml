@@ -1,0 +1,72 @@
+name = "imported_component_layout"
+type = "logic"
+hrml = '''
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+<?use id="card-cmp"?>
+    <?bind var="href"?>/product<?/bind?>
+    <?bind var="icon"?>code<?/bind?>
+    <?bind var="title"?>Dynamic Formal Systems<?/bind?>
+    <?bind var="text"?>Investigating interaction combinators.<?/bind?>
+</?use?>
+</?block?>
+'''
+expected = '''
+<body><nav class="site-nav"><a href="/">Home</a></nav><main><a href="/product" class="card-link"><div class="card"><div class="card-icon"><svg class="icon-sm"><use href="#icon-code"/></svg></div><h3 class="card-title">Dynamic Formal Systems</h3><p class="card-text">Investigating interaction combinators.</p></div></a></main><footer class="site-footer">Footer</footer></body>
+'''
+
+[[files]]
+path = "layouts/base.hrml"
+content = '''
+<body><?use id="nav-cmp"?></?use?><main><?slot id="content"?></?slot?></main><?use id="footer-cmp"?></?use?></body>
+'''
+
+[[files]]
+path = "_imports.hrml"
+content = '''
+<?load file="components/card.hrml"?>
+<?load file="components/nav.hrml"?>
+<?load file="components/footer.hrml"?>
+'''
+
+[[files]]
+path = "components/card.hrml"
+content = '''
+<?component id="card-cmp"?>
+<?bind var="href"?>
+<?bind var="icon"?>
+<?bind var="title"?>
+<?bind var="text"?>
+<?if cond="$href"?>
+<a href="<?get id="href"?>" class="card-link">
+    <div class="card">
+        <?if cond="$icon"?>
+        <div class="card-icon"><svg class="icon-sm"><use href="#icon-<?get id="icon"?>"/></svg></div>
+        <?/if?>
+        <?if cond="$title"?>
+        <h3 class="card-title"><?get id="title"?></h3>
+        <?/if?>
+        <?if cond="$text"?>
+        <p class="card-text"><?get id="text"?></p>
+        <?/if?>
+    </div>
+</a>
+<?else?>
+<div class="card"></div>
+<?/if?>
+<?/component?>
+'''
+
+[[files]]
+path = "components/nav.hrml"
+content = '''
+<?component id="nav-cmp"?><nav class="site-nav"><a href="/">Home</a></nav><?/component?>
+'''
+
+[[files]]
+path = "components/footer.hrml"
+content = '''
+<?component id="footer-cmp"?><footer class="site-footer">Footer</footer><?/component?>
+'''

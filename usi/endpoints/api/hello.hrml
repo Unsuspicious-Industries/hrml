@@ -1,0 +1,4 @@
+<div class="card">
+    <h2>Hello from endpoint template!</h2>
+    <p>This response is served by the built-in Rust backend runtime.</p>
+</div>

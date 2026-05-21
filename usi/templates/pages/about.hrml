@@ -1,0 +1,38 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">About Us</h1>
+            <p class="hero-description">
+                We are an open multidisciplinary research collective focusing on computer science, 
+                mathematics, arts and everything else.
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Our Mission</h2>
+            <p class="section-subtitle">Advancing human knowledge through stochastic epistemology</p>
+        </div>
+        
+        <div class="grid-3">
+            <div class="card">
+                <h3 class="card-title">Open Research</h3>
+                <p class="card-text">All our research is open and freely accessible. We believe in the power of open science.</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Multidisciplinary</h3>
+                <p class="card-text">We bring together researchers from diverse backgrounds to tackle complex problems.</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Formal Methods</h3>
+                <p class="card-text">We pursue fundamental questions in type systems, proof synthesis, and computational limits of knowability.</p>
+            </div>
+        </div>
+    </section>
+</?block?>

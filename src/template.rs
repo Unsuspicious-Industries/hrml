@@ -1,23 +1,26 @@
-use crate::algebra::{ComposeOp, Hypertext};
+use crate::config::Config;
 use crate::features::ONode;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-fn escape_attr(input: &str) -> String {
-    input
-        .replace('&', "&amp;")
-        .replace('"', "&quot;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
+mod ast;
+mod error;
 
+pub use ast::{AstNode, TemplateAst};
+pub use error::{
+    TemplateError, TemplateErrorKind, TemplateErrorLocation, TemplateErrorPhase, TemplateResult,
+};
+
+#[derive(Clone)]
 pub struct Engine {
     base_path: PathBuf,
     site_name: String,
     site_description: Option<String>,
     favicon: Option<String>,
+    site_url: Option<String>,
+    globals: serde_json::Value,
     tag_registry: crate::features::TagRegistry,
 }
 
@@ -28,6 +31,20 @@ impl Engine {
             site_name: "HRML App".to_string(),
             site_description: None,
             favicon: None,
+            site_url: None,
+            globals: serde_json::Value::Object(serde_json::Map::new()),
+            tag_registry: crate::features::TagRegistry::new(),
+        }
+    }
+
+    pub fn with_config(config: &Config) -> Self {
+        Self {
+            base_path: PathBuf::new(),
+            site_name: config.site_name.clone(),
+            site_description: config.site_description.clone(),
+            favicon: config.favicon.clone(),
+            site_url: config.site_url.clone(),
+            globals: config.globals.clone(),
             tag_registry: crate::features::TagRegistry::new(),
         }
     }
@@ -47,6 +64,16 @@ impl Engine {
         self
     }
 
+    pub fn with_site_url(mut self, site_url: Option<String>) -> Self {
+        self.site_url = site_url;
+        self
+    }
+
+    pub fn with_globals(mut self, globals: serde_json::Value) -> Self {
+        self.globals = globals;
+        self
+    }
+
     pub fn register_void_tag(&mut self, name: &str, handler: crate::features::VoidTagHandler) {
         self.tag_registry.register_void(name, handler);
     }
@@ -55,24 +82,235 @@ impl Engine {
         self.tag_registry.register_block(name, handler);
     }
 
-    pub fn render(&self, template_path: &str, data: &Value) -> Result<String, String> {
+    pub fn render(&self, template_path: &str, data: &Value) -> TemplateResult<String> {
         let mut context = self.build_context(data);
         let mut visited = std::collections::HashSet::new();
-        let resolved_nodes = self.resolve_with_tracking(template_path, &mut visited)?;
-        let body = self.render_nodes(&resolved_nodes, &mut context)?;
+        let (resolved_nodes, loaded_components) =
+            self.resolve_with_tracking(template_path, &mut visited)?;
+
+        for (id, nodes) in loaded_components {
+            context.set_component(&id, nodes);
+        }
+
+        self.register_components_from_tree(&resolved_nodes, &mut context)?;
+
+        let body_node = self.render_nodes(&resolved_nodes, &mut context, template_path)?;
+        let body = body_node.render();
 
         if looks_like_html_document(&body) {
             Ok(body)
         } else {
-            Ok(self.wrap_html(&body))
+            Ok(self.wrap_html(body_node))
         }
     }
 
-    pub fn render_fragment(&self, template_path: &str, data: &Value) -> Result<String, String> {
+    pub fn render_fragment(&self, template_path: &str, data: &Value) -> TemplateResult<String> {
         let mut context = self.build_context(data);
         let mut visited = std::collections::HashSet::new();
-        let resolved_nodes = self.resolve_with_tracking(template_path, &mut visited)?;
-        self.render_nodes(&resolved_nodes, &mut context)
+        let (resolved_nodes, loaded_components) =
+            self.resolve_with_tracking(template_path, &mut visited)?;
+
+        for (id, nodes) in loaded_components {
+            context.set_component(&id, nodes);
+        }
+
+        self.register_components_from_tree(&resolved_nodes, &mut context)?;
+
+        Ok(self
+            .render_nodes(&resolved_nodes, &mut context, template_path)?
+            .render())
+    }
+
+    pub fn parse_template(&self, template_path: &str) -> TemplateResult<TemplateAst> {
+        let mut visited = std::collections::HashSet::new();
+        let (nodes, _) = self.resolve_with_tracking(template_path, &mut visited)?;
+        Ok(TemplateAst {
+            nodes: nodes.into_iter().map(AstNode::from).collect(),
+        })
+    }
+
+    pub fn parse_source(source: &str) -> TemplateResult<TemplateAst> {
+        Self::parse_source_with_path(source, None)
+    }
+
+    pub fn parse_source_with_path(
+        source: &str,
+        template_path: Option<&str>,
+    ) -> TemplateResult<TemplateAst> {
+        let nodes = Parser::new(source, template_path).parse()?;
+        Ok(TemplateAst {
+            nodes: nodes.into_iter().map(AstNode::from).collect(),
+        })
+    }
+
+    pub fn render_content(
+        &self,
+        content: &str,
+        path: &str,
+        data: &Value,
+    ) -> TemplateResult<String> {
+        let mut context = self.build_context(data);
+        let ast = Parser::new(content, Some(path)).parse()?;
+
+        let blocks = self.extract_blocks_local(&ast);
+        let components = self.extract_components(&ast);
+
+        for (id, nodes) in components {
+            context.set_component(&id, nodes);
+        }
+
+        self.register_components_from_ast(&ast, &mut context)?;
+
+        let resolved_nodes = self.resolve_nodes_from_ast(&ast, &blocks)?;
+
+        let body_node = self.render_nodes(&resolved_nodes, &mut context, path)?;
+        let body = body_node.render();
+
+        if looks_like_html_document(&body) {
+            Ok(body)
+        } else {
+            Ok(self.wrap_html(body_node))
+        }
+    }
+
+    pub fn render_content_fragment(
+        &self,
+        content: &str,
+        path: &str,
+        data: &Value,
+    ) -> TemplateResult<String> {
+        let mut context = self.build_context(data);
+        let ast = Parser::new(content, Some(path)).parse()?;
+
+        let blocks = self.extract_blocks_local(&ast);
+        let components = self.extract_components(&ast);
+
+        for (id, nodes) in components {
+            context.set_component(&id, nodes);
+        }
+
+        self.register_components_from_ast(&ast, &mut context)?;
+
+        let resolved_nodes = self.resolve_nodes_from_ast(&ast, &blocks)?;
+
+        Ok(self
+            .render_nodes(&resolved_nodes, &mut context, path)?
+            .render())
+    }
+
+    pub fn render_nodes_from_tree(&self, nodes: &[Node], data: &Value) -> TemplateResult<ONode> {
+        let mut context = self.build_context(data);
+        self.register_components_from_tree(nodes, &mut context)?;
+        self.render_nodes(nodes, &mut context, "")
+    }
+
+    fn extract_blocks_local(&self, nodes: &[Node]) -> HashMap<String, Vec<Node>> {
+        let mut blocks = HashMap::new();
+        for node in nodes {
+            if let Node::Element {
+                name,
+                attrs,
+                children,
+            } = node
+            {
+                if name == "block" {
+                    if let Some(slot) = attrs.get("slot") {
+                        blocks.insert(slot.clone(), children.clone());
+                    }
+                }
+            }
+        }
+        blocks
+    }
+
+    fn extract_components(&self, nodes: &[Node]) -> Vec<(String, Vec<Node>)> {
+        let mut components = Vec::new();
+        for node in nodes {
+            if let Node::Element {
+                name,
+                attrs,
+                children,
+            } = node
+            {
+                if name == "component" {
+                    if let Some(id) = attrs.get("id") {
+                        components.push((id.clone(), children.clone()));
+                    }
+                }
+            }
+        }
+        components
+    }
+
+    fn register_components_from_ast(
+        &self,
+        nodes: &[Node],
+        context: &mut Context,
+    ) -> TemplateResult<()> {
+        for node in nodes {
+            match node {
+                Node::Element {
+                    name,
+                    attrs,
+                    children,
+                } => {
+                    if name == "component" {
+                        if let Some(id) = attrs.get("id") {
+                            context.set_component(id, children.clone());
+                        }
+                    }
+                    self.register_components_from_ast(children, context)?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    fn resolve_nodes_from_ast(
+        &self,
+        nodes: &[Node],
+        blocks: &HashMap<String, Vec<Node>>,
+    ) -> TemplateResult<Vec<Node>> {
+        let mut resolved = Vec::new();
+        for node in nodes {
+            match node {
+                Node::VoidElement { name, attrs } if name == "load" => {
+                    if let Some(file) = attrs.get("file") {
+                        resolved.push(Node::Load {
+                            file: file.clone(),
+                            blocks: blocks.clone(),
+                        });
+                    }
+                }
+                Node::VoidElement { name, attrs } if name == "slot" => {
+                    if let Some(id) = attrs.get("id") {
+                        if let Some(block_content) = blocks.get(id) {
+                            resolved.extend(block_content.clone());
+                            continue;
+                        }
+                    }
+                    resolved.push(Node::VoidElement {
+                        name: name.clone(),
+                        attrs: attrs.clone(),
+                    });
+                }
+                Node::Element {
+                    name,
+                    attrs,
+                    children,
+                } => {
+                    let resolved_children = self.resolve_nodes_from_ast(children, blocks)?;
+                    resolved.push(Node::Element {
+                        name: name.clone(),
+                        attrs: attrs.clone(),
+                        children: resolved_children,
+                    });
+                }
+                other => resolved.push(other.clone()),
+            }
+        }
+        Ok(resolved)
     }
 
     fn build_context(&self, data: &Value) -> Context {
@@ -84,6 +322,10 @@ impl Engine {
         if let Some(icon) = &self.favicon {
             context.set_str("favicon", icon.clone());
         }
+        if let Some(site_url) = &self.site_url {
+            context.set_str("site_url", site_url.clone());
+        }
+        context.set_value("globals", self.globals.clone());
         context
     }
 
@@ -91,37 +333,57 @@ impl Engine {
         &self,
         template_path: &str,
         visited: &mut std::collections::HashSet<String>,
-    ) -> Result<Vec<Node>, String> {
+    ) -> TemplateResult<(Vec<Node>, Vec<(String, Vec<Node>)>)> {
         if visited.contains(template_path) {
-            return Err(format!(
-                "Circular template dependency detected: {}",
-                template_path
-            ));
+            return Err(TemplateError::code(
+                TemplateErrorPhase::Resolve,
+                format!("Circular template dependency detected: {}", template_path),
+            )
+            .with_template_path(template_path));
         }
         visited.insert(template_path.to_string());
 
         let full_path = self.base_path.join(template_path);
-        let content = fs::read_to_string(&full_path)
-            .map_err(|e| format!("Failed to read template {}: {}", template_path, e))?;
+        let content = fs::read_to_string(&full_path).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read template {}: {}", template_path, e),
+            )
+            .with_template_path(template_path)
+        })?;
 
-        let mut nodes = Parser::new(&content).parse()?;
+        let mut nodes = Parser::new(&content, Some(template_path)).parse()?;
 
         // 1. Extract blocks defined in this template
         let blocks = self.extract_blocks(&nodes, visited)?;
 
-        // 2. Remove block Nodes from the tree
-        nodes.retain(|n| !matches!(n, Node::Element { name, .. } if name == "block"));
+        // 2. Extract components defined in this template
+        let local_components = self.extract_components(&nodes);
 
-        // 3. Process loads recursively and resolve nested loads in all elements
+        // 3. Remove block and component Nodes from the tree
+        nodes.retain(|n| match n {
+            Node::Element { name, .. } if name == "block" => false,
+            Node::Element { name, attrs, .. } if name == "component" => {
+                if attrs.get("id").is_some() {
+                    return false;
+                }
+                false
+            }
+            _ => true,
+        });
+
+        // 4. Process loads recursively and resolve nested loads in all elements
         let mut resolved_nodes = Vec::new();
+        let all_components = local_components;
 
         for node in nodes {
             match node {
                 Node::VoidElement { name, attrs } if name == "load" => {
                     if let Some(file) = attrs.get("file") {
-                        let mut loaded_nodes = self.resolve_with_tracking(file, visited)?;
-                        loaded_nodes = self.inject_blocks(loaded_nodes, &blocks);
-                        resolved_nodes.extend(loaded_nodes);
+                        resolved_nodes.push(Node::Load {
+                            file: file.clone(),
+                            blocks: blocks.clone(),
+                        });
                         continue;
                     }
                 }
@@ -143,7 +405,57 @@ impl Engine {
         }
 
         visited.remove(template_path);
-        Ok(resolved_nodes)
+        Ok((resolved_nodes, all_components))
+    }
+
+    pub(crate) fn register_components_from_tree(
+        &self,
+        nodes: &[Node],
+        context: &mut Context,
+    ) -> TemplateResult<()> {
+        for node in nodes {
+            match node {
+                Node::Element {
+                    name,
+                    attrs,
+                    children,
+                } => {
+                    if name == "component" {
+                        if let Some(id) = attrs.get("id") {
+                            context.set_component(id, children.clone());
+                        }
+                    }
+                    self.register_components_from_tree(children, context)?;
+                }
+                Node::Load { file, .. } => {
+                    if context
+                        .component_load_stack
+                        .iter()
+                        .any(|loaded| loaded == file)
+                    {
+                        continue;
+                    }
+
+                    context.component_load_stack.push(file.clone());
+                    let register_result = (|| {
+                        let mut visited = std::collections::HashSet::new();
+                        let (linked_nodes, linked_components) =
+                            self.resolve_with_tracking(file, &mut visited)?;
+
+                        for (id, component_nodes) in linked_components {
+                            context.set_component(&id, component_nodes);
+                        }
+
+                        self.register_components_from_tree(&linked_nodes, context)
+                    })();
+                    context.component_load_stack.pop();
+                    register_result?;
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     fn resolve_nodes_recursive(
@@ -151,16 +463,17 @@ impl Engine {
         nodes: Vec<Node>,
         visited: &mut std::collections::HashSet<String>,
         blocks: &HashMap<String, Vec<Node>>,
-    ) -> Result<Vec<Node>, String> {
+    ) -> TemplateResult<Vec<Node>> {
         let mut resolved = Vec::new();
 
         for node in nodes {
             match node {
                 Node::VoidElement { name, attrs } if name == "load" => {
                     if let Some(file) = attrs.get("file") {
-                        let mut loaded = self.resolve_with_tracking(file, visited)?;
-                        loaded = self.inject_blocks(loaded, blocks);
-                        resolved.extend(loaded);
+                        resolved.push(Node::Load {
+                            file: file.clone(),
+                            blocks: blocks.clone(),
+                        });
                     }
                 }
                 Node::VoidElement { name, attrs } if name == "slot" => {
@@ -197,7 +510,7 @@ impl Engine {
         &self,
         nodes: &[Node],
         visited: &mut std::collections::HashSet<String>,
-    ) -> Result<HashMap<String, Vec<Node>>, String> {
+    ) -> TemplateResult<HashMap<String, Vec<Node>>> {
         let mut blocks = HashMap::new();
         for node in nodes {
             if let Node::Element {
@@ -219,25 +532,6 @@ impl Engine {
             }
         }
         Ok(blocks)
-    }
-
-    fn extract_blocks_local(&self, nodes: &[Node]) -> HashMap<String, Vec<Node>> {
-        let mut blocks = HashMap::new();
-        for node in nodes {
-            if let Node::Element {
-                name,
-                attrs,
-                children,
-            } = node
-            {
-                if name == "block" {
-                    if let Some(slot) = attrs.get("slot") {
-                        blocks.insert(slot.clone(), children.clone());
-                    }
-                }
-            }
-        }
-        blocks
     }
 
     fn inject_blocks(
@@ -286,25 +580,43 @@ impl Engine {
         new_nodes
     }
 
-    fn render_nodes(&self, nodes: &[Node], context: &mut Context) -> Result<String, String> {
-        let mut result = String::new();
+    fn render_nodes(
+        &self,
+        nodes: &[Node],
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let mut result = Vec::new();
         for node in nodes {
-            result.push_str(&self.render_node(node, context)?);
+            result.push(self.render_node(node, context, template_path)?);
         }
-        Ok(result)
+        Ok(ONode::cat(result).compact())
     }
 
-    fn render_node(&self, node: &Node, context: &mut Context) -> Result<String, String> {
+    fn render_node(
+        &self,
+        node: &Node,
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
         match node {
-            Node::Text(text) => Ok(text.clone()),
+            Node::Text(text) => Ok(ONode::raw(text.clone())),
+            Node::Load { file, blocks } => self.render_load(file, blocks, context),
             Node::VoidElement { name, attrs } => {
                 if let Some(result) = self.tag_registry.render_void(name, attrs) {
-                    return result;
+                    return result
+                        .map_err(|message| {
+                            TemplateError::code(TemplateErrorPhase::Render, message)
+                                .with_template_path(template_path)
+                                .with_directive(name)
+                        })
+                        .map(ONode::raw);
                 }
                 match name.as_str() {
-                    "load" => Ok(String::new()),
-                    "else" => Ok(String::new()),
+                    "load" => Ok(ONode::empty()),
+                    "else" => Ok(ONode::empty()),
                     "wasm" => {
+                        use crate::features::oxml_tags;
                         let module = attrs.get("module").cloned().unwrap_or_default();
                         let src = attrs.get("src").cloned().unwrap_or_default();
                         let export = attrs
@@ -321,15 +633,14 @@ impl Engine {
                             .cloned()
                             .unwrap_or_else(|| "{}".to_string());
 
-                        Ok(format!(
-                            r#"<div class="{}" data-wasm-module="{}" data-wasm-src="{}" data-wasm-export="{}" data-wasm-start="{}" data-wasm-props='{}'></div>"#,
-                            escape_attr(&target_class),
-                            escape_attr(&module),
-                            escape_attr(&src),
-                            escape_attr(&export),
-                            escape_attr(&start),
-                            escape_attr(&props)
-                        ))
+                        Ok(ONode::content(oxml_tags::DIV)
+                            .attr("class", &target_class)
+                            .attr("data-wasm-module", &module)
+                            .attr("data-wasm-src", &src)
+                            .attr("data-wasm-export", &export)
+                            .attr("data-wasm-start", &start)
+                            .attr("data-wasm-props", &props)
+                            .build())
                     }
                     "set" => {
                         for (k, _) in attrs {
@@ -349,34 +660,54 @@ impl Engine {
                         if let (Some(id), Some(val)) = (attrs.get("id"), attrs.get("value")) {
                             context.set_str(id, val.clone());
                         }
-                        Ok(String::new())
+                        Ok(ONode::empty())
                     }
-                    "pure" => Ok(attrs.get("value").cloned().unwrap_or_default()),
-                    "mdx" => self.render_mdx(attrs),
-                    "markdown" => self.render_markdown(attrs),
-                    "markdownfm" => self.render_markdown_with_frontmatter(attrs, context),
-                    "latex" => self.render_latex(attrs),
-                    "meta" => Ok(self.render_meta_tag(attrs, context)),
-                    "linktag" => Ok(self.render_link_tag(attrs, context)),
-                    "title" => Ok(self.render_title_tag(attrs, context)),
-                    "og" => Ok(self.render_og_tag(attrs, context)),
-                    "twitter" => Ok(self.render_twitter_tag(attrs, context)),
-                    "charset" => Ok(self.render_charset_tag(attrs)),
-                    "viewport" => Ok(self.render_viewport_tag(attrs, context)),
-                    "canonical" => Ok(self.render_canonical_tag(attrs, context)),
-                    "description" => Ok(self.render_description_tag(attrs, context)),
-                    "robots" => Ok(self.render_robots_tag(attrs, context)),
-                    "stylesheet" => Ok(self.render_stylesheet_tag(attrs, context)),
-                    "script" => Ok(self.render_script_tag(attrs, context)),
-                    "use" => self.render_component_use(attrs, &[], context),
+                    "pure" => Ok(ONode::raw(attrs.get("value").cloned().unwrap_or_default())),
+                    "mdx" => self.render_mdx(attrs, template_path).map(ONode::raw),
+                    "markdown" => self.render_markdown(attrs, template_path).map(ONode::raw),
+                    "markdownfm" => self
+                        .render_markdown_with_frontmatter(attrs, context, template_path)
+                        .map(ONode::raw),
+                    "latex" => self.render_latex(attrs, template_path).map(ONode::raw),
+                    "meta" => Ok(ONode::raw(self.render_meta_tag(attrs, context))),
+                    "linktag" => Ok(ONode::raw(self.render_link_tag(attrs, context))),
+                    "title" => Ok(ONode::raw(self.render_title_tag(attrs, context))),
+                    "og" => Ok(ONode::raw(self.render_og_tag(attrs, context))),
+                    "twitter" => Ok(ONode::raw(self.render_twitter_tag(attrs, context))),
+                    "charset" => Ok(ONode::raw(self.render_charset_tag(attrs))),
+                    "viewport" => Ok(ONode::raw(self.render_viewport_tag(attrs, context))),
+                    "canonical" => Ok(ONode::raw(self.render_canonical_tag(attrs, context))),
+                    "description" => Ok(ONode::raw(self.render_description_tag(attrs, context))),
+                    "robots" => Ok(ONode::raw(self.render_robots_tag(attrs, context))),
+                    "stylesheet" => Ok(ONode::raw(self.render_stylesheet_tag(attrs, context))),
+                    "script" => Ok(ONode::raw(self.render_script_tag(attrs, context))),
+                    "use" => self.render_component_use(attrs, &[], context, template_path),
+                    "bind" => {
+                        if attrs.contains_key("from") || attrs.contains_key("value") {
+                            let var = attrs.get("var").map(String::as_str).unwrap_or("value");
+                            let bound = if let Some(from) = attrs.get("from") {
+                                context
+                                    .get_value(from)
+                                    .unwrap_or(Value::String(String::new()))
+                            } else {
+                                Value::String(attrs.get("value").cloned().unwrap_or_default())
+                            };
+                            context.set_value(var, bound);
+                        }
+                        Ok(ONode::empty())
+                    }
+                    "block" => {
+                        // Void block elements are handled by extract_blocks_local in Element context
+                        Ok(ONode::empty())
+                    }
                     "get" => {
                         if let Some(id) = attrs.get("id") {
-                            Ok(context.get(id))
+                            Ok(ONode::raw(context.get(id)))
                         } else {
-                            Ok(String::new())
+                            Ok(ONode::empty())
                         }
                     }
-                    _ => Ok(String::new()),
+                    _ => Err(self.unknown_directive_error(template_path, name)),
                 }
             }
             Node::Element {
@@ -384,40 +715,50 @@ impl Engine {
                 attrs,
                 children,
             } => {
-                if let Some(result) = self.tag_registry.render_block(
-                    name,
-                    attrs,
-                    &self.render_nodes(children, context)?,
-                ) {
-                    return result;
+                if self.tag_registry.has_block(name) {
+                    let rendered_children = self.render_nodes(children, context, template_path)?;
+                    if let Some(result) =
+                        self.tag_registry
+                            .render_block(name, attrs, &rendered_children.render())
+                    {
+                        return result
+                            .map_err(|message| {
+                                TemplateError::code(TemplateErrorPhase::Render, message)
+                                    .with_template_path(template_path)
+                                    .with_directive(name)
+                            })
+                            .map(ONode::raw);
+                    }
                 }
                 match name.as_str() {
-                    "block" => self.render_nodes(children, context),
-                    "slot" => self.render_nodes(children, context),
-                    "if" => self.render_if(attrs, children, context),
-                    "for" => self.render_for(attrs, children, context),
+                    "block" => self.render_nodes(children, context, template_path),
+                    "slot" => self.render_nodes(children, context, template_path),
+                    "if" => self.render_if(attrs, children, context, template_path),
+                    "for" => self.render_for(attrs, children, context, template_path),
                     "set" => {
                         if let Some(id) = attrs.get("id") {
-                            let content = self.render_nodes(children, context)?;
+                            let content = self
+                                .render_nodes(children, context, template_path)?
+                                .render();
                             context.set_str(id, content);
                         } else {
                             if let (Some(id), Some(val)) = (attrs.get("id"), attrs.get("value")) {
                                 context.set_str(id, val.clone());
                             }
                         }
-                        Ok(String::new())
+                        Ok(ONode::empty())
                     }
                     "component" => {
                         if let Some(id) = attrs.get("id") {
                             context.set_component(id, children.to_vec());
                         }
-                        Ok(String::new())
+                        Ok(ONode::empty())
                     }
-                    "use" => self.render_component_use(attrs, children, context),
-                    "bind" => self.render_bind(attrs, children, context),
-                    "compose" => self.render_compose(attrs, children, context),
+                    "use" => self.render_component_use(attrs, children, context, template_path),
+                    "bind" => self.render_bind(attrs, children, context, template_path),
                     "btn" => {
-                        let inner = self.render_nodes(children, context)?;
+                        use crate::features::oxml_tags;
+                        let inner = self.render_nodes(children, context, template_path)?;
                         let method = if attrs.contains_key("post") {
                             "post"
                         } else {
@@ -433,13 +774,17 @@ impl Engine {
                             .cloned()
                             .unwrap_or_else(|| "innerHTML".to_string());
 
-                        Ok(format!(
-                            r#"<button class="btn btn-primary" data-{}="{}" data-target="{}" data-swap="{}">{}</button>"#,
-                            method, endpoint, target, swap, inner
-                        ))
+                        Ok(ONode::content(oxml_tags::BUTTON)
+                            .attr("class", "btn btn-primary")
+                            .attr(format!("data-{}", method), endpoint)
+                            .attr("data-target", target)
+                            .attr("data-swap", swap)
+                            .child(inner)
+                            .build())
                     }
                     "link" => {
-                        let inner = self.render_nodes(children, context)?;
+                        use crate::features::oxml_tags;
+                        let inner = self.render_nodes(children, context, template_path)?;
                         let endpoint = attrs.get("get").unwrap_or(&String::new()).clone();
                         let target = attrs
                             .get("target")
@@ -450,13 +795,17 @@ impl Engine {
                             .cloned()
                             .unwrap_or_else(|| "innerHTML".to_string());
 
-                        Ok(format!(
-                            r##"<a href="#" data-get="{}" data-target="{}" data-swap="{}">{}</a>"##,
-                            endpoint, target, swap, inner
-                        ))
+                        Ok(ONode::content(oxml_tags::A)
+                            .attr("href", "#")
+                            .attr("data-get", endpoint)
+                            .attr("data-target", target)
+                            .attr("data-swap", swap)
+                            .child(inner)
+                            .build())
                     }
                     "form" => {
-                        let inner = self.render_nodes(children, context)?;
+                        use crate::features::oxml_tags;
+                        let inner = self.render_nodes(children, context, template_path)?;
                         let endpoint = attrs.get("post").unwrap_or(&String::new()).clone();
                         let target = attrs
                             .get("target")
@@ -467,12 +816,14 @@ impl Engine {
                             .cloned()
                             .unwrap_or_else(|| "innerHTML".to_string());
 
-                        Ok(format!(
-                            r#"<form data-post="{}" data-target="{}" data-swap="{}">{}</form>"#,
-                            endpoint, target, swap, inner
-                        ))
+                        Ok(ONode::content(oxml_tags::FORM)
+                            .attr("data-post", endpoint)
+                            .attr("data-target", target)
+                            .attr("data-swap", swap)
+                            .child(inner)
+                            .build())
                     }
-                    _ => self.render_nodes(children, context),
+                    _ => Err(self.unknown_directive_error(template_path, name)),
                 }
             }
         }
@@ -483,16 +834,17 @@ impl Engine {
         attrs: &HashMap<String, String>,
         children: &[Node],
         context: &mut Context,
-    ) -> Result<String, String> {
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
         let condition = attrs.get("cond").cloned().unwrap_or_default();
         let is_true = self.eval_condition(&condition, context);
 
         let (true_nodes, false_nodes) = self.split_if_children(children);
 
         if is_true {
-            self.render_nodes(&true_nodes, context)
+            self.render_nodes(&true_nodes, context, template_path)
         } else {
-            self.render_nodes(&false_nodes, context)
+            self.render_nodes(&false_nodes, context, template_path)
         }
     }
 
@@ -522,21 +874,22 @@ impl Engine {
         attrs: &HashMap<String, String>,
         children: &[Node],
         context: &Context,
-    ) -> Result<String, String> {
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
         let expr = attrs.get("in").cloned().unwrap_or_default();
         let (item_var, source) = parse_for_expr(&expr);
 
         let Some(Value::Array(items)) = context.get_value(&source) else {
-            return Ok(String::new());
+            return Ok(ONode::empty());
         };
 
-        let mut output = String::new();
+        let mut output = Vec::new();
         for item in items {
             let mut loop_ctx = context.clone();
             loop_ctx.set_value(&item_var, item);
-            output.push_str(&self.render_nodes(children, &mut loop_ctx)?);
+            output.push(self.render_nodes(children, &mut loop_ctx, template_path)?);
         }
-        Ok(output)
+        Ok(ONode::cat(output).compact())
     }
 
     fn render_bind(
@@ -544,56 +897,31 @@ impl Engine {
         attrs: &HashMap<String, String>,
         children: &[Node],
         context: &mut Context,
-    ) -> Result<String, String> {
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
         let var = attrs.get("var").map(String::as_str).unwrap_or("value");
-        let bound = if let Some(from) = attrs.get("from") {
-            context
-                .get_value(from)
-                .unwrap_or(Value::String(String::new()))
-        } else {
-            Value::String(attrs.get("value").cloned().unwrap_or_default())
-        };
+        if attrs.contains_key("from") || attrs.contains_key("value") {
+            let bound = if let Some(from) = attrs.get("from") {
+                context
+                    .get_value(from)
+                    .unwrap_or(Value::String(String::new()))
+            } else {
+                Value::String(attrs.get("value").cloned().unwrap_or_default())
+            };
 
-        let mut scoped = context.clone();
-        scoped.set_value(var, bound);
-        self.render_nodes(children, &mut scoped)
-    }
-
-    fn render_compose(
-        &self,
-        attrs: &HashMap<String, String>,
-        children: &[Node],
-        context: &mut Context,
-    ) -> Result<String, String> {
-        let op = attrs
-            .get("op")
-            .map(|v| ComposeOp::from_attr(v))
-            .unwrap_or(ComposeOp::Sum);
-        let segments = self.split_compose_children(children);
-        let mut composed = Hypertext::empty();
-
-        for segment in segments {
-            let rendered = self.render_nodes(&segment, context)?;
-            composed = composed.compose(Hypertext::pure(rendered), op);
+            let mut scoped = context.clone();
+            scoped.set_value(var, bound);
+            return self.render_nodes(children, &mut scoped, template_path);
         }
 
-        Ok(composed.render())
-    }
-
-    fn split_compose_children(&self, children: &[Node]) -> Vec<Vec<Node>> {
-        let mut groups: Vec<Vec<Node>> = vec![Vec::new()];
-        for node in children {
-            if let Node::VoidElement { name, .. } = node {
-                if name == "then" {
-                    groups.push(Vec::new());
-                    continue;
-                }
-            }
-            if let Some(last) = groups.last_mut() {
-                last.push(node.clone());
-            }
+        let rendered = self
+            .render_nodes(children, context, template_path)?
+            .render();
+        if !rendered.trim().is_empty() {
+            context.set_str(var, rendered);
         }
-        groups.into_iter().filter(|g| !g.is_empty()).collect()
+
+        Ok(ONode::empty())
     }
 
     fn render_component_use(
@@ -601,47 +929,92 @@ impl Engine {
         attrs: &HashMap<String, String>,
         children: &[Node],
         context: &mut Context,
-    ) -> Result<String, String> {
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
         let Some(id) = attrs.get("id") else {
-            return Ok(String::new());
+            return Ok(ONode::empty());
         };
         let Some(component_nodes) = context.get_component(id) else {
-            return Ok(String::new());
+            return Ok(ONode::empty());
         };
 
+        let mut scoped = context.clone();
         let blocks = self.extract_blocks_local(children);
+        let setup_nodes: Vec<Node> = children
+            .iter()
+            .filter(|node| match node {
+                Node::Element { name, .. } | Node::VoidElement { name, .. } => name != "block",
+                _ => true,
+            })
+            .cloned()
+            .collect();
+        let _ = self.render_nodes(&setup_nodes, &mut scoped, template_path)?;
+
         let resolved = self.inject_blocks(component_nodes, &blocks);
-        self.render_nodes(&resolved, context)
+        self.render_nodes(&resolved, &mut scoped, template_path)
+    }
+
+    fn render_load(
+        &self,
+        file: &str,
+        blocks: &HashMap<String, Vec<Node>>,
+        context: &mut Context,
+    ) -> TemplateResult<ONode> {
+        if context.load_stack.iter().any(|loaded| loaded == file) {
+            return Err(TemplateError::code(
+                TemplateErrorPhase::Resolve,
+                format!("Circular template dependency detected: {}", file),
+            )
+            .with_template_path(file)
+            .with_directive("load"));
+        }
+
+        context.load_stack.push(file.to_string());
+        let result = (|| {
+            let mut visited = std::collections::HashSet::new();
+            let (loaded_nodes, loaded_components) =
+                self.resolve_with_tracking(file, &mut visited)?;
+
+            for (id, nodes) in loaded_components {
+                context.set_component(&id, nodes);
+            }
+
+            let linked_nodes = self.inject_blocks(loaded_nodes, blocks);
+            self.render_nodes(&linked_nodes, context, file)
+        })();
+        context.load_stack.pop();
+
+        result
     }
 
     fn eval_condition(&self, condition: &str, context: &Context) -> bool {
         if condition.contains("==") {
             let parts: Vec<&str> = condition.split("==").collect();
             if parts.len() == 2 {
-                let left = context.get(parts[0].trim());
+                let left_key = parts[0].trim().trim_start_matches('$');
+                let left = context.get(left_key);
                 let right = parts[1].trim().trim_matches('"').trim_matches('\'');
                 return left == right;
             }
         }
-        !context.get(condition).is_empty()
+
+        let lookup = condition.trim().trim_start_matches('$');
+        !context.get(lookup).is_empty()
     }
 
-    fn wrap_html(&self, body: &str) -> String {
+    fn wrap_html(&self, body: ONode) -> String {
         use crate::features::oxml_tags;
         let mut head = vec![
             ONode::void(oxml_tags::META)
                 .attr("charset", "UTF-8")
-                .build()
-                .render(),
+                .build(),
             ONode::void(oxml_tags::META)
                 .attr("name", "viewport")
                 .attr("content", "width=device-width, initial-scale=1.0")
-                .build()
-                .render(),
+                .build(),
             ONode::content(oxml_tags::TITLE)
                 .text(&self.site_name)
-                .build()
-                .render(),
+                .build(),
         ];
 
         if let Some(desc) = &self.site_description {
@@ -649,8 +1022,7 @@ impl Engine {
                 ONode::void(oxml_tags::META)
                     .attr("name", "description")
                     .attr("content", desc)
-                    .build()
-                    .render(),
+                    .build(),
             );
         }
 
@@ -659,8 +1031,7 @@ impl Engine {
                 ONode::void(oxml_tags::LINK)
                     .attr("rel", "icon")
                     .attr("href", icon)
-                    .build()
-                    .render(),
+                    .build(),
             );
         }
 
@@ -668,21 +1039,51 @@ impl Engine {
             ONode::void(oxml_tags::LINK)
                 .attr("rel", "stylesheet")
                 .attr("href", "/static/css/style.css")
-                .build()
-                .render(),
+                .build(),
         );
-        head.push(format!("<script src=\"/hrml.js\"></script>"));
+        head.push(
+            ONode::content(oxml_tags::SCRIPT)
+                .attr("src", "/hrml.js")
+                .build(),
+        );
 
-        crate::features::doc(ONode::raw(head.join("\n")), ONode::raw(body.to_string()))
+        crate::features::doc(ONode::cat(head), body)
     }
 
-    fn render_mdx(&self, attrs: &HashMap<String, String>) -> Result<String, String> {
-        let file = attrs
-            .get("file")
-            .ok_or_else(|| "mdx directive requires file attribute".to_string())?;
+    fn unknown_directive_error(&self, template_path: &str, directive: &str) -> TemplateError {
+        TemplateError::code(
+            TemplateErrorPhase::Render,
+            format!(
+                "Unknown HRML directive '<?{}?>'. Use normal HTML for HTML tags and reserve '<?...?>' for HRML directives",
+                directive
+            ),
+        )
+        .with_template_path(template_path)
+        .with_directive(directive)
+    }
+
+    fn render_mdx(
+        &self,
+        attrs: &HashMap<String, String>,
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let file = attrs.get("file").ok_or_else(|| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                "mdx directive requires file attribute",
+            )
+            .with_template_path(template_path)
+            .with_directive("mdx")
+        })?;
         let full_path = self.base_path.join(file);
-        let source = fs::read_to_string(&full_path)
-            .map_err(|e| format!("Failed to read mdx file {}: {}", file, e))?;
+        let source = fs::read_to_string(&full_path).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read mdx file {}: {}", file, e),
+            )
+            .with_template_path(template_path)
+            .with_directive("mdx")
+        })?;
 
         let rendered = crate::features::render_markdown(&source);
         Ok(crate::features::render_math_delimiters(&rendered))
@@ -766,13 +1167,28 @@ impl Engine {
             .render()
     }
 
-    fn render_markdown(&self, attrs: &HashMap<String, String>) -> Result<String, String> {
-        let file = attrs
-            .get("file")
-            .ok_or_else(|| "markdown directive requires file attribute".to_string())?;
+    fn render_markdown(
+        &self,
+        attrs: &HashMap<String, String>,
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let file = attrs.get("file").ok_or_else(|| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                "markdown directive requires file attribute",
+            )
+            .with_template_path(template_path)
+            .with_directive("markdown")
+        })?;
         let full_path = self.base_path.join(file);
-        let source = fs::read_to_string(&full_path)
-            .map_err(|e| format!("Failed to read markdown file {}: {}", file, e))?;
+        let source = fs::read_to_string(&full_path).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read markdown file {}: {}", file, e),
+            )
+            .with_template_path(template_path)
+            .with_directive("markdown")
+        })?;
 
         let rendered = crate::features::render_markdown(&source);
         Ok(crate::features::render_math_delimiters(&rendered))
@@ -782,13 +1198,25 @@ impl Engine {
         &self,
         attrs: &HashMap<String, String>,
         context: &mut Context,
-    ) -> Result<String, String> {
-        let file = attrs
-            .get("file")
-            .ok_or_else(|| "markdownfm directive requires file attribute".to_string())?;
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let file = attrs.get("file").ok_or_else(|| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                "markdownfm directive requires file attribute",
+            )
+            .with_template_path(template_path)
+            .with_directive("markdownfm")
+        })?;
         let full_path = self.base_path.join(file);
-        let source = fs::read_to_string(&full_path)
-            .map_err(|e| format!("Failed to read markdown file {}: {}", file, e))?;
+        let source = fs::read_to_string(&full_path).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read markdown file {}: {}", file, e),
+            )
+            .with_template_path(template_path)
+            .with_directive("markdownfm")
+        })?;
 
         let (meta, html) = crate::features::render_markdown_with_frontmatter(&source);
         if let Some(as_key) = attrs.get("as") {
@@ -798,10 +1226,19 @@ impl Engine {
         Ok(crate::features::render_math_delimiters(&html))
     }
 
-    fn render_latex(&self, attrs: &HashMap<String, String>) -> Result<String, String> {
-        let formula = attrs
-            .get("formula")
-            .ok_or_else(|| "latex directive requires formula attribute".to_string())?;
+    fn render_latex(
+        &self,
+        attrs: &HashMap<String, String>,
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let formula = attrs.get("formula").ok_or_else(|| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                "latex directive requires formula attribute",
+            )
+            .with_template_path(template_path)
+            .with_directive("latex")
+        })?;
         let mode = attrs.get("mode").map(String::as_str).unwrap_or("inline");
         let html = match mode {
             "block" => crate::features::render_latex_block(formula),
@@ -907,8 +1344,12 @@ impl Engine {
 // --- AST ---
 
 #[derive(Debug, Clone)]
-enum Node {
+pub enum Node {
     Text(String),
+    Load {
+        file: String,
+        blocks: HashMap<String, Vec<Node>>,
+    },
     Element {
         name: String,
         attrs: HashMap<String, String>,
@@ -921,45 +1362,58 @@ enum Node {
 }
 
 impl Node {
-    fn is_void(name: &str) -> bool {
-        matches!(
-            name,
-            "load"
-                | "get"
-                | "else"
-                | "include"
-                | "pure"
-                | "then"
-                | "mdx"
-                | "markdown"
-                | "markdownfm"
-                | "latex"
-                | "meta"
-                | "linktag"
-                | "title"
-                | "og"
-                | "twitter"
-                | "charset"
-                | "viewport"
-                | "canonical"
-                | "description"
-                | "robots"
-                | "stylesheet"
-                | "script"
-                | "wasm"
-                | "input"
-                | "br"
-                | "hr"
-                | "img"
-                | "area"
-                | "base"
-                | "col"
-                | "embed"
-                | "param"
-                | "source"
-                | "track"
-                | "wbr"
-        )
+    pub fn from_ast_node(ast: AstNode) -> Self {
+        match ast {
+            AstNode::Text(text) => Node::Text(text),
+            AstNode::Load { file, blocks } => Node::Load {
+                file,
+                blocks: blocks
+                    .into_iter()
+                    .map(|(key, nodes)| (key, nodes.into_iter().map(Node::from_ast_node).collect()))
+                    .collect(),
+            },
+            AstNode::Element {
+                name,
+                attrs,
+                children,
+            } => Node::Element {
+                name,
+                attrs: attrs.into_iter().collect(),
+                children: children.into_iter().map(Node::from_ast_node).collect(),
+            },
+            AstNode::VoidElement { name, attrs } => Node::VoidElement {
+                name,
+                attrs: attrs.into_iter().collect(),
+            },
+        }
+    }
+}
+
+impl From<Node> for AstNode {
+    fn from(node: Node) -> Self {
+        match node {
+            Node::Text(text) => AstNode::Text(text),
+            Node::Load { file, blocks } => AstNode::Load {
+                file,
+                blocks: blocks
+                    .into_iter()
+                    .map(|(key, nodes)| (key, nodes.into_iter().map(AstNode::from).collect()))
+                    .collect(),
+            },
+            Node::Element {
+                name,
+                attrs,
+                children,
+            } => AstNode::Element {
+                name,
+                attrs: attrs.into_iter().collect(),
+                children: children.into_iter().map(AstNode::from).collect(),
+            },
+            Node::VoidElement { name, attrs } => AstNode::VoidElement {
+                name,
+                attrs: attrs.into_iter().collect(),
+            },
+        }
     }
 }
 
@@ -968,25 +1422,34 @@ impl Node {
 struct Parser {
     chars: Vec<char>,
     pos: usize,
+    template_path: Option<String>,
 }
 
 impl Parser {
-    fn new(input: &str) -> Self {
+    fn new(input: &str, template_path: Option<&str>) -> Self {
         Self {
             chars: input.chars().collect(),
             pos: 0,
+            template_path: template_path.map(ToOwned::to_owned),
         }
     }
 
-    fn parse(&mut self) -> Result<Vec<Node>, String> {
+    fn parse(&mut self) -> TemplateResult<Vec<Node>> {
         let mut nodes = Vec::new();
         let mut iterations = 0;
         while self.pos < self.chars.len() {
             iterations += 1;
             if iterations > 10000 {
-                return Err(format!("Parser infinite loop detected at pos {}", self.pos));
+                let remaining: String = self.chars[self.pos..].iter().take(50).collect();
+                return Err(self.internal_error(
+                    self.pos,
+                    format!(
+                        "Parser infinite loop at pos {}, remaining='{}'",
+                        self.pos, remaining
+                    ),
+                ));
             }
-            if let Some(node) = self.parse_node()? {
+            if let Some(node) = self.parse_node(false)? {
                 nodes.push(node);
             } else {
                 break;
@@ -995,35 +1458,61 @@ impl Parser {
         Ok(nodes)
     }
 
-    fn parse_until(&mut self, closing_tag: &str) -> Result<Vec<Node>, String> {
+    fn parse_until(&mut self, closing_tag: &str) -> TemplateResult<Vec<Node>> {
         let mut nodes = Vec::new();
         let mut iterations = 0;
         while self.pos < self.chars.len() {
             iterations += 1;
             if iterations > 10000 {
-                return Err(format!(
-                    "Parser infinite loop in parse_until('{}') at pos {}",
-                    closing_tag, self.pos
+                let remaining: String = self.chars[self.pos..].iter().take(50).collect();
+                return Err(self.internal_error(
+                    self.pos,
+                    format!(
+                        "Parser infinite loop in parse_until('{}') at pos {}, remaining='{}'",
+                        closing_tag, self.pos, remaining
+                    ),
+                ));
+            }
+            if closing_tag.is_empty() {
+                let end = std::cmp::min(self.pos + 60, self.chars.len());
+                let remaining: String = self.chars[self.pos..end].iter().collect();
+                return Err(self.internal_error(
+                    self.pos,
+                    format!(
+                        "BUG: parse_until empty tag at pos {}, remaining='{}'",
+                        self.pos, remaining
+                    ),
                 ));
             }
             if self.is_closing(closing_tag) {
                 self.consume_closing(closing_tag);
                 return Ok(nodes);
             }
-            if let Some(node) = self.parse_node()? {
+            if let Some(node) = self.parse_node(true)? {
                 nodes.push(node);
             } else {
+                // parse_node returned None - could be a closing tag, check before breaking
+                if self.is_closing(closing_tag) {
+                    self.consume_closing(closing_tag);
+                    return Ok(nodes);
+                }
                 break;
             }
         }
-        Ok(nodes)
+        Err(self.code_error(
+            self.pos,
+            format!(
+                "Unclosed HRML directive '{}': missing closing tag",
+                closing_tag
+            ),
+        ))
     }
 
     fn is_closing(&self, name: &str) -> bool {
-        let pattern = format!("</?{}", name);
-
-        if self.starts_with(&pattern) {
-            let end = self.pos + pattern.len();
+        // Check for </?name pattern (HRML paired style)
+        let pattern1 = format!("</?{}", name);
+        if self.starts_with(&pattern1) {
+            let end = self.pos + pattern1.len();
             if end >= self.chars.len() {
                 return true;
             }
@@ -1032,6 +1521,19 @@ impl Parser {
                 return true;
             }
         }
+
+        // Check for <?/name?> pattern (HRML alternative closing)
+        let pattern2 = format!("<?/{}?>", name);
+        if self.starts_with(&pattern2) {
+            return true;
+        }
+
+        // Check for </name> pattern (HTML style closing)
+        let html_pattern = format!("</{}>", name);
+        if self.starts_with(&html_pattern) {
+            return true;
+        }
+
         false
     }
 
@@ -1058,15 +1560,22 @@ impl Parser {
         true
     }
 
-    fn parse_node(&mut self) -> Result<Option<Node>, String> {
+    fn parse_node(&mut self, allow_closing: bool) -> TemplateResult<Option<Node>> {
         if self.pos >= self.chars.len() {
             return Ok(None);
         }
 
-        if self.starts_with("<?") && !self.starts_with("</?") {
+        if self.starts_with("<?") && !self.starts_with("</?") && !self.starts_with("<?/") {
             return self.parse_element().map(Some);
-        } else if self.starts_with("</?") {
-            return Ok(Some(Node::Text(self.consume_text())));
+        } else if self.starts_with("</?") || self.starts_with("<?/") {
+            if !allow_closing {
+                return Err(self.code_error(
+                    self.pos,
+                    "Unexpected closing HRML tag without matching opener",
+                ));
+            }
+            self.consume_closing_tag();
+            return Ok(None);
         }
 
         Ok(Some(Node::Text(self.consume_text())))
@@ -1075,10 +1584,12 @@ impl Parser {
     fn consume_text(&mut self) -> String {
         let mut text = String::new();
         while self.pos < self.chars.len() {
-            if self.starts_with("<?") && !self.starts_with("</?") {
+            // Break on opening HRML tags
+            if self.starts_with("<?") && !self.starts_with("</?") && !self.starts_with("<?/") {
                 break;
             }
-            if self.is_any_closing() {
+            // Break on closing tags too - let parse_node handle them
+            if self.starts_with("</?") || self.starts_with("<?/") {
                 break;
             }
             text.push(self.chars[self.pos]);
@@ -1087,32 +1598,56 @@ impl Parser {
         text
     }
 
-    fn is_any_closing(&self) -> bool {
-        self.starts_with("</?")
+    fn consume_closing_tag(&mut self) {
+        while self.pos < self.chars.len() {
+            if self.starts_with("?>") {
+                self.pos += 2;
+                return;
+            }
+            self.pos += 1;
+        }
     }
 
-    fn parse_element(&mut self) -> Result<Node, String> {
+    fn parse_element(&mut self) -> TemplateResult<Node> {
+        let start = self.pos;
         self.pos += 2;
 
         let name = self.consume_identifier();
+        if name.is_empty() {
+            let remaining: String = self.chars[self.pos..].iter().take(40).collect();
+            return Err(self.internal_error(
+                start,
+                format!(
+                    "BUG: parse_element got empty name at pos {}, remaining='{}'",
+                    self.pos, remaining
+                ),
+            ));
+        }
         let attrs = self.parse_attributes();
 
         while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
             self.pos += 1;
         }
 
-        if self.starts_with("?>") {
+        let explicit_self_closing = if self.starts_with("/?>") {
+            self.pos += 3;
+            true
+        } else if self.starts_with("?>") {
             self.pos += 2;
+            false
         } else {
-            while self.pos < self.chars.len() && !self.starts_with("?>") {
-                self.pos += 1;
-            }
-            if self.starts_with("?>") {
-                self.pos += 2;
-            }
+            return Err(self.code_error(
+                start,
+                format!("Unclosed HRML directive '<?{}': missing '?>'", name),
+            ));
+        };
+
+        if explicit_self_closing {
+            return Ok(Node::VoidElement { name, attrs });
         }
 
-        let is_void = Node::is_void(&name) || !self.has_matching_closing(&name);
+        let has_closing = self.has_matching_closing(&name);
+        let is_void = !has_closing;
 
         if is_void {
             Ok(Node::VoidElement { name, attrs })
@@ -1126,12 +1661,53 @@ impl Parser {
         }
     }
 
+    fn error_location(&self, pos: usize) -> TemplateErrorLocation {
+        let mut line = 1;
+        let mut column = 1;
+
+        for ch in self.chars.iter().take(pos) {
+            if *ch == '\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        TemplateErrorLocation { line, column }
+    }
+
+    fn internal_error(&self, pos: usize, message: impl Into<String>) -> TemplateError {
+        let location = self.error_location(pos);
+        let mut error = TemplateError::internal(TemplateErrorPhase::Parse, message)
+            .with_location(location.line, location.column);
+
+        if let Some(path) = &self.template_path {
+            error = error.with_template_path(path.clone());
+        }
+
+        error
+    }
+
+    fn code_error(&self, pos: usize, message: impl Into<String>) -> TemplateError {
+        let location = self.error_location(pos);
+        let mut error = TemplateError::code(TemplateErrorPhase::Parse, message)
+            .with_location(location.line, location.column);
+
+        if let Some(path) = &self.template_path {
+            error = error.with_template_path(path.clone());
+        }
+
+        error
+    }
+
     fn has_matching_closing(&self, name: &str) -> bool {
-        let pattern = format!("</?{}", name);
+        // Check for </?name pattern (HRML paired style)
+        let pattern1 = format!("</?{}", name);
         let mut i = self.pos;
-        while i + pattern.len() <= self.chars.len() {
+        while i + pattern1.len() <= self.chars.len() {
             let mut matched = true;
-            for (j, ch) in pattern.chars().enumerate() {
+            for (j, ch) in pattern1.chars().enumerate() {
                 if self.chars[i + j] != ch {
                     matched = false;
                     break;
@@ -1142,6 +1718,24 @@ impl Parser {
             }
             i += 1;
         }
+
+        // Check for <?/name?> pattern (HRML alternative closing)
+        let pattern2 = format!("<?/{}?>", name);
+        i = self.pos;
+        while i + pattern2.len() <= self.chars.len() {
+            let mut matched = true;
+            for (j, ch) in pattern2.chars().enumerate() {
+                if self.chars[i + j] != ch {
+                    matched = false;
+                    break;
+                }
+            }
+            if matched {
+                return true;
+            }
+            i += 1;
+        }
+
         false
     }
 
@@ -1226,6 +1820,8 @@ struct Context {
     data: Value,
     vars: HashMap<String, Value>,
     components: HashMap<String, Vec<Node>>,
+    load_stack: Vec<String>,
+    component_load_stack: Vec<String>,
 }
 
 impl Context {
@@ -1234,6 +1830,8 @@ impl Context {
             data,
             vars: HashMap::new(),
             components: HashMap::new(),
+            load_stack: Vec::new(),
+            component_load_stack: Vec::new(),
         }
     }
 

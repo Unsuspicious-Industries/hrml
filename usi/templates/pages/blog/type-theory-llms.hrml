@@ -1,0 +1,8 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+    <section class="blog-post">
+        <?markdownfm file="posts/type-theory-llms.md"?>
+    </section>
+</?block?>

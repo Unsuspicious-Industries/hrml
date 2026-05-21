@@ -19,6 +19,8 @@ pub fn default_config(name: &str) -> String {
         site_name: name.to_string(),
         site_description: Some("A web application built with HRML".to_string()),
         favicon: Some("/static/favicon.ico".to_string()),
+        site_url: None,
+        globals: serde_json::Value::Object(serde_json::Map::new()),
     };
     toml::to_string_pretty(&config).unwrap()
 }
@@ -84,23 +86,9 @@ See the HRML documentation for more details.
 
 pub const GITIGNORE: &str = r#"# HRML
 dist/
-*.pyc
-__pycache__/
-.DS_Store
-*.db
-*.sqlite3
 
 # Environment
 .env
 .env.local
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Dependencies
-node_modules/
-vendor/
 "#;

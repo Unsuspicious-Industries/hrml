@@ -1,0 +1,43 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+    <?use id="hero-cmp"?>
+        <?bind var="label"?>Thoughts<?/bind?>
+        <?bind var="title"?>Research Notes & Reflections<?/bind?>
+        <?bind var="description"?>Research dispatches from formal systems, constrained generation, and the philosophy of computation.<?/bind?>
+    </?use?>
+
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Latest Posts</h2>
+            <p class="section-subtitle">Two recent notes imported from the real Unsuspicious Industries writing archive</p>
+        </div>
+        
+        <div class="grid-2 blog-grid">
+            <?use id="post-card"?>
+            <?bind var="title" value="Truth by Construction"/?>
+            <?bind var="excerpt" value="From Natural Language to Logic Machines Through Formal Constraints."/?>
+            <?bind var="date" value="2025-08-11"/?>
+            <?bind var="slug" value="proposition-7"/?>
+            <?bind var="icon_name" value="book"/?>
+            </?use?>
+
+            <?use id="post-card"?>
+            <?bind var="title" value="Completeability and Regular Expressions"/?>
+            <?bind var="excerpt" value="Interesting challenges regarding two-level languages in Proposition 7"/?>
+            <?bind var="date" value="2025-10-12"/?>
+            <?bind var="slug" value="completing-regex"/?>
+            <?bind var="icon_name" value="code"/?>
+            </?use?>
+        </div>
+    </section>
+
+    <?use id="cta-section"?>
+        <?bind var="title"?>Want the full archive?<?/bind?>
+        <?bind var="primary"?>Talk to the lab<?/bind?>
+        <?bind var="primary-href"?>/contact<?/bind?>
+        <?bind var="secondary"?>Read about our methods<?/bind?>
+        <?bind var="secondary-href"?>/product<?/bind?>
+    </?use?>
+</?block?>

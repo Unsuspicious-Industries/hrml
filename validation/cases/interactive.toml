@@ -1,0 +1,8 @@
+name = "interactive"
+type = "logic"
+hrml = '''
+<?btn post="/x"?>Go</?btn?>
+'''
+expected = '''
+Go
+'''

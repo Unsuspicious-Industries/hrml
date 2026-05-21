@@ -1,0 +1,37 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Contact Us</h1>
+            <p class="hero-description">
+                Interested in research collaboration? Get in touch with us.
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Research Opportunities</h2>
+            <p class="section-subtitle">We are always looking for collaborators</p>
+        </div>
+        
+        <div class="grid-3">
+            <div class="card">
+                <h3 class="card-title">Email</h3>
+                <p class="card-text">Contact us at research@unsuspicious.org for collaboration inquiries.</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">GitHub</h3>
+                <p class="card-text">Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.</p>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title">Social</h3>
+                <p class="card-text">Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.</p>
+            </div>
+        </div>
+    </section>
+</?block?>

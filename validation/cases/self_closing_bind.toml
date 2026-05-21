@@ -1,0 +1,9 @@
+name = "self_closing_bind"
+type = "logic"
+hrml = '''
+<?bind var="title" value="Bound Title"/?>
+<h1><?get id="title"?></h1>
+'''
+expected = '''
+<h1>Bound Title</h1>
+'''

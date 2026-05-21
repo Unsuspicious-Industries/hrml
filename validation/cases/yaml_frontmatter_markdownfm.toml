@@ -1,0 +1,30 @@
+name = "yaml_frontmatter_markdownfm"
+type = "logic"
+hrml = '''
+<?bind var="post_body"?><?markdownfm file="posts/test.mdx" as="post"?><?/bind?>
+<h1><?get id="post.title"?></h1>
+<p><?get id="post.excerpt"?></p>
+<?get id="post_body"?>
+'''
+expected = '''
+<h1>Bound Post</h1>
+<p>Bound Excerpt</p>
+<h1>Hello</h1>
+<p>Body copy.</p>
+'''
+
+[[files]]
+path = "posts/test.mdx"
+content = '''
+---
+title: Bound Post
+excerpt: Bound Excerpt
+author: Tester
+publishDate: 2025-01-01
+status: published
+---
+
+# Hello
+
+Body copy.
+'''

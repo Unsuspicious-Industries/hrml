@@ -1,4 +1,0 @@
-<?load file="layouts/site.hrml"?>
-<?block slot="extra_head"?><?load file="content/heads/tag/theorem-proving.hrml"?></?block?>
-<?block slot="body_attrs"?>class="antialiased bg-page text-default tracking-tight"</?block?>
-<?block slot="content"?><?load file="content/bodies/tag/theorem-proving.hrml"?></?block?>

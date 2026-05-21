@@ -1,7 +1,0 @@
-<?compose op="sum"?>
-<?load file="components/chrome/header.hrml"?>
-<?then?>
-<?load file="content/sections/tag/rl.hrml"?>
-<?then?>
-<?load file="components/chrome/footer.hrml"?>
-</?compose?>

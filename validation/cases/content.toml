@@ -1,0 +1,8 @@
+name = "content"
+type = "structure"
+hrml = '''
+<section>Content Fixture</section>
+'''
+expected = '''
+<section>Content Fixture</section>
+'''

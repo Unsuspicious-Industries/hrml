@@ -1,0 +1,8 @@
+name = "parser_basic"
+type = "structure"
+hrml = '''
+Hello Fixture
+'''
+expected = '''
+Hello Fixture
+'''

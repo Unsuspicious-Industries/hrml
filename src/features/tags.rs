@@ -22,6 +22,10 @@ impl TagRegistry {
         self.block_handlers.insert(name.to_string(), handler);
     }
 
+    pub fn has_block(&self, name: &str) -> bool {
+        self.block_handlers.contains_key(name)
+    }
+
     pub fn render_void(
         &self,
         name: &str,

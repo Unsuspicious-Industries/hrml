@@ -1,0 +1,8 @@
+<?component id="card-link"?>
+<?bind var="href"/?>
+<a href="<?get id="href"?>" class="card-link">
+    <div class="card">
+        <slot id="content"?>
+    </div>
+</a>
+<?/component?>

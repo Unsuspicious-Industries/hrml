@@ -1,2 +1,0 @@
-<!DOCTYPE html>
-<html><body><?slot id="content"?></?slot?></body></html>

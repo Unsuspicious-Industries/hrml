@@ -1,0 +1,17 @@
+<?component id="job-card"?>
+<?bind var="title"/?><?bind var="subtitle"/?><?bind var="excerpt"/?><?bind var="location"/?><?bind var="team"/?><?bind var="employmentType"/?><?bind var="href"/?><?bind var="applyUrl"/?>
+<article class="job-card">
+    <div class="job-card-meta">
+        <?if cond="$team"?><span class="job-chip"><?get id="team"?></span><?/if?>
+        <?if cond="$employmentType"?><span class="job-chip muted"><?get id="employmentType"?></span><?/if?>
+        <?if cond="$location"?><span class="job-chip muted"><?get id="location"?></span><?/if?>
+    </div>
+    <h3 class="job-card-title"><?get id="title"?></h3>
+    <?if cond="$subtitle"?><p class="job-card-subtitle"><?get id="subtitle"?></p><?/if?>
+    <?if cond="$excerpt"?><p class="job-card-text"><?get id="excerpt"?></p><?/if?>
+    <div class="job-card-actions">
+        <?if cond="$href"?><a href="<?get id="href"?>" class="btn btn-primary">Full brief</a><?/if?>
+        <?if cond="$applyUrl"?><a href="<?get id="applyUrl"?>" class="btn btn-secondary">Apply</a><?/if?>
+    </div>
+</article>
+<?/component?>

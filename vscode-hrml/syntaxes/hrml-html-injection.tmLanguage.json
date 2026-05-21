@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "HRML HTML Injection",
+  "scopeName": "text.html.hrml.injection",
+  "injectionSelector": "L:text.html.basic",
+  "patterns": [
+    {
+      "name": "meta.tag.template.hrml",
+      "begin": "(<\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then|pure|mdx|markdown|markdownfm|latex|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|wasm)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "entity.name.tag.hrml" }
+      },
+      "end": "(\\?>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.hrml" }
+      },
+      "patterns": [
+        {
+          "name": "entity.other.attribute-name.hrml",
+          "match": "\\b(file|id|as|cond|in|item|index|endpoint|method|cache|target|swap|post|get|scoped|global|slot|var|value|from|op|mode|formula|content|href|src|name|export|start|module|props|class|defer)\\b"
+        },
+        {
+          "name": "string.quoted.double.hrml",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.hrml",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.hrml",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.hrml",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "meta.tag.template.close.hrml",
+      "begin": "(<\\/\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "entity.name.tag.hrml" }
+      },
+      "end": "(\\?>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.hrml" }
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 // and route guards. Maps URL paths to template files automatically.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RouteKind {

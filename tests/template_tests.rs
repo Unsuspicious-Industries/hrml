@@ -305,6 +305,26 @@ fn test_site_vars_available_in_context() {
 }
 
 #[test]
+fn test_globals_available_in_context() {
+    let test_dir = setup_test_templates("globals_vars");
+    fs::write(
+        format!("{}/pages/globals.hrml", test_dir),
+        r#"<p><?get id="globals.colors.accent"?></p>
+<p><?get id="globals.fonts.heading"?></p>"#,
+    )
+    .unwrap();
+
+    let engine = Engine::new(&test_dir).with_globals(json!({
+        "colors": { "accent": "#0ea5e9" },
+        "fonts": { "heading": "Cormorant Garamond" }
+    }));
+
+    let result = engine.render("pages/globals.hrml", &json!({})).unwrap();
+    assert!(result.contains("<p>#0ea5e9</p>"));
+    assert!(result.contains("<p>Cormorant Garamond</p>"));
+}
+
+#[test]
 fn test_wasm_directive_renders_window_attributes() {
     let test_dir = setup_test_templates("wasm");
     fs::write(
@@ -317,26 +337,28 @@ fn test_wasm_directive_renders_window_attributes() {
     let result = engine.render("pages/wasm.hrml", &json!({})).unwrap();
     assert!(result.contains("data-wasm-module=\"/static/js/app.mjs\""));
     assert!(result.contains("data-wasm-export=\"mount\""));
-    assert!(result.contains("data-wasm-props='{"));
+    assert!(result.contains("data-wasm-props=\"{"));
     assert!(result.contains("class=\"hrml-wasm-window\""));
 }
 
 #[test]
-fn test_compose_sum_and_product() {
-    let test_dir = setup_test_templates("compose");
+fn test_component_composition_with_bindings() {
+    let test_dir = setup_test_templates("component_composition");
     fs::write(
-        format!("{}/pages/compose.hrml", test_dir),
-        r#"<?compose op="sum"?><span>A</span><?then?><span>B</span></?compose?>
-<?compose op="product"?><section>L</section><?then?><section>R</section></?compose?>"#,
+        format!("{}/pages/component_composition.hrml", test_dir),
+        r#"<?component id="shell"?><section><?slot id="body"?></?slot?></section></?component?>
+<?component id="card"?><article><?slot id="body"?></?slot?></article></?component?>
+<?bind var="title" value="Composed"?>
+<?use id="shell"?><?block slot="body"?><?use id="card"?><?block slot="body"?><h2><?get id="title"?></h2></?block?></?use?></?block?></?use?>
+</?bind?>"#,
     )
     .unwrap();
 
     let engine = Engine::new(&test_dir);
-    let result = engine.render("pages/compose.hrml", &json!({})).unwrap();
-    assert!(result.contains("<span>A</span><span>B</span>"));
-    assert!(result.contains("class=\"hrml-product\""));
-    assert!(result.contains("<section>L</section>"));
-    assert!(result.contains("<section>R</section>"));
+    let result = engine
+        .render("pages/component_composition.hrml", &json!({}))
+        .unwrap();
+    assert!(result.contains("<section><article><h2>Composed</h2></article></section>"));
 }
 
 #[test]
@@ -459,4 +481,104 @@ fn test_markdown_frontmatter_and_meta_tag_library() {
         result.contains("name=\"twitter:title\"")
             && result.contains("content=\"Frontmatter Title\"")
     );
+}
+
+#[test]
+fn test_unmatched_slot_keeps_default_content() {
+    let test_dir = setup_test_templates("slot_default");
+    fs::write(
+        format!("{}/pages/default_slot.hrml", test_dir),
+        r#"<?load file="layouts/base.hrml"?>"#,
+    )
+    .unwrap();
+
+    let engine = Engine::new(&test_dir);
+    let result = engine
+        .render("pages/default_slot.hrml", &json!({}))
+        .unwrap();
+
+    assert!(result.contains("Default content"));
+    assert!(!result.contains("<?slot"));
+}
+
+#[test]
+fn test_slot_replacement_with_large_block_content() {
+    let test_dir = setup_test_templates("large_block");
+    // Build block content > 300 chars (the old search limit)
+    let long_text = "Large block content. ".repeat(20);
+    assert!(
+        long_text.len() > 300,
+        "Test requires block content longer than 300 chars, got {}",
+        long_text.len()
+    );
+
+    fs::write(
+        format!("{}/layouts/doc.hrml", test_dir),
+        r#"<!DOCTYPE html>
+<html><head><title>Test</title></head>
+<body>
+<main>
+<?slot id="content"?>
+</main>
+</body>
+</html>"#,
+    )
+    .unwrap();
+
+    let page_content = format!(
+        r#"<?load file="layouts/doc.hrml"?>
+<?block slot="content"?>
+    <p>{}</p>
+</?block?>"#,
+        long_text
+    );
+    fs::write(format!("{}/pages/large.hrml", test_dir), &page_content).unwrap();
+
+    let engine = Engine::new(&test_dir);
+    let result = engine.render("pages/large.hrml", &json!({})).unwrap();
+
+    // No unprocessed tags
+    assert!(!result.contains("<?load"));
+    assert!(!result.contains("<?slot"));
+    assert!(!result.contains("<?block"));
+    assert!(!result.contains("</?block?>"));
+
+    // Content appears inside the layout, not after </html>
+    assert!(result.contains("<main>"));
+    assert!(result.contains("</main>"));
+    let main_start = result.find("<main>").unwrap();
+    let main_end = result.find("</main>").unwrap();
+    let main_content = &result[main_start..main_end];
+    assert!(
+        main_content.contains("Large block content."),
+        "Block content should be inside <main>, got: {}..{}",
+        main_start,
+        main_end
+    );
+
+    // Content should NOT appear after </html>
+    let html_end = result.find("</html>").unwrap();
+    let after_html = &result[html_end..];
+    assert!(
+        !after_html.contains("Large block content."),
+        "Block content found after </html>"
+    );
+}
+
+#[test]
+fn test_render_fragment_does_not_wrap_html_document() {
+    let test_dir = setup_test_templates("fragment");
+    fs::write(
+        format!("{}/pages/fragment.hrml", test_dir),
+        r#"<section><h1>Fragment</h1></section>"#,
+    )
+    .unwrap();
+
+    let engine = Engine::new(&test_dir);
+    let result = engine
+        .render_fragment("pages/fragment.hrml", &json!({}))
+        .unwrap();
+
+    assert_eq!(result.trim(), "<section><h1>Fragment</h1></section>");
+    assert!(!result.contains("<!DOCTYPE html>"));
 }

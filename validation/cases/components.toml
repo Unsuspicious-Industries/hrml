@@ -1,0 +1,8 @@
+name = "components"
+type = "structure"
+hrml = '''
+<div>Components Fixture</div>
+'''
+expected = '''
+Components Fixture
+'''

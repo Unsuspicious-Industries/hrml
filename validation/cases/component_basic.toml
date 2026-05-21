@@ -1,0 +1,9 @@
+name = "component_basic"
+type = "logic"
+hrml = '''
+<?component id="x"?><span>FX</span></?component?>
+<?use id="x"?></?use?>
+'''
+expected = '''
+<span>FX</span>
+'''

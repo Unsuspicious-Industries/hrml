@@ -1,0 +1,13 @@
+<?component id="section-header"?>
+<div class="section-header">
+    <?if cond="$label"?>
+    <p class="section-label"><?get id="label"?></p>
+    <?/if?>
+    <?if cond="$title"?>
+    <h2 class="section-title"><?get id="title"?></h2>
+    <?/if?>
+    <?if cond="$subtitle"?>
+    <p class="section-subtitle"><?get id="subtitle"?></p>
+    <?/if?>
+</div>
+<?/component?>

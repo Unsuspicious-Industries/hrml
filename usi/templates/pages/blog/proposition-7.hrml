@@ -1,0 +1,12 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+<?block slot="content"?>
+    <?bind var="post_body"?><?markdownfm file="posts/proposition-7.mdx" as="post"?><?/bind?>
+    <?use id="prose-page"?>
+        <?bind var="label"?>Research Note<?/bind?>
+        <?bind var="title" from="post.title"/?>
+        <?bind var="description" from="post.excerpt"/?>
+        <?bind var="meta"?><?get id="post.author"?> · <?get id="post.publishDate"?> · <?get id="post.status"?><?/bind?>
+        <?block slot="content"?><?get id="post_body"?><?/block?>
+    </?use?>
+</?block?>

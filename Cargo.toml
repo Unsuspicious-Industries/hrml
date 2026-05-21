@@ -11,7 +11,7 @@ categories = ["web-programming", "command-line-utilities"]
 
 [[bin]]
 name = "hrml"
-path = "src/main.rs"
+path = "cli/main.rs"
 
 [[test]]
 name = "comprehensive_tests"
@@ -22,12 +22,14 @@ name = "advanced_tests"
 path = "validation/advanced_tests.rs"
 
 [[test]]
-name = "formal_properties"
-path = "validation/formal_properties.rs"
+name = "unit_tests"
+path = "validation/unit_tests.rs"
 
 [[test]]
-name = "fixtures_runner"
-path = "validation/fixtures_runner.rs"
+name = "prop_tests"
+path = "validation/prop/mod.rs"
+
+
 
 [dependencies]
 # Minimal tokio instead of full
@@ -46,3 +48,6 @@ libc = "0.2"
 
 [dev-dependencies]
 regex = "1"
+proptest = "1"
+kuchiki = "0.8"
+tempfile = "3"

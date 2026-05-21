@@ -1,0 +1,14 @@
+<?component id="prose-page"?>
+<?bind var="label"/?><?bind var="title"/?><?bind var="description"/?><?bind var="meta"/?>
+<section class="hero hero-compact">
+    <div class="hero-content">
+        <?if cond="$label"?><p class="hero-label"><?get id="label"?></p><?/if?>
+        <?if cond="$title"?><h1 class="hero-title"><?get id="title"?></h1><?/if?>
+        <?if cond="$description"?><p class="hero-description"><?get id="description"?></p><?/if?>
+        <?if cond="$meta"?><p class="page-meta"><?get id="meta"?></p><?/if?>
+    </div>
+</section>
+<section class="section prose-section">
+    <article class="prose-shell"><?slot id="content"?></?slot?></article>
+</section>
+<?/component?>

@@ -1,0 +1,17 @@
+<?component id="nav-cmp"?>
+<nav class="site-nav">
+    <div class="nav-brand">
+        <a href="/" class="nav-logo-img"><img src="/static/images/usi.png" alt="Unsuspicious Industries"></a>
+    </div>
+    <div class="nav-links">
+        <a href="/product" class="nav-link">Product</a>
+        <a href="/dfs" class="nav-link">DFS</a>
+        <a href="/services" class="nav-link">Services</a>
+        <a href="/jobs" class="nav-link">Jobs</a>
+        <a href="/ethics" class="nav-link">Ethics</a>
+        <a href="/about" class="nav-link">About</a>
+        <a href="/blog" class="nav-link">Thoughts</a>
+        <a href="/contact" class="nav-link nav-cta">Contact</a>
+    </div>
+</nav>
+<?/component?>
