@@ -58,3 +58,28 @@ fn endpoint_missing_returns_error() {
     let err = rt.call_endpoint("/api/unknown", &json!({})).unwrap_err();
     assert!(err.contains("Endpoint not found"));
 }
+
+#[test]
+fn endpoint_flat_fallback_supports_module_action_files() {
+    let dir = setup_backend_dir("flat_fallback");
+    fs::write(
+        format!("{}/api/todos_publish.hrml", dir),
+        "<div><?get id=\"action\"?>-<?get id=\"data.state\"?></div>",
+    )
+    .unwrap();
+
+    let rt = Runtime::new(&dir);
+    let value = rt
+        .call_endpoint("/api/todos/publish", &json!({"state": "ready"}))
+        .unwrap();
+
+    assert_eq!(value.as_str().unwrap(), "<div>publish-ready</div>");
+}
+
+#[test]
+fn endpoint_rejects_non_api_paths() {
+    let dir = setup_backend_dir("invalid_path");
+    let rt = Runtime::new(&dir);
+    let err = rt.call_endpoint("/pages/home", &json!({})).unwrap_err();
+    assert!(err.contains("Invalid endpoint path"));
+}

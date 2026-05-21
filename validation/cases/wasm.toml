@@ -1,0 +1,8 @@
+name = "wasm"
+type = "logic"
+hrml = '''
+<section><?wasm module="mod1" src="/m.wasm" export="mount"?></section>
+'''
+expected = '''
+<section><div class="hrml-wasm-window" data-wasm-export="mount" data-wasm-module="mod1" data-wasm-props="{}" data-wasm-src="/m.wasm" data-wasm-start=""></div></section>
+'''

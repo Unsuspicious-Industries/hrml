@@ -1,0 +1,8 @@
+name = "latex"
+type = "logic"
+hrml = '''
+<section><?latex formula="x^2 + y^2 = z^2"?></section>
+'''
+expected = '''
+<section><span class="math-inline" data-math="x^2 + y^2 = z^2">\(x^2 + y^2 = z^2\)</span></section>
+'''

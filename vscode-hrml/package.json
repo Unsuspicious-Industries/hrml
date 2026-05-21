@@ -3,6 +3,12 @@
   "displayName": "HRML Syntax Highlighting",
   "description": "Syntax highlighting for HRML template files",
   "version": "0.1.0",
+  "files": [
+    "language-configuration.json",
+    "README.md",
+    "LICENSE",
+    "syntaxes/*.json"
+  ],
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -26,6 +32,11 @@
           "source.css": "css",
           "source.js": "javascript"
         }
+      },
+      {
+        "scopeName": "text.html.hrml.injection",
+        "path": "./syntaxes/hrml-html-injection.tmLanguage.json",
+        "injectTo": ["text.html.basic"]
       }
     ]
   }

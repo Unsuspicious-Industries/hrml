@@ -1,0 +1,14 @@
+name = "load_simple"
+type = "logic"
+hrml = '''
+<?load file="components/header.hrml"?>
+'''
+expected = '''
+<header>H</header>
+'''
+
+[[files]]
+path = "components/header.hrml"
+content = '''
+<header>H</header>
+'''

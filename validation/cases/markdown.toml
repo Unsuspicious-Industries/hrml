@@ -1,0 +1,17 @@
+name = "markdown"
+type = "logic"
+hrml = '''
+<?markdown file="doc.md"?>
+'''
+expected = '''
+<h1>Hello</h1>
+<p>This is a <em>markdown</em> fixture.</p>
+'''
+
+[[files]]
+path = "doc.md"
+content = '''
+# Hello
+
+This is a *markdown* fixture.
+'''

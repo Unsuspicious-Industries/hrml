@@ -1,0 +1,108 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?block slot="content"?>
+    <section class="hero">
+        <div class="hero-content">
+            <p class="hero-label">Advancing Human knowledge through stochastic epistemology</p>
+            <h1 class="hero-title">Forging formal methods with <span class="text-accent">informal vibes</span></h1>
+            <p class="hero-description">
+                <span>Unsuspicious Industries</span> operates at the convergence of theoretical computer science, 
+                machine learning, and complex systems.
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <p class="section-label">Research Divisions</p>
+            <h2 class="section-title">Multidisciplinary Curiosity</h2>
+            <p class="section-subtitle">Six core research areas that define our institutional mission</p>
+        </div>
+        
+        <div class="grid-3">
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/product<?/bind?>
+                <?bind var="icon"?>code<?/bind?>
+                <?bind var="title"?>Dynamic Formal Systems<?/bind?>
+                <?bind var="text"?>Investigating interaction combinators, optimal reduction strategies, and System F type theory.<?/bind?>
+            </?use?>
+            
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/dfs<?/bind?>
+                <?bind var="icon"?>cpu<?/bind?>
+                <?bind var="title"?>Axiomatic Elaboration Laboratory<?/bind?>
+                <?bind var="text"?>Finding good and beautiful bases for rational thinking.<?/bind?>
+            </?use?>
+            
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/product<?/bind?>
+                <?bind var="icon"?>brain<?/bind?>
+                <?bind var="title"?>Artificial Intelligence Research<?/bind?>
+                <?bind var="text"?>Training transformer architectures with formal constraints.<?/bind?>
+            </?use?>
+            
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/product<?/bind?>
+                <?bind var="icon"?>chart-line<?/bind?>
+                <?bind var="title"?>Macroeconomics Formalisation<?/bind?>
+                <?bind var="text"?>Rewriting advanced economics research using HPC and formal systems.<?/bind?>
+            </?use?>
+            
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/product<?/bind?>
+                <?bind var="icon"?>leaf<?/bind?>
+                <?bind var="title"?>Computational Biology Division<?/bind?>
+                <?bind var="text"?>Understanding consciousness through pluridisciplinary approaches.<?/bind?>
+            </?use?>
+            
+            <?use id="card-cmp"?>
+                <?bind var="href"?>/product<?/bind?>
+                <?bind var="icon"?>palette<?/bind?>
+                <?bind var="title"?>LSH Research Division<?/bind?>
+                <?bind var="text"?>Exploring beauty, art and philosophy towards deeper understanding.<?/bind?>
+            </?use?>
+        </div>
+    </section>
+
+    <section class="section stats-section">
+        <div class="section-header">
+            <p class="section-label">Research Stats</p>
+            <h2 class="section-title">Academic Impact</h2>
+        </div>
+        
+        <div class="stats-grid">
+            <?use id="stat-cmp"?>
+                <?bind var="icon"?>flask<?/bind?>
+                <?bind var="number"?>25+<?/bind?>
+                <?bind var="label"?>Active Research Projects<?/bind?>
+            </?use?>
+            
+            <?use id="stat-cmp"?>
+                <?bind var="icon"?>users<?/bind?>
+                <?bind var="number"?>2+<?/bind?>
+                <?bind var="label"?>Research Centers<?/bind?>
+            </?use?>
+            
+            <?use id="stat-cmp"?>
+                <?bind var="icon"?>check<?/bind?>
+                <?bind var="number"?>99%<?/bind?>
+                <?bind var="label"?>Peer Review Acceptance<?/bind?>
+            </?use?>
+            
+            <?use id="stat-cmp"?>
+                <?bind var="icon"?>coffee<?/bind?>
+                <?bind var="number"?>5000+<?/bind?>
+                <?bind var="label"?>Cups of Coffee<?/bind?>
+            </?use?>
+        </div>
+    </section>
+
+    <section class="section cta-section">
+        <h2 class="section-title">Join Our Academic Community</h2>
+        <div class="cta-buttons">
+            <a href="/contact" class="btn btn-primary">Research Collaboration</a>
+            <a href="/about" class="btn btn-secondary">About the Team</a>
+        </div>
+    </section>
+</?block?>

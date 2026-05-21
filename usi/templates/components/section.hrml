@@ -1,0 +1,6 @@
+<?component id="section-cmp"?>
+<?bind var="class"/?>
+<section class="section <?get id="class"?>">
+    <slot id="content"?>
+</section>
+<?/component?>

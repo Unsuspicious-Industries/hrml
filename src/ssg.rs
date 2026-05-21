@@ -6,7 +6,6 @@
 
 use crate::template::Engine;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -112,7 +111,7 @@ impl SSG {
                         report.add_page(url, rel_str, out_path.to_string_lossy().to_string());
                     }
                     Err(e) => {
-                        report.add_error(rel_str, e);
+                        report.add_error(rel_str, e.to_string());
                     }
                 }
             }

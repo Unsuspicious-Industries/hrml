@@ -1,0 +1,8 @@
+name = "chrome"
+type = "structure"
+hrml = '''
+<div>Chrome Fixture</div>
+'''
+expected = '''
+Chrome Fixture
+'''

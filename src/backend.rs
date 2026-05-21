@@ -44,7 +44,9 @@ impl Runtime {
                 .strip_prefix(&self.endpoints_path)
                 .map_err(|e| e.to_string())?;
             let rel = rel.to_string_lossy().replace('\\', "/");
-            let rendered = Engine::new(&base).render_fragment(&rel, &context)?;
+            let rendered = Engine::new(&base)
+                .render_fragment(&rel, &context)
+                .map_err(|e| e.to_string())?;
             return Ok(Value::String(rendered));
         }
 

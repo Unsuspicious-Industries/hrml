@@ -36,7 +36,7 @@ description = "Desc"
 "#;
     fs::write(&toml_path, content).unwrap();
 
-    let cfg = Config::load(toml_path.to_str().unwrap()).expect("load cfg");
+    let cfg = Config::from_toml(&fs::read_to_string(&toml_path).unwrap()).expect("load cfg");
     assert_eq!(cfg.host, "0.0.0.0");
     assert_eq!(cfg.port, 9000);
     assert_eq!(cfg.templates_path, "tpls");
@@ -44,8 +44,8 @@ description = "Desc"
 
     // save
     let out = dir.join("out.toml");
-    cfg.save(out.to_str().unwrap()).expect("save");
-    let cfg2 = Config::load(out.to_str().unwrap()).expect("load2");
+    fs::write(&out, cfg.to_toml_string().expect("save")).expect("write out");
+    let cfg2 = Config::from_toml(&fs::read_to_string(&out).unwrap()).expect("load2");
     assert_eq!(cfg2.port, 9000);
 }
 

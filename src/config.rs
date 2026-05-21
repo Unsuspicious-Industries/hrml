@@ -1,8 +1,6 @@
 use serde::Deserialize;
 use serde::Serialize;
-use std::fs;
-use std::io;
-use std::path::Path;
+use serde_json::{Map, Value};
 
 fn default_host() -> String {
     "127.0.0.1".to_string()
@@ -53,6 +51,16 @@ pub struct Config {
 
     #[serde(default)]
     pub favicon: Option<String>,
+
+    #[serde(default)]
+    pub site_url: Option<String>,
+
+    #[serde(default = "default_globals")]
+    pub globals: Value,
+}
+
+fn default_globals() -> Value {
+    Value::Object(Map::new())
 }
 
 #[derive(Deserialize, Default)]
@@ -68,6 +76,8 @@ struct RawConfig {
     site_name: Option<String>,
     site_description: Option<String>,
     favicon: Option<String>,
+    site_url: Option<String>,
+    globals: Option<toml::Value>,
 }
 
 #[derive(Deserialize, Default)]
@@ -89,6 +99,7 @@ struct RawSite {
     name: Option<String>,
     description: Option<String>,
     favicon: Option<String>,
+    url: Option<String>,
 }
 
 impl Default for Config {
@@ -102,13 +113,14 @@ impl Default for Config {
             site_name: "HRML App".to_string(),
             site_description: Some("A web application built with HRML".to_string()),
             favicon: None,
+            site_url: None,
+            globals: default_globals(),
         }
     }
 }
 
 impl Config {
-    pub fn load(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = fs::read_to_string(path)?;
+    pub fn from_toml(content: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let raw: RawConfig = toml::from_str(&content)?;
 
         let mut config = Config::default();
@@ -144,6 +156,9 @@ impl Config {
             if let Some(favicon) = site.favicon {
                 config.favicon = Some(favicon);
             }
+            if let Some(url) = site.url {
+                config.site_url = Some(url);
+            }
         }
 
         if let Some(host) = raw.host {
@@ -170,72 +185,38 @@ impl Config {
         if let Some(favicon) = raw.favicon {
             config.favicon = Some(favicon);
         }
+        if let Some(site_url) = raw.site_url {
+            config.site_url = Some(site_url);
+        }
+        if let Some(globals) = raw.globals {
+            config.globals = toml_value_to_json(globals);
+        }
 
         Ok(config)
     }
 
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let content = toml::to_string_pretty(self)?;
-        fs::write(path, content)?;
-        Ok(())
+    pub fn to_toml_string(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(toml::to_string_pretty(self)?)
     }
+}
 
-    pub fn setup(&mut self) -> io::Result<()> {
-        fs::create_dir_all(self.templates_path.clone() + "/pages")?;
-        fs::create_dir_all(self.templates_path.clone() + "/layouts")?;
-        fs::create_dir_all(self.templates_path.clone() + "/components")?;
-        fs::create_dir_all(self.endpoints_path.clone() + "/api")?;
-        fs::create_dir_all(self.static_path.clone() + "/css")?;
-        fs::create_dir_all(self.static_path.clone() + "/js")?;
-        fs::create_dir_all(self.static_path.clone() + "/images")?;
-
-        let config_path = "hrml.toml";
-        if !Path::new(config_path).exists() {
-            let config_str = crate::assets::default_config(&self.site_name);
-            fs::write(config_path, config_str)?;
+fn toml_value_to_json(value: toml::Value) -> Value {
+    match value {
+        toml::Value::String(v) => Value::String(v),
+        toml::Value::Integer(v) => Value::Number(v.into()),
+        toml::Value::Float(v) => serde_json::Number::from_f64(v)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+        toml::Value::Boolean(v) => Value::Bool(v),
+        toml::Value::Datetime(v) => Value::String(v.to_string()),
+        toml::Value::Array(values) => {
+            Value::Array(values.into_iter().map(toml_value_to_json).collect())
         }
-
-        let templates_dir = Path::new(&self.templates_path);
-
-        let base_layout_path = templates_dir.join("layouts/base.hrml");
-        if !base_layout_path.exists() {
-            fs::write(base_layout_path, crate::assets::BASE_LAYOUT)?;
-        }
-
-        let nav_path = templates_dir.join("components/nav.hrml");
-        if !nav_path.exists() {
-            fs::write(nav_path, crate::assets::NAV)?;
-        }
-
-        let index_path = templates_dir.join("pages/index.hrml");
-        if !index_path.exists() {
-            fs::write(index_path, crate::assets::INDEX_PAGE)?;
-        }
-
-        let about_path = templates_dir.join("pages/about.hrml");
-        if !about_path.exists() {
-            fs::write(about_path, crate::assets::ABOUT_PAGE)?;
-        }
-
-        let css_path = Path::new(&self.static_path).join("css/style.css");
-        if !css_path.exists() {
-            fs::write(css_path, crate::assets::STYLE_CSS)?;
-        }
-
-        let endpoints_dir = Path::new(&self.endpoints_path);
-        let hello_path = endpoints_dir.join("api/hello.hrml");
-        if !hello_path.exists() {
-            fs::write(hello_path, crate::assets::HELLO_ENDPOINT)?;
-        }
-
-        if !Path::new("README.md").exists() {
-            fs::write("README.md", crate::assets::readme(&self.site_name))?;
-        }
-
-        if !Path::new(".gitignore").exists() {
-            fs::write(".gitignore", crate::assets::GITIGNORE)?;
-        }
-
-        Ok(())
+        toml::Value::Table(table) => Value::Object(
+            table
+                .into_iter()
+                .map(|(key, value)| (key, toml_value_to_json(value)))
+                .collect(),
+        ),
     }
 }

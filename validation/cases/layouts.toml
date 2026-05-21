@@ -1,0 +1,19 @@
+name = "layouts"
+type = "structure"
+hrml = '''
+<?load file="layouts/base.hrml"?>
+<?block slot="content"?><p>Layout Content</p></?block?>
+'''
+expected = '''
+Layout Content
+'''
+
+[[files]]
+path = "layouts/base.hrml"
+content = '''
+<!DOCTYPE html>
+<html>
+<head><title>Base</title></head>
+<body><?slot id="content"?>Default</?slot?></body>
+</html>
+'''

@@ -18,32 +18,25 @@ fn tmp_dir(name: &str) -> PathBuf {
 }
 
 #[test]
-fn config_setup_creates_structure() {
-    let dir = tmp_dir("config_setup");
-    let orig = std::env::current_dir().unwrap();
-    std::env::set_current_dir(&dir).unwrap();
-
+fn config_serializes_without_filesystem_side_effects() {
     let mut cfg = Config::default();
     cfg.templates_path = "templates_test".to_string();
     cfg.endpoints_path = "endpoints_test".to_string();
     cfg.static_path = "static_test".to_string();
     cfg.site_name = "TestSite".to_string();
+    cfg.site_description = Some("Integration description".to_string());
 
-    cfg.setup().expect("setup failed");
+    let toml = cfg.to_toml_string().expect("serialize config");
+    let roundtrip = Config::from_toml(&toml).expect("deserialize config");
 
-    assert!(dir.join("templates_test/pages").exists());
-    assert!(dir.join("templates_test/layouts").exists());
-    assert!(dir.join("templates_test/components").exists());
-    assert!(dir.join("endpoints_test/api").exists());
-    assert!(dir.join("static_test/css").exists());
-    assert!(dir.join("static_test/js").exists());
-    assert!(dir.join("static_test/images").exists());
-    assert!(dir.join("hrml.toml").exists());
-    assert!(dir.join("README.md").exists());
-    assert!(dir.join(".gitignore").exists());
-
-    // cleanup: restore cwd
-    std::env::set_current_dir(orig).unwrap();
+    assert_eq!(roundtrip.templates_path, "templates_test");
+    assert_eq!(roundtrip.endpoints_path, "endpoints_test");
+    assert_eq!(roundtrip.static_path, "static_test");
+    assert_eq!(roundtrip.site_name, "TestSite");
+    assert_eq!(
+        roundtrip.site_description.as_deref(),
+        Some("Integration description")
+    );
 }
 
 #[test]

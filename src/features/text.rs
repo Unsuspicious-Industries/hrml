@@ -17,10 +17,10 @@ pub fn slugify(input: &str) -> String {
 }
 
 pub fn excerpt(input: &str, max_len: usize) -> String {
-    if input.len() <= max_len {
+    let mut s: String = input.chars().take(max_len).collect();
+    if s.len() == input.len() {
         return input.to_string();
     }
-    let mut s = input[..max_len].to_string();
     if let Some(last_space) = s.rfind(' ') {
         s.truncate(last_space);
     }

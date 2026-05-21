@@ -1,0 +1,37 @@
+<?component id="stats-section"?>
+<?bind var="label"/?>
+<?bind var="title"/?>
+<section class="section stats-section">
+    <div class="section-header">
+        <?if cond="$label"?>
+        <p class="section-label"><?get id="label"?></p>
+        <?/if?>
+        <?if cond="$title"?>
+        <h2 class="section-title"><?get id="title"?></h2>
+        <?/if?>
+    </div>
+    <div class="stats-grid">
+        <slot id="content"?>
+    </div>
+</section>
+<?/component?>
+
+<?component id="stat-item"?>
+<?bind var="icon"/?>
+<?bind var="number"/?>
+<?bind var="label"/?>
+<?bind var="size"/?>
+<div class="stat-item">
+    <?if cond="$icon"?>
+    <div class="stat-icon">
+        <svg class="icon-<?get id="size"?>"><use href="#icon-<?get id="icon"?>"/></svg>
+    </div>
+    <?/if?>
+    <?if cond="$number"?>
+    <div class="stat-number"><?get id="number"?></div>
+    <?/if?>
+    <?if cond="$label"?>
+    <div class="stat-label"><?get id="label"?></div>
+    <?/if?>
+</div>
+<?/component?>

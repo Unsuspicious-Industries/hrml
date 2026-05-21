@@ -1,0 +1,23 @@
+host = "127.0.0.1"
+port = 8080
+templates_path = "templates"
+endpoints_path = "endpoints"
+static_path = "static"
+site_name = "Unsuspicious Industries"
+site_description = "An open multidisciplinary research collective"
+favicon = "/static/favicon.ico"
+
+[globals]
+primary = "#1f2937"
+secondary = "#1f2937"
+accent = "#3730a3"
+text_heading = "#3730a3"
+text_default = "#1f2937"
+text_muted = "#6b7280"
+border = "#e5e7eb"
+bg_page = "#ffffff"
+bg_section = "#f8fafc"
+brand_accent_1 = "#54005b"
+brand_accent_2 = "#06b6d4"
+font_mono = "'Fira Mono', 'Liberation Mono', 'Courier New', monospace"
+font_serif = "'Crimson Text', serif"

@@ -1,0 +1,95 @@
+<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+
+<?component id="section-header"?>
+<?bind var="label"/?><?bind var="title"/?><?bind var="subtitle"/?>
+<div class="section-header">
+    <?if cond="$label"?>
+    <p class="section-label"><?get id="label"?></p>
+    <?/if?>
+    <?if cond="$title"?>
+    <h2 class="section-title"><?get id="title"?></h2>
+    <?/if?>
+    <?if cond="$subtitle"?>
+    <p class="section-subtitle"><?get id="subtitle"?></p>
+    <?/if?>
+</div>
+<?/component?>
+
+<?block slot="content"?>
+    <section class="hero">
+        <div class="hero-content">
+            <p class="hero-label">Applied Research</p>
+            <h1 class="hero-title">Bridging Theory and Practice</h1>
+            <p class="hero-description">
+                We translate our theoretical research into practical applications, developing tools and 
+                systems that advance the state of the art in computing.
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <?load file="components/section-header.hrml"?>
+        <?bind var="label" value="Research Areas"/?>
+        <?bind var="title" value="Where theory meets implementation"/?>
+        <?bind var="subtitle" value="Practical applications of our research"/?>
+        
+        <div class="grid-3">
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">⟨/⟩</div>
+                    <h3 class="card-title">Type Theory Tools</h3>
+                    <p class="card-text">Developing next-generation proof assistants and type checkers based on dependent types and homotopy type theory.</p>
+                </div>
+            </a>
+            
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">⬡</div>
+                    <h3 class="card-title">Interaction Nets</h3>
+                    <p class="card-text">Implementing optimal reduction strategies for the λ-calculus using interaction net architectures.</p>
+                </div>
+            </a>
+            
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">⧉</div>
+                    <h3 class="card-title">LLM Formal Constraints</h3>
+                    <p class="card-text">Training transformer models with type-theoretic constraints for more reliable code generation.</p>
+                </div>
+            </a>
+            
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">⚗</div>
+                    <h3 class="card-title">Proof Synthesis</h3>
+                    <p class="card-text">Automated theorem proving using machine learning guided search strategies.</p>
+                </div>
+            </a>
+            
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">◈</div>
+                    <h3 class="card-title">Formal Verification</h3>
+                    <p class="card-text">Applying formal methods to verify correctness of software systems.</p>
+                </div>
+            </a>
+            
+            <a href="/product" class="card-link">
+                <div class="card">
+                    <div class="card-icon">∿</div>
+                    <h3 class="card-title">Computational Dynamics</h3>
+                    <p class="card-text">Modelling complex systems using formal methods and high-performance computing.</p>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <section class="section cta-section">
+        <h2 class="section-title">Collaborate With Us</h2>
+        <p class="section-subtitle">We are always looking for research partners</p>
+        <div class="cta-buttons">
+            <a href="/contact" class="btn btn-primary">Get in Touch</a>
+        </div>
+    </section>
+</?block?>

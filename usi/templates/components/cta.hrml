@@ -1,0 +1,20 @@
+<?component id="cta-section"?>
+<?bind var="title"/?>
+<?bind var="primary"/?>
+<?bind var="primary-href"/?>
+<?bind var="secondary"/?>
+<?bind var="secondary-href"/?>
+<section class="section cta-section">
+    <?if cond="$title"?>
+    <h2 class="section-title"><?get id="title"?></h2>
+    <?/if?>
+    <div class="cta-buttons">
+        <?if cond="$primary"?>
+        <a href="<?get id="primary-href"?>" class="btn btn-primary"><?get id="primary"?></a>
+        <?/if?>
+        <?if cond="$secondary"?>
+        <a href="<?get id="secondary-href"?>" class="btn btn-secondary"><?get id="secondary"?></a>
+        <?/if?>
+    </div>
+</section>
+<?/component?>
