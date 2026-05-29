@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
+/// Write attributes in key order. `BTreeMap` iterates sorted, so output is a
+/// deterministic function of the attribute set.
 fn write_attrs(tag: &mut String, attrs: &BTreeMap<String, String>) {
-    let mut keys: Vec<&String> = attrs.keys().collect();
-    keys.sort();
-    for k in keys {
+    for (k, v) in attrs {
         tag.push(' ');
         tag.push_str(k);
         tag.push_str("=\"");
-        tag.push_str(&attrs[k]);
+        tag.push_str(v);
         tag.push('"');
     }
 }
