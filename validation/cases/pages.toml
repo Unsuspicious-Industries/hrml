@@ -1,6 +1,6 @@
 name = "pages"
 type = "structure"
-hrml = '''
+xrml = '''
 <p>Pages Fixture</p>
 '''
 expected = '''

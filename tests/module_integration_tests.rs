@@ -1,7 +1,7 @@
-use hrml::config::Config;
-use hrml::router::Router;
-use hrml::ssg::SSG;
-use hrml::template::Engine;
+use xrml::config::Config;
+use xrml::router::Router;
+use xrml::ssg::SSG;
+use xrml::template::Engine;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;

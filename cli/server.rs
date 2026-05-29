@@ -10,10 +10,13 @@ use axum::{
     routing::get,
     Router,
 };
-use hrml::{backend::Runtime, config::Config, project::Project};
+use xrml::{backend::Runtime, config::Config, project::Project, router::Router as HrmlRouter};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
+use tokio::sync::mpsc;
 use tower_http::services::ServeDir;
 
 const HRML_JS: &str = include_str!("../src/runtime/client.js");
@@ -23,10 +26,68 @@ struct AppState {
     project: Arc<RwLock<Project>>,
     backend_runtime: Arc<Runtime>,
     static_path: Arc<PathBuf>,
+    templates_path: Arc<PathBuf>,
 }
 
-pub async fn run_dev(project_path: &Path, log_ast: bool) -> Result<(), String> {
-    run_server(project_path, true, log_ast).await
+pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<(), String> {
+    if debug {
+        std::env::set_var("HRML_DEBUG", "1");
+    }
+    validate_project(project_path)?;
+
+    let mut project = load_project(project_path)?;
+
+    if log_ast {
+        ast_log::write_ast_log(project_path, &project.config)?;
+    }
+
+    let host = project.config.host.clone();
+    let port = project.config.port;
+    let static_path_str = project.config.static_path.clone();
+    let static_path_arc = Arc::new(project_path.join(&static_path_str));
+    let backend_runtime = Arc::new(build_backend_runtime(project_path, &project.config));
+
+    project.parse_all().map_err(|e| e.to_string())?;
+
+    println!("Starting HRML development server on {}:{}", host, port);
+
+    let state = AppState {
+        project: Arc::new(RwLock::new(project)),
+        backend_runtime,
+        static_path: static_path_arc.clone(),
+        templates_path: Arc::new(project_path.join("templates")),
+    };
+
+    let state_for_watcher = state.clone();
+    let project_path_buf = project_path.to_path_buf();
+    tokio::spawn(async move {
+        watch_for_changes(project_path_buf, state_for_watcher).await;
+    });
+
+    let app = Router::new()
+        .route("/", get(index_handler))
+        .route("/hrml.js", get(hrml_js_handler))
+        .route(
+            "/api/*path",
+            get(api_get_handler)
+                .post(endpoint_handler)
+                .delete(endpoint_handler),
+        )
+        .route("/*path", get(page_handler).post(endpoint_handler))
+        .nest_service("/static", ServeDir::new(&*static_path_arc))
+        .with_state(state);
+
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
+        .await
+        .map_err(|e| format!("Failed to bind server: {}", e))?;
+
+    println!("   Server running at http://{}:{}", host, port);
+    println!();
+    println!("Press Ctrl+C to stop");
+
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| format!("Server error: {}", e))
 }
 
 pub async fn serve_static(project_path: &Path, log_ast: bool) -> Result<(), String> {
@@ -67,66 +128,95 @@ pub async fn serve_static(project_path: &Path, log_ast: bool) -> Result<(), Stri
     Ok(())
 }
 
-async fn run_server(project_path: &Path, dev_mode: bool, log_ast: bool) -> Result<(), String> {
-    validate_project(project_path)?;
+async fn watch_for_changes(project_path: PathBuf, state: AppState) {
+    let (tx, mut rx) = mpsc::unbounded_channel::<notify::Result<Event>>();
 
-    let mut project = load_project(project_path)?;
+    let mut watcher =
+        match RecommendedWatcher::new(move |res| drop(tx.send(res)), notify::Config::default()) {
+            Ok(w) => w,
+            Err(e) => {
+                eprintln!("   Failed to create file watcher: {}", e);
+                return;
+            }
+        };
 
-    if log_ast {
-        ast_log::write_ast_log(project_path, &project.config)?;
+    if let Err(e) = watcher.watch(&project_path, RecursiveMode::Recursive) {
+        eprintln!("   Failed to start file watcher: {}", e);
+        return;
     }
 
-    let host = project.config.host.clone();
-    let port = project.config.port;
-    let static_path_str = project.config.static_path.clone();
-    let static_path_arc = Arc::new(project_path.join(&static_path_str));
-    let backend_runtime = Arc::new(build_backend_runtime(project_path, &project.config));
+    println!("   Watching for changes...");
 
-    project.parse_all().map_err(|e| e.to_string())?;
+    let mut last_reload = tokio::time::Instant::now();
+    const DEBOUNCE_MS: u64 = 500;
 
-    if dev_mode {
-        println!(
-            "Starting HRML development server on {}:{}",
-            host, port
-        );
-        println!("   Watching for changes...");
-    } else {
-        println!("Starting HRML server on {}:{}", host, port);
+    while let Some(res) = rx.recv().await {
+        match res {
+            Ok(event) => {
+                if !is_relevant_change(&event) {
+                    continue;
+                }
+
+                let now = tokio::time::Instant::now();
+                if now.duration_since(last_reload) < Duration::from_millis(DEBOUNCE_MS) {
+                    continue;
+                }
+                last_reload = now;
+
+                println!("\n   Change detected, reloading...");
+                match reload_project(&project_path, &state) {
+                    Ok(true) => println!("   ✓ Reloaded\n"),
+                    Ok(false) => println!("   ✓ Reloaded (config may have changed)\n"),
+                    Err(e) => eprintln!("   ✗ Reload error: {}\n", e),
+                }
+            }
+            Err(e) => eprintln!("   Watch error: {}\n", e),
+        }
+    }
+}
+
+fn is_relevant_change(event: &Event) -> bool {
+    if !matches!(
+        event.kind,
+        EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+    ) {
+        return false;
     }
 
-    let state = AppState {
-        project: Arc::new(RwLock::new(project)),
-        backend_runtime,
-        static_path: static_path_arc.clone(),
-    };
+    for path in &event.paths {
+        let file_name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n,
+            None => continue,
+        };
 
-    let app = Router::new()
-        .route("/", get(index_handler))
-        .route("/hrml.js", get(hrml_js_handler))
-        .route(
-            "/api/*path",
-            get(api_get_handler)
-                .post(endpoint_handler)
-                .delete(endpoint_handler),
-        )
-        .route("/*path", get(page_handler).post(endpoint_handler))
-        .nest_service(
-            "/static",
-            ServeDir::new(&*static_path_arc),
-        )
-        .with_state(state);
+        if file_name.starts_with('.') || file_name.starts_with('#') || file_name.ends_with('~') {
+            continue;
+        }
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
-        .await
-        .map_err(|e| format!("Failed to bind server: {}", e))?;
+        let ext = match path.extension().and_then(|e| e.to_str()) {
+            Some(e) => e,
+            None => continue,
+        };
 
-    println!("   Server running at http://{}:{}", host, port);
-    println!();
-    println!("Press Ctrl+C to stop");
+        if matches!(ext, "hrml" | "trml" | "html" | "toml") {
+            return true;
+        }
+    }
 
-    axum::serve(listener, app)
-        .await
-        .map_err(|e| format!("Server error: {}", e))
+    false
+}
+
+fn reload_project(project_path: &Path, state: &AppState) -> Result<bool, String> {
+    let mut new_project = load_project(project_path)?;
+    new_project.parse_all().map_err(|e| e.to_string())?;
+
+    let mut project = state.project.write().unwrap();
+    let config_changed = project.config.site_name != new_project.config.site_name
+        || project.config.host != new_project.config.host
+        || project.config.port != new_project.config.port;
+    *project = new_project;
+
+    Ok(config_changed)
 }
 
 fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
@@ -137,7 +227,7 @@ fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
 
 async fn index_handler(State(state): State<AppState>) -> Response {
     let project = state.project.read().unwrap();
-    for template_path in ["pages/index.hrml", "pages/index.html"] {
+    for template_path in ["pages/index.trml", "pages/index.hrml", "pages/index.html"] {
         if project.get_file(template_path).is_some() {
             match project.render(template_path, &serde_json::json!({})) {
                 Ok(html) => return Html(html).into_response(),
@@ -172,15 +262,17 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
     }
 
     let template_candidates = [
+        format!("pages/{}.trml", normalized),
         format!("pages/{}.hrml", normalized),
         format!("pages/{}.html", normalized),
+        format!("pages/{}/index.trml", normalized),
         format!("pages/{}/index.hrml", normalized),
         format!("pages/{}/index.html", normalized),
     ];
 
     {
         let project = state.project.read().unwrap();
-        for template_path in template_candidates {
+        for template_path in template_candidates.iter() {
             if project.get_file(&template_path).is_some() {
                 match project.render(&template_path, &serde_json::json!({})) {
                     Ok(html) => return Html(html).into_response(),
@@ -195,10 +287,37 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
                 }
             }
         }
+    }
 
-        match project.render("pages/404.hrml", &serde_json::json!({})) {
-            Ok(html) => return (StatusCode::NOT_FOUND, Html(html)).into_response(),
-            Err(_) => {}
+    let pages_dir = state.templates_path.join("pages");
+    let router = HrmlRouter::from_pages_dir(&pages_dir);
+    let url = format!("/{}", normalized);
+
+    if let Some((route, params)) = router.resolve(&url) {
+        let project = state.project.read().unwrap();
+        let render_data = serde_json::to_value(params).unwrap_or(serde_json::json!({}));
+        let template_path = format!("pages/{}", route.template);
+        if project.get_file(&template_path).is_some() {
+            match project.render(&template_path, &render_data) {
+                Ok(html) => return Html(html).into_response(),
+                Err(error) => {
+                    eprintln!("[ERROR] {}", error);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Template error: {}", error),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    }
+
+    {
+        let project = state.project.read().unwrap();
+        for err_page in &["pages/404.trml", "pages/404.hrml"] {
+            if let Ok(html) = project.render(err_page, &serde_json::json!({})) {
+                return (StatusCode::NOT_FOUND, Html(html)).into_response();
+            }
         }
     }
 

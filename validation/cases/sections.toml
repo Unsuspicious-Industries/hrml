@@ -1,6 +1,6 @@
 name = "sections"
 type = "structure"
-hrml = '''
+xrml = '''
 <section>Sections Fixture</section>
 '''
 expected = '''

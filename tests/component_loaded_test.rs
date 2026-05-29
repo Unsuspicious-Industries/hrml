@@ -1,4 +1,4 @@
-use hrml::template::Engine;
+use xrml::template::Engine;
 use serde_json::json;
 use std::fs;
 
@@ -37,7 +37,7 @@ fn test_component_loaded_from_file() {
         r#"<?load file="components/icon.hrml"?>
 
 <div>Loaded with slot:</div>
-<?bind var="name" value="loaded-value"/?>
+<?bind var="name"?>loaded-value<?/bind?>
 <?use id="icon-cmp"?>
 <?block slot="content"?>
 <span><?get id="name"?></span>

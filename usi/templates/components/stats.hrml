@@ -11,7 +11,7 @@
         <?/if?>
     </div>
     <div class="stats-grid">
-        <slot id="content"?>
+        <?slot id="content"?>
     </div>
 </section>
 <?/component?>
@@ -24,7 +24,7 @@
 <div class="stat-item">
     <?if cond="$icon"?>
     <div class="stat-icon">
-        <svg class="icon-<?get id="size"?>"><use href="#icon-<?get id="icon"?>"/></svg>
+        <svg class="icon-$size"><use href="#icon-$icon"/></svg>
     </div>
     <?/if?>
     <?if cond="$number"?>

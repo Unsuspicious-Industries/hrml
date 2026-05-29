@@ -1,7 +1,7 @@
 {
-  "name": "hrml-syntax",
-  "displayName": "HRML Syntax Highlighting",
-  "description": "Syntax highlighting for HRML template files",
+  "name": "xrml-syntax",
+  "displayName": "XRML Syntax Highlighting",
+  "description": "Syntax highlighting for XRML template files (.hrml and .trml) — XRML = eXtensible Rust Markup Language",
   "version": "0.1.0",
   "files": [
     "language-configuration.json",
@@ -20,6 +20,12 @@
         "aliases": ["HRML", "hrml"],
         "extensions": [".hrml"],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "trml",
+        "aliases": ["TRML", "trml"],
+        "extensions": [".trml"],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -27,6 +33,16 @@
         "language": "hrml",
         "scopeName": "text.html.hrml",
         "path": "./syntaxes/hrml.tmLanguage.json",
+        "embeddedLanguages": {
+          "text.html": "html",
+          "source.css": "css",
+          "source.js": "javascript"
+        }
+      },
+      {
+        "language": "trml",
+        "scopeName": "text.html.trml",
+        "path": "./syntaxes/trml.tmLanguage.json",
         "embeddedLanguages": {
           "text.html": "html",
           "source.css": "css",

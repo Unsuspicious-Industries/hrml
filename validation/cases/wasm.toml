@@ -1,6 +1,6 @@
 name = "wasm"
 type = "logic"
-hrml = '''
+xrml = '''
 <section><?wasm module="mod1" src="/m.wasm" export="mount"?></section>
 '''
 expected = '''

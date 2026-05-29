@@ -1,5 +1,68 @@
 /* USI Industrial Styles */
 
+/* ── Font Faces ──────────────────────────────── */
+
+@font-face {
+    font-family: 'Hack';
+    src: url('/static/fonts/hack/Hack-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hack';
+    src: url('/static/fonts/hack/Hack-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hack';
+    src: url('/static/fonts/hack/Hack-Italic.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hack';
+    src: url('/static/fonts/hack/Hack-BoldItalic.woff2') format('woff2');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Libre Baskerville';
+    src: url('/static/fonts/libre-baskerville/LibreBaskerville-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Libre Baskerville';
+    src: url('/static/fonts/libre-baskerville/LibreBaskerville-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Libre Baskerville';
+    src: url('/static/fonts/libre-baskerville/LibreBaskerville-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Nazi Typewriter';
+    src: url('/static/fonts/nazi-typewriter/NaziTypewriter-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ── Reset / Base ─────────────────────────────── */
+
 * {
     margin: 0;
     padding: 0;
@@ -17,6 +80,20 @@ body {
     background: var(--bg-page);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
+}
+
+/* ── Typography ───────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6,
+.hero-title,
+.section-title,
+.card-title {
+    font-family: var(--font-serif);
+}
+
+.ethics-body .prose-shell,
+.ethics-body .prose-shell p {
+    font-family: var(--font-typewriter);
 }
 
 /* Fix whitespace from template blank lines */
@@ -230,6 +307,99 @@ main > * {
     margin: 0 auto;
 }
 
+/* Blog stacked rows */
+.blog-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+}
+
+.blog-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3rem;
+    align-items: start;
+    padding-bottom: 4rem;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+}
+
+.blog-row:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.blog-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 36rem;
+}
+
+.blog-row-meta {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin: 0;
+}
+
+.blog-row-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin: 0;
+    line-height: 1.25;
+    transition: color 0.15s;
+}
+
+.blog-row:hover .blog-row-title {
+    color: var(--accent);
+}
+
+.blog-row-excerpt {
+    font-size: 1.0625rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.blog-row-img {
+    display: block;
+    width: 540px;
+    height: 300px;
+    object-fit: cover;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.blog-row:hover .blog-row-img {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 768px) {
+    .blog-row {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .blog-row-img {
+        width: 100%;
+        height: auto;
+        max-height: 340px;
+    }
+
+    .blog-row-title {
+        font-size: 1.375rem;
+    }
+}
+
 /* Cards grid */
 .grid-3 {
     display: grid;
@@ -405,8 +575,9 @@ main > * {
 }
 
 .prose-shell {
-    max-width: 50rem;
+    max-width: 65rem;
     margin: 0 auto;
+    font-family: var(--font-serif);
     font-size: 1.05rem;
     line-height: 1.8;
     color: var(--text-default);
@@ -450,6 +621,39 @@ main > * {
     border-left: 3px solid var(--accent);
     padding-left: 1rem;
     color: var(--text-muted);
+}
+
+.prose-shell .footnote-definition {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.prose-shell .footnote-definition .footnote-definition-label {
+    font-weight: 700;
+    color: var(--text-default);
+    margin-right: 0.5rem;
+}
+
+.prose-shell .footnote-definition p {
+    display: inline;
+}
+
+.prose-shell .footnote-reference {
+    font-size: 0.75rem;
+    vertical-align: super;
+    line-height: 0;
+}
+
+.prose-shell .footnote-reference a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.prose-shell .footnote-reference a:hover {
+    text-decoration: underline;
 }
 
 .prose-shell code {

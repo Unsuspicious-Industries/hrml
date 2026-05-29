@@ -26,7 +26,7 @@ impl Route {
         let rel = file.strip_prefix(base).ok()?;
         let rel_str = rel.to_string_lossy().replace('\\', "/");
 
-        if !rel_str.ends_with(".hrml") {
+        if !rel_str.ends_with(".hrml") && !rel_str.ends_with(".trml") {
             return None;
         }
 
@@ -47,6 +47,7 @@ impl Route {
             .trim_start_matches("pages/")
             .trim_start_matches("templates/pages/")
             .trim_end_matches(".hrml")
+            .trim_end_matches(".trml")
             .trim_end_matches("/index");
 
         if path.is_empty() || path == "index" {
@@ -216,18 +217,22 @@ mod tests {
     #[test]
     fn template_to_url_index() {
         assert_eq!(Route::template_to_url("pages/index.hrml"), "/");
+        assert_eq!(Route::template_to_url("pages/index.trml"), "/");
     }
 
     #[test]
     fn template_to_url_static() {
         assert_eq!(Route::template_to_url("pages/about.hrml"), "/about");
+        assert_eq!(Route::template_to_url("pages/about.trml"), "/about");
         assert_eq!(Route::template_to_url("pages/blog.hrml"), "/blog");
         assert_eq!(Route::template_to_url("pages/blog/index.hrml"), "/blog");
+        assert_eq!(Route::template_to_url("pages/blog/index.trml"), "/blog");
     }
 
     #[test]
     fn template_to_url_nested() {
         assert_eq!(Route::template_to_url("pages/blog/post.hrml"), "/blog/post");
+        assert_eq!(Route::template_to_url("pages/blog/post.trml"), "/blog/post");
         assert_eq!(
             Route::template_to_url("pages/docs/api/index.hrml"),
             "/docs/api"
@@ -241,6 +246,10 @@ mod tests {
             "/blog/[slug]"
         );
         assert_eq!(
+            Route::template_to_url("pages/blog/[slug].trml"),
+            "/blog/[slug]"
+        );
+        assert_eq!(
             Route::template_to_url("pages/users/[id].hrml"),
             "/users/[id]"
         );
@@ -250,6 +259,10 @@ mod tests {
     fn template_to_url_catch_all() {
         assert_eq!(
             Route::template_to_url("pages/docs/[...rest].hrml"),
+            "/docs/[...rest]"
+        );
+        assert_eq!(
+            Route::template_to_url("pages/docs/[...rest].trml"),
             "/docs/[...rest]"
         );
     }

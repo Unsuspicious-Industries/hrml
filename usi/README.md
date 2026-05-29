@@ -11,8 +11,6 @@ usi/
 │   ├── layouts/          # Layout templates
 │   ├── components/       # Reusable components
 │   └── pages/            # Page templates
-├── endpoints/            # Rust-native endpoint templates
-│   └── api/              # API endpoints
 └── static/               # Static assets
     ├── css/              # Stylesheets
     ├── js/               # JavaScript files
@@ -42,11 +40,5 @@ hrml build
 
 1. Create a new template in `templates/pages/`
 2. Link to it from navigation in `templates/components/nav.hrml`
-
-## Adding API Endpoints
-
-1. Create a `.hrml`, `.html`, or `.json` file in `endpoints/api/`
-2. Optional actions can be defined as `<name>/<action>.hrml`
-3. Access the endpoint at `/api/<name>/<action>`
 
 See the HRML documentation for more details.

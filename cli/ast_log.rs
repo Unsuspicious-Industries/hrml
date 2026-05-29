@@ -1,8 +1,8 @@
-use hrml::project::Project;
+use xrml::project::Project;
 use std::fs;
 use std::path::Path;
 
-pub fn write_ast_log(project_path: &Path, config: &hrml::config::Config) -> Result<(), String> {
+pub fn write_ast_log(project_path: &Path, config: &xrml::config::Config) -> Result<(), String> {
     let mut project = Project::new(config.clone());
     let templates_path = project_path.join(&config.templates_path);
     load_dir_into_project(&mut project, &templates_path, &templates_path)?;

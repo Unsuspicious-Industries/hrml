@@ -1,6 +1,6 @@
 name = "latex"
 type = "logic"
-hrml = '''
+xrml = '''
 <section><?latex formula="x^2 + y^2 = z^2"?></section>
 '''
 expected = '''

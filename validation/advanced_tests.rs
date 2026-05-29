@@ -10,7 +10,7 @@ proptest! {
         let p = tmp.path().join("pages").join("r.hrml");
         fs::create_dir_all(p.parent().unwrap()).unwrap();
         fs::write(&p, &s).unwrap();
-        let engine = hrml::template::Engine::new(tmp.path().to_str().unwrap());
+        let engine = xrml::template::Engine::new(tmp.path().to_str().unwrap());
         let _ = engine.render_fragment("pages/r.hrml", &serde_json::json!({}));
     }
 
@@ -30,7 +30,7 @@ proptest! {
         let p = tmp.path().join("pages").join("b.hrml");
         fs::create_dir_all(p.parent().unwrap()).unwrap();
         fs::write(&p, &s).unwrap();
-        let engine = hrml::template::Engine::new(tmp.path().to_str().unwrap());
+        let engine = xrml::template::Engine::new(tmp.path().to_str().unwrap());
         let out = engine.render("pages/b.hrml", &serde_json::json!({})).unwrap();
         assert!(out.contains("content"));
     }

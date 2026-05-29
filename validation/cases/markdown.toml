@@ -1,6 +1,6 @@
 name = "markdown"
 type = "logic"
-hrml = '''
+xrml = '''
 <?markdown file="doc.md"?>
 '''
 expected = '''

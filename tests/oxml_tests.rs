@@ -1,4 +1,4 @@
-use hrml::features::{doc, oxml_tags, ONode};
+use xrml::features::{doc, oxml_tags, ONode};
 
 #[test]
 fn test_oxml_typed_content_elements() {
@@ -112,7 +112,7 @@ fn test_oxml_document_builder() {
 
 #[test]
 fn test_oxml_shorthand_constructors() {
-    use hrml::features::{div, link, meta, span};
+    use xrml::features::{div, link, meta, span};
 
     let d = div().id("app").text("Hello").build().render();
     assert!(d.contains("<div id=\"app\">Hello</div>"));

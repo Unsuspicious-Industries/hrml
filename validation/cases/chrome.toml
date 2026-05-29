@@ -1,6 +1,6 @@
 name = "chrome"
 type = "structure"
-hrml = '''
+xrml = '''
 <div>Chrome Fixture</div>
 '''
 expected = '''

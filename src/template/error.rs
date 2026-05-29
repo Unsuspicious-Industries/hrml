@@ -68,23 +68,40 @@ impl TemplateError {
 
 impl std::fmt::Display for TemplateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {:?}: {}", self.kind, self.phase, self.message)?;
+        let label = match self.kind {
+            TemplateErrorKind::Code => "error",
+            TemplateErrorKind::Internal => "internal error",
+        };
+        let phase = match self.phase {
+            TemplateErrorPhase::Parse => "parse",
+            TemplateErrorPhase::Resolve => "resolve",
+            TemplateErrorPhase::Render => "render",
+            TemplateErrorPhase::Io => "io",
+        };
 
-        if let Some(path) = &self.template_path {
-            write!(f, " [template: {}", path)?;
-            if let Some(location) = &self.location {
-                write!(f, ":{}:{}", location.line, location.column)?;
-            }
-            write!(f, "]")?;
-        } else if let Some(location) = &self.location {
-            write!(f, " [line {}:{}]", location.line, location.column)?;
-        }
+        let path = self.template_path.as_deref().unwrap_or("<unknown>");
+        let loc = self
+            .location
+            .as_ref()
+            .map(|l| format!("{}:{}", l.line, l.column))
+            .unwrap_or_else(|| "?:?".to_string());
 
-        if let Some(directive) = &self.directive {
-            write!(f, " [directive: {}]", directive)?;
-        }
+        let directive_note = self
+            .directive
+            .as_ref()
+            .map(|d| format!("  in `<?{}?>`\n", d))
+            .unwrap_or_default();
 
-        Ok(())
+        write!(
+            f,
+            "\n  \u{00d7} {label} [{phase}] in {path}:{loc}\n   {}\n{dir}  \u{2500}\u{2500} help: verify the template matches HRML directive syntax\n",
+            self.message,
+            dir = directive_note,
+            label = label,
+            phase = phase,
+            path = path,
+            loc = loc,
+        )
     }
 }
 

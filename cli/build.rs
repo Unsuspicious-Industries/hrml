@@ -36,13 +36,13 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
 
         let out_name = if path.starts_with("pages/") {
             let name = path.strip_prefix("pages/").unwrap().to_string();
-            if name.ends_with(".hrml") {
-                name.strip_suffix(".hrml").unwrap().to_string() + ".html"
+            if let Some(stem) = name.strip_suffix(".hrml").or_else(|| name.strip_suffix(".trml")) {
+                stem.to_string() + ".html"
             } else {
                 name
             }
-        } else if path.ends_with(".hrml") {
-            path.strip_suffix(".hrml").unwrap().to_string() + ".html"
+        } else if let Some(stem) = path.strip_suffix(".hrml").or_else(|| path.strip_suffix(".trml")) {
+            stem.to_string() + ".html"
         } else {
             path.to_string()
         };

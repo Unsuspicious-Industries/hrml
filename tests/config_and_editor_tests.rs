@@ -1,8 +1,8 @@
-use hrml::config::Config;
-use hrml::template::Engine;
 use serde_json::{json, Value};
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
+use xrml::config::Config;
+use xrml::template::Engine;
 
 fn temp_dir(prefix: &str) -> String {
     let now = SystemTime::now()
@@ -18,7 +18,7 @@ fn temp_dir(prefix: &str) -> String {
 #[test]
 fn config_loads_nested_site_and_globals_tables() {
     let dir = temp_dir("config");
-    let path = format!("{}/hrml.toml", dir);
+    let path = format!("{}/xrml.toml", dir);
     fs::write(
         &path,
         r#"[site]
@@ -56,7 +56,7 @@ fn template_context_exposes_site_url_and_nested_globals() {
     fs::create_dir_all(format!("{}/pages", dir)).unwrap();
     fs::write(
         format!("{}/pages/index.hrml", dir),
-        r#"<a href="<?get id="site_url"?>/docs">Docs</a>
+        r#"<a href="$site_url/docs">Docs</a>
 <p><?get id="globals.background.variant"?></p>
 <p><?get id="globals.background.gap"?></p>"#,
     )
@@ -101,7 +101,7 @@ fn template_wasm_props_support_reusable_background_variants() {
 #[test]
 fn vscode_extension_contributes_html_injection_grammar() {
     let package: Value =
-        serde_json::from_str(&fs::read_to_string("vscode-hrml/package.json").unwrap()).unwrap();
+        serde_json::from_str(&fs::read_to_string("vscode/package.json").unwrap()).unwrap();
     let grammars = package["contributes"]["grammars"].as_array().unwrap();
 
     assert!(grammars.iter().any(|grammar| {
@@ -113,7 +113,7 @@ fn vscode_extension_contributes_html_injection_grammar() {
 #[test]
 fn vscode_html_injection_targets_standard_html_scope() {
     let grammar: Value = serde_json::from_str(
-        &fs::read_to_string("vscode-hrml/syntaxes/hrml-html-injection.tmLanguage.json").unwrap(),
+        &fs::read_to_string("vscode/syntaxes/hrml-html-injection.tmLanguage.json").unwrap(),
     )
     .unwrap();
 

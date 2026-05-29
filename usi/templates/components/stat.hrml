@@ -4,7 +4,7 @@
 <?bind var="label"/?>
 <div class="stat-item">
     <?if cond="$icon"?>
-    <div class="stat-icon"><svg class="icon-md"><use href="#icon-<?get id="icon"?>"/></svg></div>
+    <div class="stat-icon"><svg class="icon-md"><use href="#icon-$icon"/></svg></div>
     <?/if?>
     <?if cond="$number"?>
     <div class="stat-number"><?get id="number"?></div>

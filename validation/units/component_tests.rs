@@ -36,7 +36,7 @@ fn component_use_applies_child_bindings_before_render() {
 <?bind var="href"/?>
 <?bind var="title"/?>
 <?if cond="$href"?>
-<a href="<?get id="href"?>"><h3><?get id="title"?></h3></a>
+<a href="$href"><h3><?get id="title"?></h3></a>
 <?else?>
 <div><h3><?get id="title"?></h3></div>
 <?/if?>
@@ -69,10 +69,10 @@ fn usi_card_component_renders_bound_content() {
 <?bind var="title"/?>
 <?bind var="text"/?>
 <?if cond="$href"?>
-<a href="<?get id="href"?>" class="card-link">
+<a href="$href" class="card-link">
     <div class="card">
         <?if cond="$icon"?>
-        <div class="card-icon"><svg class="icon-sm"><use href="#icon-<?get id="icon"?>"/></svg></div>
+        <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
         <?/if?>
         <?if cond="$title"?>
         <h3 class="card-title"><?get id="title"?></h3>
@@ -85,7 +85,7 @@ fn usi_card_component_renders_bound_content() {
 <?else?>
 <div class="card">
     <?if cond="$icon"?>
-    <div class="card-icon"><svg class="icon-sm"><use href="#icon-<?get id="icon"?>"/></svg></div>
+    <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
     <?/if?>
     <?if cond="$title"?>
     <h3 class="card-title"><?get id="title"?></h3>
@@ -137,10 +137,10 @@ fn imported_component_available_inside_loaded_layout_slot() {
 <?bind var="title"/?>
 <?bind var="text"/?>
 <?if cond="$href"?>
-<a href="<?get id="href"?>" class="card-link">
+<a href="$href" class="card-link">
     <div class="card">
         <?if cond="$icon"?>
-        <div class="card-icon"><svg class="icon-sm"><use href="#icon-<?get id="icon"?>"/></svg></div>
+        <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
         <?/if?>
         <?if cond="$title"?>
         <h3 class="card-title"><?get id="title"?></h3>
@@ -241,8 +241,8 @@ fn real_usi_index_renders_imported_cards() {
 
 #[test]
 fn real_usi_index_renders_imported_cards_via_project_api() {
-    use hrml::config::Config;
-    use hrml::project::Project;
+    use xrml::config::Config;
+    use xrml::project::Project;
     use std::path::Path;
 
     let mut project = Project::new(Config::default());
@@ -313,7 +313,7 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 
 #[test]
 fn direct_usi_templates_path_renders_cards() {
-    let engine = hrml::template::Engine::new("usi/templates")
+    let engine = xrml::template::Engine::new("usi/templates")
         .with_site_name("Unsuspicious Industries".to_string())
         .with_globals(serde_json::json!({
             "primary": "#1f2937",
@@ -398,4 +398,69 @@ fn prose_page_receives_meta_and_body_from_bound_markdown() {
         "missing prose body: {}",
         out
     );
+}
+
+#[test]
+fn blog_and_jobs_pages_render() {
+    use xrml::config::Config;
+    use xrml::project::Project;
+    use std::path::Path;
+    use std::fs;
+
+    let templates_root = Path::new("usi/templates");
+    let project_root = Path::new("usi");
+
+    let config = Config {
+        site_name: "USI".to_string(),
+        globals: serde_json::json!({
+            "primary":"#1f2937","secondary":"#1f2937","accent":"#3730a3",
+            "text_heading":"#3730a3","text_default":"#1f2937",
+            "text_muted":"#6b7280","border":"#e5e7eb",
+            "bg_page":"#ffffff","bg_section":"#f8fafc",
+            "brand_accent_1":"#54005b","brand_accent_2":"#06b6d4",
+            "font_mono":"mono","font_serif":"serif","font_typewriter":"tw"
+        }),
+        ..Config::default()
+    };
+
+    let mut project = Project::new(config).with_base_path(project_root);
+
+    for entry in walkdir(templates_root) {
+        if entry.ends_with(".hrml") {
+            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            let source = fs::read_to_string(&entry).unwrap();
+            project.add_file(rel.to_string(), source);
+        }
+    }
+    project.parse_all().unwrap();
+
+    for page in &[
+        "pages/blog.hrml",
+        "pages/jobs.hrml",
+        "pages/jobs/ethics-researcher.hrml",
+        "pages/jobs/itinerant-polymath.hrml",
+    ] {
+        let result = project.render(page, &serde_json::json!({}));
+        assert!(result.is_ok(), "page {} failed: {}", page, result.err().unwrap());
+    }
+
+    let blog_out = project.render("pages/blog.hrml", &serde_json::json!({})).unwrap();
+    assert!(blog_out.contains("completing-regex") || blog_out.contains("proposition-7") || blog_out.contains("post-card"),
+        "blog page missing post content: {}", &blog_out[..blog_out.len().min(500)]);
+
+    let jobs_out = project.render("pages/jobs.hrml", &serde_json::json!({})).unwrap();
+    assert!(jobs_out.contains("ethics") || jobs_out.contains("polymath") || jobs_out.contains("job-card"),
+        "jobs page missing job content: {}", &jobs_out[..jobs_out.len().min(500)]);
+}
+
+fn walkdir(dir: &std::path::Path) -> Vec<String> {
+    let mut out = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.is_dir() { out.extend(walkdir(&p)); }
+            else { out.push(p.to_string_lossy().to_string()); }
+        }
+    }
+    out
 }

@@ -1,6 +1,6 @@
 name = "interactive"
 type = "logic"
-hrml = '''
+xrml = '''
 <?btn post="/x"?>Go</?btn?>
 '''
 expected = '''

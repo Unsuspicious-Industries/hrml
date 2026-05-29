@@ -1,6 +1,6 @@
 name = "component_basic"
 type = "logic"
-hrml = '''
+xrml = '''
 <?component id="x"?><span>FX</span></?component?>
 <?use id="x"?></?use?>
 '''
