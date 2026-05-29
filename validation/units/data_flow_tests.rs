@@ -1,6 +1,5 @@
 use super::shared::TestEnv;
 use serde_json::json;
-use xrml::template::Engine;
 
 #[test]
 fn resolve_supports_inline_var_in_path() {

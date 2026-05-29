@@ -500,20 +500,6 @@ impl Engine {
                             .build())
                     }
                     "set" => {
-                        for (k, _) in attrs {
-                            if k == "id" {
-                                if let Some(val) = attrs.get("value") {
-                                    context.set_str(k, val.clone());
-                                }
-                            } else if k != "value" {
-                                if k == "id" && attrs.contains_key("value") {
-                                    context.set_str(
-                                        attrs.get("id").unwrap(),
-                                        attrs.get("value").unwrap().clone(),
-                                    );
-                                }
-                            }
-                        }
                         if let (Some(id), Some(val)) = (attrs.get("id"), attrs.get("value")) {
                             context.set_str(id, val.clone());
                         }
@@ -615,10 +601,6 @@ impl Engine {
                                 .render_nodes(children, context, template_path)?
                                 .render();
                             context.set_str(id, content);
-                        } else {
-                            if let (Some(id), Some(val)) = (attrs.get("id"), attrs.get("value")) {
-                                context.set_str(id, val.clone());
-                            }
                         }
                         Ok(ONode::empty())
                     }
