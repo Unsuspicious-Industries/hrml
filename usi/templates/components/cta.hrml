@@ -10,10 +10,10 @@
     <?/if?>
     <div class="cta-buttons">
         <?if cond="$primary"?>
-        <a href="<?get id="primary-href"?>" class="btn btn-primary"><?get id="primary"?></a>
+        <a href="$primary-href" class="btn btn-primary"><?get id="primary"?></a>
         <?/if?>
         <?if cond="$secondary"?>
-        <a href="<?get id="secondary-href"?>" class="btn btn-secondary"><?get id="secondary"?></a>
+        <a href="$secondary-href" class="btn btn-secondary"><?get id="secondary"?></a>
         <?/if?>
     </div>
 </section>

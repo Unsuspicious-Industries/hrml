@@ -1,4 +1,4 @@
-use hrml::features::{excerpt, render_latex_block, render_latex_inline, render_markdown, slugify};
+use xrml::features::{excerpt, render_latex_block, render_latex_inline, render_markdown, slugify};
 
 #[test]
 fn test_markdown_renders_headings_and_lists() {

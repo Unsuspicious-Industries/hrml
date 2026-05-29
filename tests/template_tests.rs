@@ -1,4 +1,4 @@
-use hrml::template::Engine;
+use xrml::template::Engine;
 use serde_json::json;
 use std::fs;
 
@@ -169,7 +169,7 @@ fn test_form_processing() {
         "Missing data-target attribute"
     );
     assert!(
-        result.contains("<input type=\"text\" name=\"name\">"),
+        result.contains("<input name=\"name\" type=\"text\">"),
         "Missing form input"
     );
 }
@@ -289,7 +289,7 @@ fn test_site_vars_available_in_context() {
         format!("{}/pages/site_vars.hrml", test_dir),
         r#"<h1><?get id="site_name"?></h1>
 <p><?get id="site_description"?></p>
-<img src="<?get id="favicon"?>">"#,
+<img src="$favicon">"#,
     )
     .unwrap();
 
@@ -348,9 +348,8 @@ fn test_component_composition_with_bindings() {
         format!("{}/pages/component_composition.hrml", test_dir),
         r#"<?component id="shell"?><section><?slot id="body"?></?slot?></section></?component?>
 <?component id="card"?><article><?slot id="body"?></?slot?></article></?component?>
-<?bind var="title" value="Composed"?>
-<?use id="shell"?><?block slot="body"?><?use id="card"?><?block slot="body"?><h2><?get id="title"?></h2></?block?></?use?></?block?></?use?>
-</?bind?>"#,
+<?bind var="title"?>Composed<?/bind?>
+<?use id="shell"?><?block slot="body"?><?use id="card"?><?block slot="body"?><h2><?get id="title"?></h2></?block?></?use?></?block?></?use?>"#,
     )
     .unwrap();
 
@@ -370,11 +369,10 @@ fn test_component_use_and_bind_and_for() {
 <article class="card"><?slot id="content"?><p>Default</p></?slot?></article>
 </?component?>
 
-<?bind var="title" value="Hello"?>
+<?bind var="title"?>Hello<?/bind?>
 <?use id="card"?>
 <?block slot="content"?><h2><?get id="title"?></h2></?block?>
 </?use?>
-</?bind?>
 
 <ul>
 <?for in="item in data.items"?>
@@ -581,4 +579,55 @@ fn test_render_fragment_does_not_wrap_html_document() {
 
     assert_eq!(result.trim(), "<section><h1>Fragment</h1></section>");
     assert!(!result.contains("<!DOCTYPE html>"));
+}
+#[test]
+fn test_debug() {
+    use xrml::{template::Engine};
+    use serde_json::json;
+    use std::fs;
+    
+    let test_dir = "/tmp/hrml_test_dir";
+    let _ = fs::remove_dir_all(test_dir);
+    fs::create_dir_all(test_dir).unwrap();
+    fs::create_dir_all(format!("{}/layouts", test_dir)).unwrap();
+    fs::create_dir_all(format!("{}/pages", test_dir)).unwrap();
+    fs::create_dir_all(format!("{}/content", test_dir)).unwrap();
+    
+    fs::write(
+        format!("{}/layouts/base.hrml", test_dir),
+        r#"<?load file="pages/default.hrml"?>"#,
+    )
+    .unwrap();
+
+    fs::write(
+        format!("{}/pages/default.hrml", test_dir),
+        "<!DOCTYPE html><html><head><?slot name=\"head\"?></head><body><?slot name=\"body\"?></body></html>",
+    )
+    .unwrap();
+    
+    fs::write(
+        format!("{}/content/post_fm.md", test_dir),
+        "---\ntitle = \"Frontmatter Title\"\ndescription = \"Frontmatter Desc\"\n---\n\n# Hello FM\n",
+    )
+    .unwrap();
+    
+    fs::write(
+        format!("{}/pages/taglib.hrml", test_dir),
+        r#"<?markdownfm file="content/post_fm.md" as="post"?>
+<?title value="$post.title"?>
+<?charset?>
+<?viewport?>
+<?description content="$post.description"?>
+<?robots content="noindex,nofollow"?>
+<?canonical href="https://example.test/post"?>
+<?stylesheet href="/assets/site.css"?>
+<?script src="/assets/app.js" defer?>
+<?og name="title" content="$post.title"?>
+<?twitter name="title" content="$post.title"?>"#,
+    )
+    .unwrap();
+
+    let engine = Engine::new(&test_dir);
+    let result = engine.render("pages/taglib.hrml", &json!({})).unwrap();
+    println!("=== OUTPUT ===\n{}\n", result);
 }

@@ -1,6 +1,6 @@
 name = "imported_component_layout"
 type = "logic"
-hrml = '''
+xrml = '''
 <?load file="layouts/base.hrml"?>
 <?load file="_imports.hrml"?>
 
@@ -40,10 +40,10 @@ content = '''
 <?bind var="title"?>
 <?bind var="text"?>
 <?if cond="$href"?>
-<a href="<?get id="href"?>" class="card-link">
+<a href="$href" class="card-link">
     <div class="card">
         <?if cond="$icon"?>
-        <div class="card-icon"><svg class="icon-sm"><use href="#icon-<?get id="icon"?>"/></svg></div>
+        <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
         <?/if?>
         <?if cond="$title"?>
         <h3 class="card-title"><?get id="title"?></h3>

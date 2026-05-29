@@ -1,6 +1,6 @@
 <?component id="post-card"?>
 <?bind var="title"/?><?bind var="excerpt"/?><?bind var="date"/?><?bind var="slug"/?><?bind var="icon_name"/?>
-<a href="/blog/<?get id="slug"?>" class="card-link">
+<a href="/blog/$slug" class="card-link">
     <div class="card post-card">
         <div class="card-icon">
             <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

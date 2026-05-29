@@ -30,9 +30,9 @@
 
     <section class="section">
         <?load file="components/section-header.hrml"?>
-        <?bind var="label" value="Research Areas"/?>
-        <?bind var="title" value="Where theory meets implementation"/?>
-        <?bind var="subtitle" value="Practical applications of our research"/?>
+        <?bind var="label"?>Research Areas<?/bind?>
+        <?bind var="title"?>Where theory meets implementation<?/bind?>
+        <?bind var="subtitle"?>Practical applications of our research<?/bind?>
         
         <div class="grid-3">
             <a href="/product" class="card-link">

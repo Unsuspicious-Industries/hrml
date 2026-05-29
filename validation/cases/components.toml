@@ -1,6 +1,6 @@
 name = "components"
 type = "structure"
-hrml = '''
+xrml = '''
 <div>Components Fixture</div>
 '''
 expected = '''

@@ -1,8 +1,8 @@
 use crate::validation;
-use hrml::{assets, config::Config, project::Project, router};
 use std::fs;
 use std::io;
 use std::path::Path;
+use xrml::{assets, config::Config, project::Project, router};
 
 pub fn create_project(name: &str) -> io::Result<()> {
     let project_path = Path::new(name);
@@ -23,9 +23,9 @@ pub fn create_project(name: &str) -> io::Result<()> {
 }
 
 pub(crate) fn load_project_config(project_path: &Path) -> Result<Config, String> {
-    let config_path = project_path.join("hrml.toml");
+    let config_path = project_path.join("xrml.toml");
     if !config_path.exists() {
-        return Err(format!("No hrml.toml found in {}", project_path.display()));
+        return Err(format!("No xrml.toml found in {}", project_path.display()));
     }
 
     let content = fs::read_to_string(&config_path)
@@ -38,7 +38,7 @@ pub fn load_project(path: &Path) -> Result<Project, String> {
     let config = load_project_config(path)?;
     let templates_path = path.join(&config.templates_path);
 
-    let mut project = Project::new(config);
+    let mut project = Project::new(config).with_base_path(path);
     load_dir_into_project(&mut project, &templates_path, &templates_path)?;
 
     Ok(project)
@@ -52,7 +52,11 @@ fn load_dir_into_project(project: &mut Project, base: &Path, dir: &Path) -> Resu
 
         if path.is_dir() {
             load_dir_into_project(project, base, &path)?;
-        } else if path.extension().map(|e| e == "hrml").unwrap_or(false) {
+        } else if path
+            .extension()
+            .map(|e| e == "hrml" || e == "trml")
+            .unwrap_or(false)
+        {
             let rel_path = path
                 .strip_prefix(base)
                 .map_err(|e| e.to_string())?
@@ -67,7 +71,7 @@ fn load_dir_into_project(project: &mut Project, base: &Path, dir: &Path) -> Resu
 }
 
 pub(crate) fn validate_project(path: &Path) -> Result<(), String> {
-    let config_path = path.join("hrml.toml");
+    let config_path = path.join("xrml.toml");
     if !config_path.exists() {
         return Err(format!("File not found: {}", config_path.display()));
     }
@@ -75,12 +79,12 @@ pub(crate) fn validate_project(path: &Path) -> Result<(), String> {
     let content = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read {}: {}", config_path.display(), e))?;
     let config =
-        Config::from_toml(&content).map_err(|e| format!("Failed to load hrml.toml: {}", e))?;
+        Config::from_toml(&content).map_err(|e| format!("Failed to load xrml.toml: {}", e))?;
 
     let templates_path = path.join(&config.templates_path);
     if !templates_path.exists() {
         return Err(format!(
-            "Templates directory not found: {}\nCreate it or update hrml.toml",
+            "Templates directory not found: {}\nCreate it or update xrml.toml",
             templates_path.display()
         ));
     }
@@ -136,7 +140,7 @@ pub fn check_project(path: &Path) -> Result<(), String> {
         println!("  {} -> {} ({:?})", route.path, route.template, route.kind);
     }
 
-    let mut project = Project::new(config);
+    let mut project = Project::new(config).with_base_path(path);
     load_dir_into_project(&mut project, &templates_path, &templates_path)?;
     project.parse_all().map_err(|e| e.to_string())?;
 
@@ -203,7 +207,7 @@ fn setup_project_files(project_path: &Path, config: &Config) -> io::Result<()> {
     fs::create_dir_all(project_path.join(&config.static_path).join("js"))?;
     fs::create_dir_all(project_path.join(&config.static_path).join("images"))?;
 
-    let config_path = project_path.join("hrml.toml");
+    let config_path = project_path.join("xrml.toml");
     if !config_path.exists() {
         fs::write(&config_path, assets::default_config(&config.site_name))?;
     }

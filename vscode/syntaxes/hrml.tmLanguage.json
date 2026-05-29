@@ -11,7 +11,7 @@
       "patterns": [
         {
           "name": "meta.tag.template.hrml",
-          "begin": "(<\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then|pure|mdx|markdown|markdownfm|latex|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|wasm)\\b",
+          "begin": "(<\\?)(data|field|filter|item|items|list|load|map|record|slice|sort|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then|pure|mdx|markdown|markdownfm|latex|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|wasm)\\b",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.hrml" },
             "2": { "name": "entity.name.tag.hrml" }
@@ -23,7 +23,7 @@
           "patterns": [
             {
               "name": "entity.other.attribute-name.hrml",
-              "match": "\\b(file|id|as|cond|in|item|index|endpoint|method|cache|target|swap|post|get|scoped|global|slot|var|value|from|op|mode|formula|content|href|src|name|export|start|module|props|class|defer)\\b"
+              "match": "\\b(by|count|data|file|from|id|as|cond|in|item|index|endpoint|method|order|over|cache|start|target|swap|post|get|scoped|global|slot|var|value|op|mode|formula|content|href|src|name|export|start|module|props|class|defer|where)\\b"
             },
             {
               "name": "string.quoted.double.hrml",

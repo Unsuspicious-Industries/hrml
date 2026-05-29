@@ -4,7 +4,7 @@ use super::shared::TestEnv;
 fn parser_does_not_hang_on_long_searches() {
     let env = TestEnv::new("parser_long_search");
     let long_body: String = std::iter::repeat('a').take(800).collect();
-    let content = format!("<?bind var=\"name\" value=\"x\"/?>{}", long_body);
+    let content = format!("<?bind var=\"name\"?>x<?/bind?>{}", long_body);
     env.write("pages/test.hrml", &content);
 
     let out = env.render("pages/test.hrml");
@@ -18,7 +18,7 @@ fn nested_components_bind_and_slots() {
         "pages/test.hrml",
         r#"<?component id="shell"?><section><?slot id="body"?></?slot?></section></?component?>
 <?component id="card"?><article><?slot id="body"?></?slot?></article></?component?>
-<?bind var="title" value="Nested"/?>
+<?bind var="title"?>Nested<?/bind?>
 <?use id="shell"?><?block slot="body"?><?use id="card"?><?block slot="body"?><h2><?get id="title"?></h2></?block?></?use?></?block?></?use?>"#,
     );
     let out = env.render("pages/test.hrml").unwrap();

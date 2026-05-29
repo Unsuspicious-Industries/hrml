@@ -20,6 +20,101 @@ pub fn render_markdown_with_frontmatter(source: &str) -> (Value, String) {
     (meta, render_markdown(body))
 }
 
+fn escape_attr(input: &str) -> String {
+    input
+        .replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+fn unescape_html(text: &str) -> String {
+    text.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&#39;", "'")
+        .replace("&quot;", "\"")
+}
+
+fn render_latex_inline(formula: &str) -> String {
+    format!(
+        r#"<span class="math-inline" data-math="{}">\({}\)</span>"#,
+        escape_attr(formula),
+        formula
+    )
+}
+
+fn render_latex_block(formula: &str) -> String {
+    format!(
+        r#"<div class="math-block" data-math="{}">\[{}\]</div>"#,
+        escape_attr(formula),
+        formula
+    )
+}
+
+fn protect_math(source: &str) -> (String, Vec<(String, String)>) {
+    let mut out = String::new();
+    let mut blocks = Vec::new();
+    let mut i = 0;
+    let bytes = source.as_bytes();
+
+    while i < bytes.len() {
+        if i + 1 < bytes.len() && bytes[i] == b'$' && bytes[i + 1] == b'$' {
+            let start = i + 2;
+            if let Some(end_rel) = source[start..].find("$$") {
+                let expr = &source[start..start + end_rel];
+                let placeholder = format!("\x01MATH_B_{}\x01", blocks.len());
+                let clean = unescape_html(expr);
+                blocks.push((placeholder.clone(), clean));
+                out.push_str(&placeholder);
+                i = start + end_rel + 2;
+                continue;
+            }
+        }
+        if bytes[i] == b'$' {
+            let start = i + 1;
+            if let Some(end_rel) = source[start..].find('$') {
+                let expr = &source[start..start + end_rel];
+                let placeholder = format!("\x01MATH_I_{}\x01", blocks.len());
+                let clean = unescape_html(expr);
+                blocks.push((placeholder.clone(), clean));
+                out.push_str(&placeholder);
+                i = start + end_rel + 1;
+                continue;
+            }
+        }
+
+        let ch = source[i..].chars().next().unwrap_or('\u{FFFD}');
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+
+    (out, blocks)
+}
+
+fn restore_math(html: &str, blocks: &[(String, String)]) -> String {
+    let mut result = html.to_string();
+    for (placeholder, expr) in blocks {
+        let replacement = if placeholder.contains("MATH_B_") {
+            render_latex_block(expr)
+        } else {
+            render_latex_inline(expr)
+        };
+        result = result.replace(placeholder, &replacement);
+    }
+    result
+}
+
+pub fn render_mdx_with_math(source: &str) -> (Value, String) {
+    let (frontmatter, body) = split_frontmatter(source);
+    let meta = parse_frontmatter(frontmatter);
+
+    let (protected, math_blocks) = protect_math(body);
+    let html = render_markdown(&protected);
+    let result = restore_math(&html, &math_blocks);
+
+    (meta, result)
+}
+
 fn split_frontmatter(source: &str) -> (&str, &str) {
     let body_start = if source.starts_with("---\r\n") {
         5

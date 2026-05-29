@@ -76,7 +76,7 @@
         <?/if?>
         <?/if?>
         
-        <slot id="content"?>
+        <?slot id="content"?>
     </main>
     
     <?use id="footer-cmp"?>

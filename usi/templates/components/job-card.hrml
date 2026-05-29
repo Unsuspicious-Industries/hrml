@@ -10,8 +10,8 @@
     <?if cond="$subtitle"?><p class="job-card-subtitle"><?get id="subtitle"?></p><?/if?>
     <?if cond="$excerpt"?><p class="job-card-text"><?get id="excerpt"?></p><?/if?>
     <div class="job-card-actions">
-        <?if cond="$href"?><a href="<?get id="href"?>" class="btn btn-primary">Full brief</a><?/if?>
-        <?if cond="$applyUrl"?><a href="<?get id="applyUrl"?>" class="btn btn-secondary">Apply</a><?/if?>
+        <?if cond="$href"?><a href="$href" class="btn btn-primary">Full brief</a><?/if?>
+        <?if cond="$applyUrl"?><a href="$applyUrl" class="btn btn-secondary">Apply</a><?/if?>
     </div>
 </article>
 <?/component?>

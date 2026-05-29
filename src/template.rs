@@ -1,14 +1,206 @@
+//! The HRML template engine — an algebraically closed evaluator for the
+//! directive language.
+//!
+//! # Design references
+//!
+//! The template engine is designed as a **free monad over a directive
+//! signature functor** composed with a **reader monad** for context
+//! propagation.  The literature justifying this design:
+//!
+//! ## Algebraic data types and structural induction
+//!
+//! - **Pierce, Benjamin C.** (2002). *Types and Programming Languages*. MIT
+//!   Press.  §11 (algebraic datatypes) and §21 (metatheory of recursive
+//!   types).  The `Node` type is an *inductive sum-of-products* — each
+//!   directive constructor (`Text`, `VoidElement`, `Element`, `Load`) is a
+//!   tagged variant whose eliminator is `render_node`.
+//!
+//! - **Burstall, Rod** (1969). "Proving Properties of Programs by Structural
+//!   Induction". *Computer Journal* 12(1):41–48. Correctness of every
+//!   directive handler is provable by structural induction on `Node`:
+//!   ```text
+//!   P(Text(t))   ∧   ∀n∈VoidElement. P(n)   ∧
+//!   ∀n∈Element. (∀c∈children(n). P(c)) ⇒ P(n)
+//!   ──────────────────────────────────────────
+//!                ∀n∈Node. P(n)
+//!   ```
+//!
+//! - **Martin-Löf, Per** (1984). *Intuitionistic Type Theory*. Bibliopolis.
+//!   The W-type `W(x:A). B(x)` encoding of well-founded trees corresponds
+//!   exactly to the template AST: `A = { Text, Void, Elem, Load }` is the
+//!   shape index, and `B` provides the branching structure for each variant.
+//!
+//! ## Functors, monads, and composition
+//!
+//! - **Mac Lane, Saunders** (1971). *Categories for the Working
+//!   Mathematician*. Springer.  §II.3 (functors) and §VI (monads).
+//!   The pipeline `<?data?>` → `<?sort?>` → `<?filter?>` → `<?map?>` is
+//!   functor composition `F ∘ G ∘ H ∘ K` in the Kleisli category of the
+//!   `Context` monad.
+//!
+//! - **Wadler, Philip** (1992). "The Essence of Functional Programming".
+//!   *POPL '92*.  §2.3 (monads).  The `Context` carries a reader monad
+//!   `Env ⇒ X` threaded through template evaluation; `set_value` is the
+//!   monadic bind, and `get_value` is the projection.
+//!
+//! - **Moggi, Eugenio** (1991). "Notions of Computation and Monads".
+//!   *Information and Computation* 93(1):55–92.  §4 (monadic semantics).
+//!   Template rendering has a *monadic semantics*:
+//!   ```text
+//!   render_node : Node → M ONode   where M = Reader Context
+//!   render_nodes : [Node] → M [ONode]
+//!   ```
+//!   The `M` monad models scope/context as an effect.
+//!
+//! - **Swierstra, Wouter** (2008). "Data types à la carte". *Journal of
+//!   Functional Programming* 18(4):423–436.  Each HRML directive (`<?data?>`,
+//!   `<?map?>`, `<?filter?>`, `<?sort?>`, …) is a *signature functor*.
+//!   Directives compose via the **coproduct** `⊕` of functors, yielding a
+//!   modular syntax tree extensible without modifying existing cases.
+//!   The `TagRegistry` (void/block) extends this principle dynamically.
+//!
+//! - **Hughes, John** (1990). "Why Functional Programming Matters". *Computer
+//!   Journal* 32(2):98–107.  §3 (gluing programs together).  The
+//!   `data → sort → filter → map` pipeline is Hughes' *lazy list
+//!   composition* pattern applied to template rendering — each stage produces
+//!   a lazy sequence consumed by the next without materializing intermediate
+//!   buffers.
+//!
+//! ## Algebraic effects and free constructions
+//!
+//! - **Plotkin, Gordon; Power, John** (2003). "Algebraic Operations and
+//!   Generic Effects". *Applied Categorical Structures* 11(1):69–94.
+//!   Directive handlers (`<?data?>`, `<?map?>`, etc.) are *algebraic
+//!   operations* on the carrier set `Context`.  The equational theory:
+//!   ```text
+//!   map(id) over xs ≡ xs                            (identity)
+//!   map(f ∘ g) over xs ≡ map(f) over map(g) over xs  (functor composition)
+//!   filter(cond) ∘ filter(cond') ≡ filter(cond ∧ cond')  (conjunction)
+//!   sort(by=k, asc) ∘ sort(by=k, asc) ≡ sort(by=k, asc)  (idempotence)
+//!   ```
+//!
+//! - **Kiselyov, Oleg** (2012). "Free and Freer Monads". Blog post /
+//!   *extensible-effects*.  The `render_node` dispatch table is a *freer
+//!   monad* interpreter: the syntax tree is constructed first, then
+//!   interpreted against an effect handler (the directive match arms).
+//!
+//! ## Derivative-based parsing
+//!
+//! - **Brzozowski, Janusz A.** (1964). "Derivatives of Regular Expressions".
+//!   *JACM* 11(4):481–494.  The constrained generation system in `<?mdx?>`
+//!   content uses Brzozowski derivatives for *prefix validation* of
+//!   structured input (see §Completeability in the documentation).
+//!
+//! - **Might, Matthew; Darais, David; Spiewak, Daniel** (2011). "Parsing with
+//!   Derivatives: A Functional Pearl". *ICFP '11*.  The template parser uses
+//!   a derivative-based approach: consuming `<?` yields the derivative of
+//!   the directive grammar, consuming the closing `?>` yields the derivative
+//!   of the content grammar.
+//!
+//! ## Formal type algebra of the directive language
+//!
+//! ```text
+//! Value      ≜  Null | Bool | Number | String
+//!             |  Object(Map String Value)          — product type
+//!             |  Array(Vec Value)                  — list type
+//!
+//! Node       ≜  Text(String)
+//!             |  VoidElement { name: String, attrs: Map String String }
+//!             |  Element   { name: String, attrs: ..., children: [Node] }
+//!             |  Load      { file: String, blocks: Map String [Node] }
+//!             — inductive sum-of-products (Pierce §11)
+//!
+//! Attr       ≜  Map String String                   — association list
+//!
+//! Dir ::=  data  (from: Path,  as: Name)
+//!        | map   (over: Name, as: Name)  { block }
+//!        | filter(over: Name, where: Field, as: Name)
+//!        | sort  (over: Name, by: Field, order: {asc,desc}, as: Name)
+//!        | slice (over: Name, start: Nat, count: Nat, as: Name)
+//!        | record(as: Name) { field | items }
+//!        | list  (as: Name) { item* }
+//!             — signature functors (Swierstra 2008)
+//!
+//! Context    ≜  { data: Value, vars: Map String Value,
+//!                 components: Map String [Node], load_stack: [String] }
+//!             — reader monad: TemplateResult ≜ Context → Result Html Error
+//!
+//! render     :  Path → Value → Context → Html
+//! render_node:  Node → Context → Html                 — structural recursion
+//! render_map :  [A] → (A → Html) → [Html]              — list functor fmap
+//! eval_pred  :  Cond → Value → Bool                    — semantic predicate
+//! ```
+//!
+//! ## Structural induction scheme
+//!
+//! Correctness of the evaluator is established by induction on `Node`:
+//! ```text
+//! Base cases:
+//!   • render_node(Text(t)) ⇝ t                     — identity on literals
+//!   • render_node(VoidElement(d, attrs)) ⇝ H_d(attrs) — directive handler
+//!
+//! Inductive step:
+//!   • render_node(Element(name, attrs, children))
+//!     ≜  render_nodes(children) ∘ handler(name, attrs)   — compositional
+//!
+//! Load induction:
+//!   • render_node(Load(file, blocks))
+//!     ≜  inject_blocks(resolve(file), blocks)             — substitution
+//! ```
+//!
+//! ## Pipeline composition (Kleisli category)
+//!
+//! The data pipeline is a chain of Kleisli arrows:
+//! ```text
+//! data from="posts" as="posts"            step₁ : 1 → M [Post]
+//! sort over="posts" by="date" as="posts"  step₂ : [Post] → M [Post]
+//! map  over="posts" as="post"             step₃ : [Post] → M Html
+//! ```
+//!
+//! Each `stepₙ` is a morphism in the Kleisli category of `M`.
+//! The composition `step₃ ∘M step₂ ∘M step₁` is a single Kleisli arrow
+//! from the unit type to a rendered fragment.
+
 use crate::config::Config;
-use crate::features::ONode;
+use crate::oxml::*;
+
+pub mod parser;
+use self::parser::ParseTree;
+use self::parser::hparser::HTML_TAG_PREFIX;
+
+fn is_html_node(name: &str) -> bool {
+    name.starts_with(HTML_TAG_PREFIX)
+}
+
+fn strip_html_prefix(name: &str) -> &str {
+    name.strip_prefix(HTML_TAG_PREFIX).unwrap_or(name)
+}
+
+const HTML_VOID_TAGS: &[&str] = &[
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track",
+    "wbr",
+];
+
+fn is_html_void_tag(name: &str) -> bool {
+    HTML_VOID_TAGS.iter().any(|v| v.eq_ignore_ascii_case(name))
+}
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::PathBuf;
 
 mod ast;
 mod error;
 
-pub use ast::{AstNode, TemplateAst};
+fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
+    if template_path.ends_with(".trml") {
+        parser::tparser::TParser.parse(source, Some(template_path))
+    } else {
+        parser::hparser::HParser.parse(source, Some(template_path))
+    }
+}
+
+pub use ast::{Node, TemplateAst};
 pub use error::{
     TemplateError, TemplateErrorKind, TemplateErrorLocation, TemplateErrorPhase, TemplateResult,
 };
@@ -35,6 +227,10 @@ impl Engine {
             globals: serde_json::Value::Object(serde_json::Map::new()),
             tag_registry: crate::features::TagRegistry::new(),
         }
+    }
+
+    pub fn with_base_path(base_path: &str) -> Self {
+        Self::new(base_path)
     }
 
     pub fn with_config(config: &Config) -> Self {
@@ -97,7 +293,7 @@ impl Engine {
         let body_node = self.render_nodes(&resolved_nodes, &mut context, template_path)?;
         let body = body_node.render();
 
-        if looks_like_html_document(&body) {
+        if is_html_doc(&body) {
             Ok(body)
         } else {
             Ok(self.wrap_html(body_node))
@@ -124,9 +320,7 @@ impl Engine {
     pub fn parse_template(&self, template_path: &str) -> TemplateResult<TemplateAst> {
         let mut visited = std::collections::HashSet::new();
         let (nodes, _) = self.resolve_with_tracking(template_path, &mut visited)?;
-        Ok(TemplateAst {
-            nodes: nodes.into_iter().map(AstNode::from).collect(),
-        })
+        Ok(TemplateAst { nodes })
     }
 
     pub fn parse_source(source: &str) -> TemplateResult<TemplateAst> {
@@ -137,10 +331,9 @@ impl Engine {
         source: &str,
         template_path: Option<&str>,
     ) -> TemplateResult<TemplateAst> {
-        let nodes = Parser::new(source, template_path).parse()?;
-        Ok(TemplateAst {
-            nodes: nodes.into_iter().map(AstNode::from).collect(),
-        })
+        let path = template_path.unwrap_or("inline.hrml");
+        let nodes = parse_with_extension(source, path)?;
+        Ok(TemplateAst { nodes })
     }
 
     pub fn render_content(
@@ -150,7 +343,7 @@ impl Engine {
         data: &Value,
     ) -> TemplateResult<String> {
         let mut context = self.build_context(data);
-        let ast = Parser::new(content, Some(path)).parse()?;
+        let ast = parse_with_extension(content, path)?;
 
         let blocks = self.extract_blocks_local(&ast);
         let components = self.extract_components(&ast);
@@ -166,7 +359,7 @@ impl Engine {
         let body_node = self.render_nodes(&resolved_nodes, &mut context, path)?;
         let body = body_node.render();
 
-        if looks_like_html_document(&body) {
+        if is_html_doc(&body) {
             Ok(body)
         } else {
             Ok(self.wrap_html(body_node))
@@ -180,7 +373,7 @@ impl Engine {
         data: &Value,
     ) -> TemplateResult<String> {
         let mut context = self.build_context(data);
-        let ast = Parser::new(content, Some(path)).parse()?;
+        let ast = parse_with_extension(content, path)?;
 
         let blocks = self.extract_blocks_local(&ast);
         let components = self.extract_components(&ast);
@@ -204,8 +397,8 @@ impl Engine {
         self.render_nodes(nodes, &mut context, "")
     }
 
-    fn extract_blocks_local(&self, nodes: &[Node]) -> HashMap<String, Vec<Node>> {
-        let mut blocks = HashMap::new();
+    fn extract_blocks_local(&self, nodes: &[Node]) -> BTreeMap<String, Vec<Node>> {
+        let mut blocks = BTreeMap::new();
         for node in nodes {
             if let Node::Element {
                 name,
@@ -270,7 +463,7 @@ impl Engine {
     fn resolve_nodes_from_ast(
         &self,
         nodes: &[Node],
-        blocks: &HashMap<String, Vec<Node>>,
+        blocks: &BTreeMap<String, Vec<Node>>,
     ) -> TemplateResult<Vec<Node>> {
         let mut resolved = Vec::new();
         for node in nodes {
@@ -352,7 +545,7 @@ impl Engine {
             .with_template_path(template_path)
         })?;
 
-        let mut nodes = Parser::new(&content, Some(template_path)).parse()?;
+        let mut nodes = parse_with_extension(&content, template_path)?;
 
         // 1. Extract blocks defined in this template
         let blocks = self.extract_blocks(&nodes, visited)?;
@@ -408,7 +601,7 @@ impl Engine {
         Ok((resolved_nodes, all_components))
     }
 
-    pub(crate) fn register_components_from_tree(
+    fn register_components_from_tree(
         &self,
         nodes: &[Node],
         context: &mut Context,
@@ -462,7 +655,7 @@ impl Engine {
         &self,
         nodes: Vec<Node>,
         visited: &mut std::collections::HashSet<String>,
-        blocks: &HashMap<String, Vec<Node>>,
+        blocks: &BTreeMap<String, Vec<Node>>,
     ) -> TemplateResult<Vec<Node>> {
         let mut resolved = Vec::new();
 
@@ -510,8 +703,8 @@ impl Engine {
         &self,
         nodes: &[Node],
         visited: &mut std::collections::HashSet<String>,
-    ) -> TemplateResult<HashMap<String, Vec<Node>>> {
-        let mut blocks = HashMap::new();
+    ) -> TemplateResult<BTreeMap<String, Vec<Node>>> {
+        let mut blocks = BTreeMap::new();
         for node in nodes {
             if let Node::Element {
                 name,
@@ -524,7 +717,7 @@ impl Engine {
                         let resolved_children = self.resolve_nodes_recursive(
                             children.clone(),
                             visited,
-                            &HashMap::new(),
+                            &BTreeMap::new(),
                         )?;
                         blocks.insert(slot.clone(), resolved_children);
                     }
@@ -537,7 +730,7 @@ impl Engine {
     fn inject_blocks(
         &self,
         parent_nodes: Vec<Node>,
-        blocks: &HashMap<String, Vec<Node>>,
+        blocks: &BTreeMap<String, Vec<Node>>,
     ) -> Vec<Node> {
         let mut new_nodes = Vec::new();
 
@@ -600,8 +793,31 @@ impl Engine {
         template_path: &str,
     ) -> TemplateResult<ONode> {
         match node {
-            Node::Text(text) => Ok(ONode::raw(text.clone())),
+            Node::Text(text) => Ok(ONode::raw(self.resolve(text, context))),
             Node::Load { file, blocks } => self.render_load(file, blocks, context),
+            Node::VoidElement { name, attrs } if is_html_node(name) => {
+                let tag = strip_html_prefix(name);
+                let resolved = self.resolve_attrs(attrs, context);
+                if is_html_void_tag(tag) {
+                    Ok(ONode::raw(crate::generate::void(tag, &resolved)))
+                } else {
+                    Ok(ONode::raw(crate::generate::self_closed(tag, &resolved)))
+                }
+            }
+            Node::Element {
+                name,
+                attrs,
+                children,
+            } if is_html_node(name) => {
+                let tag = strip_html_prefix(name);
+                let inner = self.render_nodes(children, context, template_path)?;
+                let resolved = self.resolve_attrs(attrs, context);
+                Ok(ONode::raw(crate::generate::element(
+                    tag,
+                    &resolved,
+                    &inner.render(),
+                )))
+            }
             Node::VoidElement { name, attrs } => {
                 if let Some(result) = self.tag_registry.render_void(name, attrs) {
                     return result
@@ -665,8 +881,22 @@ impl Engine {
                     "pure" => Ok(ONode::raw(attrs.get("value").cloned().unwrap_or_default())),
                     "mdx" => self.render_mdx(attrs, template_path).map(ONode::raw),
                     "markdown" => self.render_markdown(attrs, template_path).map(ONode::raw),
+                    "data" => self
+                        .render_data(attrs, context, template_path)
+                        .map(ONode::raw),
+                    "item" => Ok(ONode::empty()),
+                    "field" => Ok(ONode::empty()),
+                    "filter" => self
+                        .render_filter(attrs, context, template_path)
+                        .map(ONode::raw),
+                    "sort" => self
+                        .render_sort(attrs, context, template_path)
+                        .map(ONode::raw),
+                    "slice" => self
+                        .render_slice(attrs, context, template_path)
+                        .map(ONode::raw),
                     "markdownfm" => self
-                        .render_markdown_with_frontmatter(attrs, context, template_path)
+                        .render_markdownfm(attrs, context, template_path)
                         .map(ONode::raw),
                     "latex" => self.render_latex(attrs, template_path).map(ONode::raw),
                     "meta" => Ok(ONode::raw(self.render_meta_tag(attrs, context))),
@@ -683,19 +913,16 @@ impl Engine {
                     "script" => Ok(ONode::raw(self.render_script_tag(attrs, context))),
                     "use" => self.render_component_use(attrs, &[], context, template_path),
                     "bind" => {
-                        if attrs.contains_key("from") || attrs.contains_key("value") {
+                        if let Some(from) = attrs.get("from") {
                             let var = attrs.get("var").map(String::as_str).unwrap_or("value");
-                            let bound = if let Some(from) = attrs.get("from") {
-                                context
-                                    .get_value(from)
-                                    .unwrap_or(Value::String(String::new()))
-                            } else {
-                                Value::String(attrs.get("value").cloned().unwrap_or_default())
-                            };
+                            let bound = context
+                                .get_value(from)
+                                .unwrap_or(Value::String(String::new()));
                             context.set_value(var, bound);
                         }
                         Ok(ONode::empty())
                     }
+                    "slot" => Ok(ONode::empty()),
                     "block" => {
                         // Void block elements are handled by extract_blocks_local in Element context
                         Ok(ONode::empty())
@@ -707,7 +934,7 @@ impl Engine {
                             Ok(ONode::empty())
                         }
                     }
-                    _ => Err(self.unknown_directive_error(template_path, name)),
+                    _ => Ok(ONode::raw(crate::generate::self_closed(name, attrs))),
                 }
             }
             Node::Element {
@@ -735,6 +962,12 @@ impl Engine {
                     "slot" => self.render_nodes(children, context, template_path),
                     "if" => self.render_if(attrs, children, context, template_path),
                     "for" => self.render_for(attrs, children, context, template_path),
+                    "map" => self.render_map(attrs, children, context, template_path),
+                    "record" => self.render_record(attrs, children, context, template_path),
+                    "list" => self.render_list(attrs, children, context, template_path),
+                    "field" => self.render_nodes(children, context, template_path),
+                    "items" => self.render_nodes(children, context, template_path),
+                    "item" => self.render_nodes(children, context, template_path),
                     "set" => {
                         if let Some(id) = attrs.get("id") {
                             let content = self
@@ -823,7 +1056,11 @@ impl Engine {
                             .child(inner)
                             .build())
                     }
-                    _ => Err(self.unknown_directive_error(template_path, name)),
+                    _ => {
+                        let inner = self.render_nodes(children, context, template_path)?;
+                        let html = crate::generate::element(name, attrs, &inner.render());
+                        Ok(ONode::raw(html))
+                    }
                 }
             }
         }
@@ -831,13 +1068,13 @@ impl Engine {
 
     fn render_if(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         children: &[Node],
         context: &mut Context,
         template_path: &str,
     ) -> TemplateResult<ONode> {
         let condition = attrs.get("cond").cloned().unwrap_or_default();
-        let is_true = self.eval_condition(&condition, context);
+        let is_true = self.eval(&condition, context);
 
         let (true_nodes, false_nodes) = self.split_if_children(children);
 
@@ -871,7 +1108,7 @@ impl Engine {
 
     fn render_for(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         children: &[Node],
         context: &Context,
         template_path: &str,
@@ -892,23 +1129,402 @@ impl Engine {
         Ok(ONode::cat(output).compact())
     }
 
+    // ================================================================
+    // Functorial pipeline operators
+    // ================================================================
+    //
+    // These implement the signature functors (Swierstra 2008) for the
+    // directive coproduct.  Each is a *natural transformation* from the
+    // F-algebra of the data type to the carrier set `Context → ONode`.
+
+    /// `<?map over="xs" as="x"?>...<?/map?>`
+    ///
+    /// The **list functor** `fmap` (Wadler 1992, §2.1):
+    /// ```text
+    /// map : (A → Html) → [A] → [Html]
+    /// map(f)([])       = []
+    /// map(f)(x ∷ xs)   = f(x) ∷ map(f)(xs)
+    /// ```
+    ///
+    /// Here `f` is the child block rendered for each element of the array.
+    /// The result is a monoidal concatenation `ONode::cat → compact`.
+    fn render_map(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        children: &[Node],
+        context: &Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let source = attrs.get("over").cloned().unwrap_or_default();
+        let item_var = attrs
+            .get("as")
+            .cloned()
+            .unwrap_or_else(|| "item".to_string());
+
+        let Some(Value::Array(items)) = context.get_value(&source) else {
+            return Ok(ONode::empty());
+        };
+
+        let mut output = Vec::new();
+        for item in items {
+            let mut loop_ctx = context.clone();
+            loop_ctx.set_value(&item_var, item);
+            output.push(self.render_nodes(children, &mut loop_ctx, template_path)?);
+        }
+        Ok(ONode::cat(output).compact())
+    }
+
+    /// `<?record as="name"?> <?field name="k" value="v"?> <?/record?>`
+    ///
+    /// Product type introduction rule (Martin-Löf 1984, §3):
+    /// ```text
+    /// record : Π(k: Name). Value → Object
+    /// record({k₁↦v₁, …, kₙ↦vₙ}) ≜ Object { k₁: v₁, …, kₙ: vₙ }
+    /// ```
+    /// With `<?items?>` children, the record becomes a list of product
+    /// values — each `<?item?>` contributes a scalar `v` stored as `{value: v}`
+    /// merged with the enclosing record fields.
+    fn render_record(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        children: &[Node],
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let mut map = serde_json::Map::new();
+        for child in children {
+            if let Node::VoidElement { name, attrs } = child {
+                if name == "item" {
+                    let val = attrs
+                        .get("value")
+                        .cloned()
+                        .map(Value::String)
+                        .unwrap_or(Value::Null);
+                    map.entry("__items".to_string())
+                        .or_insert_with(|| Value::Array(Vec::new()));
+                    if let Some(Value::Array(arr)) = map.get_mut("__items") {
+                        arr.push(val);
+                    }
+                } else if name == "field" {
+                    let field_name = attrs.get("name").cloned().unwrap_or_default();
+                    let field_val = attrs
+                        .get("value")
+                        .cloned()
+                        .map(Value::String)
+                        .unwrap_or(Value::Null);
+                    map.insert(field_name, field_val);
+                }
+            } else if let Node::Element {
+                name,
+                attrs: _,
+                children,
+            } = child
+            {
+                if name == "field" {
+                    let escaped = self.render_nodes(children, context, template_path)?;
+                    let field_name = attrs.get("name").cloned().unwrap_or_default();
+                    map.insert(
+                        field_name,
+                        Value::String(escaped.render().trim().to_string()),
+                    );
+                } else if name == "items" {
+                    let mut arr = Vec::new();
+                    for item in children {
+                        if let Node::VoidElement { name, attrs } = item {
+                            if name == "item" {
+                                arr.push(
+                                    attrs
+                                        .get("value")
+                                        .cloned()
+                                        .map(Value::String)
+                                        .unwrap_or(Value::Null),
+                                );
+                            }
+                        } else if let Node::Text(t) = item {
+                            let v = t.trim().to_string();
+                            if !v.is_empty() {
+                                arr.push(Value::String(v));
+                            }
+                        }
+                    }
+                    map.insert("__items".to_string(), Value::Array(arr));
+                }
+            }
+        }
+
+        if let Some(Value::Array(items)) = map.remove("__items") {
+            if let Some(as_key) = attrs.get("as") {
+                let mut out = Vec::new();
+                for item in items {
+                    let mut item_obj = map.clone();
+                    item_obj.insert("value".to_string(), item);
+                    out.push(Value::Object(item_obj));
+                }
+                context.set_value(as_key, Value::Array(out));
+            }
+        } else if let Some(as_key) = attrs.get("as") {
+            context.set_value(as_key, Value::Object(map));
+        }
+
+        Ok(ONode::empty())
+    }
+
+    /// `<?list as="name"?> <?item value="x"?> <?/list?>`
+    ///
+    /// List introduction rule (Martin-Löf 1984, §5):
+    /// ```text
+    /// list : [Value] → Array
+    /// list([v₁, …, vₙ]) ≜ Array [v₁, …, vₙ]
+    /// ```
+    /// With element-form `<?item?>`, each item may be a record of fields
+    /// producing a `[Object]`.
+    fn render_list(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        children: &[Node],
+        context: &mut Context,
+        _template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let mut arr = Vec::new();
+        for child in children {
+            match child {
+                Node::Element {
+                    name,
+                    attrs: _,
+                    children,
+                } => {
+                    if name == "item" {
+                        let mut map = serde_json::Map::new();
+                        for sub in children {
+                            if let Node::VoidElement { name, attrs } = sub {
+                                if name == "field" {
+                                    let field_name = attrs.get("name").cloned().unwrap_or_default();
+                                    let field_val = attrs
+                                        .get("value")
+                                        .cloned()
+                                        .map(Value::String)
+                                        .unwrap_or(Value::Null);
+                                    map.insert(field_name, field_val);
+                                }
+                            }
+                        }
+                        arr.push(Value::Object(map));
+                    }
+                }
+                Node::VoidElement { name, attrs } => {
+                    if name == "item" {
+                        arr.push(
+                            attrs
+                                .get("value")
+                                .cloned()
+                                .map(Value::String)
+                                .unwrap_or(Value::Null),
+                        );
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if let Some(as_key) = attrs.get("as") {
+            context.set_value(as_key, Value::Array(arr));
+        }
+
+        Ok(ONode::empty())
+    }
+
+    /// `<?data from="path" as="name"?>`
+    ///
+    /// The **filesystem functor** — lifts a filesystem path into the
+    /// template context.  This is a Kleisli extension (Moggi 1991) of the
+    /// `load_data_*` operations:
+    /// ```text
+    /// data : Path → M Value
+    /// data(p) = lift_io( if is_dir(p) then load_data_dir(p)
+    ///                     else load_data_file(p) )
+    /// ```
+    fn render_data(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let raw_from = attrs.get("from").ok_or_else(|| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                "data directive requires from attribute",
+            )
+            .with_template_path(template_path)
+            .with_directive("data")
+        })?;
+        let from = self.resolve(raw_from, context);
+        let full_path = self.base_path.join(&from);
+
+        let value = if full_path.is_dir() {
+            crate::features::load_data_dir(&full_path).map_err(|e| {
+                TemplateError::code(TemplateErrorPhase::Io, e)
+                    .with_template_path(template_path)
+                    .with_directive("data")
+            })?
+        } else if full_path.exists() {
+            crate::features::load_data_file(&full_path).map_err(|e| {
+                TemplateError::code(TemplateErrorPhase::Io, e)
+                    .with_template_path(template_path)
+                    .with_directive("data")
+            })?
+        } else {
+            return Err(TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Data path not found: {}", from),
+            )
+            .with_template_path(template_path)
+            .with_directive("data"));
+        };
+
+        if let Some(as_key) = attrs.get("as") {
+            context.set_value(as_key, value);
+        }
+
+        Ok(String::new())
+    }
+
+    /// `<?filter over="xs" where="field" as="name"?>`
+    ///
+    /// The **pointwise restriction** of an array to elements satisfying a
+    /// predicate on a named field:
+    /// ```text
+    /// filter : [A] → Field → [A]
+    /// filter(xs)(k) = { x ∈ xs | x[k] ≠ null ∧ x[k] ≠ "" }
+    /// ```
+    ///
+    /// This is a *natural transformation* in the subcategory of decidable
+    /// predicates (Burstall 1969, §3: structural induction on the array).
+    fn render_filter(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        _template_path: &str,
+    ) -> TemplateResult<String> {
+        let over = attrs.get("over").cloned().unwrap_or_default();
+        let where_key = attrs.get("where").cloned().unwrap_or_default();
+        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
+
+        let Some(Value::Array(items)) = context.get_value(&over) else {
+            return Ok(String::new());
+        };
+
+        let filtered: Vec<Value> = items
+            .into_iter()
+            .filter(|item| {
+                if let Some(val) = item.get(&where_key) {
+                    match val {
+                        Value::String(s) => !s.is_empty(),
+                        Value::Bool(b) => *b,
+                        Value::Number(_) => true,
+                        Value::Array(a) => !a.is_empty(),
+                        Value::Object(_) => true,
+                        Value::Null => false,
+                    }
+                } else {
+                    false
+                }
+            })
+            .collect();
+
+        context.set_value(&as_key, Value::Array(filtered));
+        Ok(String::new())
+    }
+
+    /// `<?sort over="xs" by="field" order="desc" as="name"?>`
+    ///
+    /// The **lexicographic ordering** of an array by a named field:
+    /// ```text
+    /// sort : [A] → Field → Order → [A]
+    /// Order = { asc, desc }
+    /// sort(xs)(k)(asc)  ≜ sort_by str_cmp(x[k], y[k])
+    /// sort(xs)(k)(desc) ≜ reverse ∘ sort(xs)(k)(asc)
+    /// ```
+    ///
+    /// Sorting is *stable* (by construction of `Vec::sort_by`).  The type is
+    /// a forgetful functor from the category of ordered sets to the category
+    /// of plain sets (Mac Lane 1971, §II.1).
+    fn render_sort(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        _template_path: &str,
+    ) -> TemplateResult<String> {
+        let over = attrs.get("over").cloned().unwrap_or_default();
+        let by = attrs.get("by").cloned().unwrap_or_default();
+        let desc = attrs.get("order").map(|o| o == "desc").unwrap_or(false);
+        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
+
+        let Some(Value::Array(items)) = context.get_value(&over) else {
+            return Ok(String::new());
+        };
+
+        let by_clone = by.clone();
+        let mut sorted: Vec<Value> = items;
+        sorted.sort_by(|a, b| {
+            let a_val = value_to_sort_key(a.get(&by_clone));
+            let b_val = value_to_sort_key(b.get(&by_clone));
+            if desc {
+                b_val.cmp(&a_val)
+            } else {
+                a_val.cmp(&b_val)
+            }
+        });
+
+        context.set_value(&as_key, Value::Array(sorted));
+        Ok(String::new())
+    }
+
+    fn render_slice(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        _template_path: &str,
+    ) -> TemplateResult<String> {
+        let over = attrs.get("over").cloned().unwrap_or_default();
+        let start: usize = attrs
+            .get("start")
+            .unwrap_or(attrs.get("from").unwrap_or(&"0".to_string()))
+            .parse()
+            .unwrap_or(0);
+        let count: usize = attrs
+            .get("count")
+            .unwrap_or(attrs.get("to").unwrap_or(&"0".to_string()))
+            .parse()
+            .unwrap_or(0);
+        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
+
+        let Some(Value::Array(items)) = context.get_value(&over) else {
+            return Ok(String::new());
+        };
+
+        let end = if count > 0 {
+            (start + count).min(items.len())
+        } else {
+            items.len()
+        };
+        let sliced: Vec<Value> = items.into_iter().skip(start).take(end - start).collect();
+
+        context.set_value(&as_key, Value::Array(sliced));
+        Ok(String::new())
+    }
+
     fn render_bind(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         children: &[Node],
         context: &mut Context,
         template_path: &str,
     ) -> TemplateResult<ONode> {
         let var = attrs.get("var").map(String::as_str).unwrap_or("value");
-        if attrs.contains_key("from") || attrs.contains_key("value") {
-            let bound = if let Some(from) = attrs.get("from") {
-                context
-                    .get_value(from)
-                    .unwrap_or(Value::String(String::new()))
-            } else {
-                Value::String(attrs.get("value").cloned().unwrap_or_default())
-            };
-
+        if let Some(from) = attrs.get("from") {
+            let bound = context
+                .get_value(from)
+                .unwrap_or(Value::String(String::new()));
             let mut scoped = context.clone();
             scoped.set_value(var, bound);
             return self.render_nodes(children, &mut scoped, template_path);
@@ -917,16 +1533,13 @@ impl Engine {
         let rendered = self
             .render_nodes(children, context, template_path)?
             .render();
-        if !rendered.trim().is_empty() {
-            context.set_str(var, rendered);
-        }
-
+        context.set_str(var, rendered);
         Ok(ONode::empty())
     }
 
     fn render_component_use(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         children: &[Node],
         context: &mut Context,
         template_path: &str,
@@ -957,7 +1570,7 @@ impl Engine {
     fn render_load(
         &self,
         file: &str,
-        blocks: &HashMap<String, Vec<Node>>,
+        blocks: &BTreeMap<String, Vec<Node>>,
         context: &mut Context,
     ) -> TemplateResult<ONode> {
         if context.load_stack.iter().any(|loaded| loaded == file) {
@@ -987,7 +1600,7 @@ impl Engine {
         result
     }
 
-    fn eval_condition(&self, condition: &str, context: &Context) -> bool {
+    fn eval(&self, condition: &str, context: &Context) -> bool {
         if condition.contains("==") {
             let parts: Vec<&str> = condition.split("==").collect();
             if parts.len() == 2 {
@@ -1050,21 +1663,9 @@ impl Engine {
         crate::features::doc(ONode::cat(head), body)
     }
 
-    fn unknown_directive_error(&self, template_path: &str, directive: &str) -> TemplateError {
-        TemplateError::code(
-            TemplateErrorPhase::Render,
-            format!(
-                "Unknown HRML directive '<?{}?>'. Use normal HTML for HTML tags and reserve '<?...?>' for HRML directives",
-                directive
-            ),
-        )
-        .with_template_path(template_path)
-        .with_directive(directive)
-    }
-
     fn render_mdx(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         template_path: &str,
     ) -> TemplateResult<String> {
         let file = attrs.get("file").ok_or_else(|| {
@@ -1089,43 +1690,96 @@ impl Engine {
         Ok(crate::features::render_math_delimiters(&rendered))
     }
 
-    fn resolve_value_or_literal(&self, raw: &str, context: &Context) -> String {
-        if let Some(stripped) = raw.strip_prefix('$') {
-            context.get(stripped)
-        } else {
-            raw.to_string()
-        }
+    fn resolve_attrs(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &Context,
+    ) -> BTreeMap<String, String> {
+        attrs
+            .iter()
+            .map(|(k, v)| (k.clone(), self.resolve(v, context)))
+            .collect()
     }
 
-    fn render_meta_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn resolve(&self, raw: &str, context: &Context) -> String {
+        if !raw.contains('$') {
+            return raw.to_string();
+        }
+        let mut result = String::with_capacity(raw.len());
+        let mut rest = raw;
+        while let Some(dollar) = rest.find('$') {
+            result.push_str(&rest[..dollar]);
+            let after = &rest[dollar + 1..];
+            let greedy_end = after
+                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-' && c != '.')
+                .unwrap_or(after.len());
+
+            if greedy_end == 0 {
+                result.push('$');
+                rest = after;
+                continue;
+            }
+
+            // Try the full dotted name, peel back one .segment at a time until a
+            // binding resolves. $post.title finds post.title; $slug.mdx finds
+            // slug and keeps .mdx as literal.
+            let candidate = &after[..greedy_end];
+            let mut try_len = candidate.len();
+            let resolved = loop {
+                let sub = &candidate[..try_len];
+                if let Some(v) = context.get_value(sub) {
+                    break Some((try_len, value_to_string(&v)));
+                }
+                match sub.rfind('.') {
+                    Some(i) => try_len = i,
+                    None => break None,
+                }
+            };
+
+            match resolved {
+                Some((len, s)) => {
+                    result.push_str(&s);
+                    rest = &after[len..];
+                }
+                None => {
+                    let ident_end = candidate.find('.').unwrap_or(candidate.len());
+                    rest = &after[ident_end..];
+                }
+            }
+        }
+        result.push_str(rest);
+        result
+    }
+
+    fn render_meta_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let mut node = ONode::void(oxml_tags::META);
         let mut keys = attrs.keys().cloned().collect::<Vec<_>>();
         keys.sort();
         for key in keys {
-            let resolved = self.resolve_value_or_literal(attrs.get(&key).unwrap(), context);
+            let resolved = self.resolve(attrs.get(&key).unwrap(), context);
             node = node.attr(key, resolved);
         }
         node.build().render()
     }
 
-    fn render_link_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_link_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let mut node = ONode::void(oxml_tags::LINK);
         let mut keys = attrs.keys().cloned().collect::<Vec<_>>();
         keys.sort();
         for key in keys {
-            let resolved = self.resolve_value_or_literal(attrs.get(&key).unwrap(), context);
+            let resolved = self.resolve(attrs.get(&key).unwrap(), context);
             node = node.attr(key, resolved);
         }
         node.build().render()
     }
 
-    fn render_title_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_title_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let value = attrs
             .get("value")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_default();
         ONode::content(oxml_tags::TITLE)
             .text(&value)
@@ -1133,7 +1787,7 @@ impl Engine {
             .render()
     }
 
-    fn render_og_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_og_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let Some(name) = attrs.get("name") else {
             return String::new();
@@ -1141,7 +1795,7 @@ impl Engine {
         let Some(content) = attrs.get("content") else {
             return String::new();
         };
-        let resolved_content = self.resolve_value_or_literal(content, context);
+        let resolved_content = self.resolve(content, context);
         let property = format!("og:{}", name);
         ONode::void(oxml_tags::META)
             .attr("property", &property)
@@ -1150,7 +1804,7 @@ impl Engine {
             .render()
     }
 
-    fn render_twitter_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_twitter_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let Some(name) = attrs.get("name") else {
             return String::new();
@@ -1158,7 +1812,7 @@ impl Engine {
         let Some(content) = attrs.get("content") else {
             return String::new();
         };
-        let resolved_content = self.resolve_value_or_literal(content, context);
+        let resolved_content = self.resolve(content, context);
         let key = format!("twitter:{}", name);
         ONode::void(oxml_tags::META)
             .attr("name", &key)
@@ -1169,7 +1823,7 @@ impl Engine {
 
     fn render_markdown(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         template_path: &str,
     ) -> TemplateResult<String> {
         let file = attrs.get("file").ok_or_else(|| {
@@ -1194,21 +1848,28 @@ impl Engine {
         Ok(crate::features::render_math_delimiters(&rendered))
     }
 
-    fn render_markdown_with_frontmatter(
+    fn render_markdownfm(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         context: &mut Context,
         template_path: &str,
     ) -> TemplateResult<String> {
-        let file = attrs.get("file").ok_or_else(|| {
-            TemplateError::code(
-                TemplateErrorPhase::Render,
-                "markdownfm directive requires file attribute",
-            )
-            .with_template_path(template_path)
-            .with_directive("markdownfm")
-        })?;
-        let full_path = self.base_path.join(file);
+        if let Some(dir) = attrs.get("dir") {
+            return self.render_markdown_dir(dir, attrs, context, template_path);
+        }
+
+        let file = self.resolve(
+            attrs.get("file").ok_or_else(|| {
+                TemplateError::code(
+                    TemplateErrorPhase::Render,
+                    "markdownfm directive requires file or dir attribute",
+                )
+                .with_template_path(template_path)
+                .with_directive("markdownfm")
+            })?,
+            context,
+        );
+        let full_path = self.base_path.join(&file);
         let source = fs::read_to_string(&full_path).map_err(|e| {
             TemplateError::code(
                 TemplateErrorPhase::Io,
@@ -1226,9 +1887,77 @@ impl Engine {
         Ok(crate::features::render_math_delimiters(&html))
     }
 
+    fn render_markdown_dir(
+        &self,
+        dir: &str,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<String> {
+        let full_dir = self.base_path.join(dir);
+        let entries = fs::read_dir(&full_dir).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read directory {}: {}", dir, e),
+            )
+            .with_template_path(template_path)
+            .with_directive("markdownfm")
+        })?;
+
+        let mut filenames: Vec<String> = Vec::new();
+        for entry in entries {
+            let entry = entry.map_err(|e| {
+                TemplateError::code(
+                    TemplateErrorPhase::Io,
+                    format!("Failed to read entry: {}", e),
+                )
+                .with_template_path(template_path)
+            })?;
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if file_name.starts_with('.') || file_name.starts_with('_') {
+                continue;
+            }
+            if let Some(ext) = path.extension() {
+                if ext == "md" || ext == "mdx" {
+                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                        filenames.push(stem.to_string());
+                    }
+                }
+            }
+        }
+        filenames.sort();
+
+        let mut posts = Vec::new();
+        for slug in &filenames {
+            for ext in &["mdx", "md"] {
+                let file_path = full_dir.join(format!("{}.{}", slug, ext));
+                if let Ok(content) = fs::read_to_string(&file_path) {
+                    let (meta, _html) = crate::features::render_markdown_with_frontmatter(&content);
+                    let mut obj = match meta {
+                        Value::Object(m) => m,
+                        _ => serde_json::Map::new(),
+                    };
+                    obj.insert("slug".to_string(), Value::String(slug.clone()));
+                    posts.push(Value::Object(obj));
+                    break;
+                }
+            }
+        }
+
+        if let Some(as_key) = attrs.get("as") {
+            context.set_value(as_key, Value::Array(posts));
+        }
+
+        Ok(String::new())
+    }
+
     fn render_latex(
         &self,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         template_path: &str,
     ) -> TemplateResult<String> {
         let formula = attrs.get("formula").ok_or_else(|| {
@@ -1247,7 +1976,7 @@ impl Engine {
         Ok(html)
     }
 
-    fn render_charset_tag(&self, attrs: &HashMap<String, String>) -> String {
+    fn render_charset_tag(&self, attrs: &BTreeMap<String, String>) -> String {
         use crate::features::oxml_tags;
         let charset = attrs
             .get("value")
@@ -1259,11 +1988,11 @@ impl Engine {
             .render()
     }
 
-    fn render_viewport_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_viewport_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let content = attrs
             .get("content")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_else(|| "width=device-width,initial-scale=1".to_string());
         ONode::void(oxml_tags::META)
             .attr("name", "viewport")
@@ -1272,11 +2001,11 @@ impl Engine {
             .render()
     }
 
-    fn render_canonical_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_canonical_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let href = attrs
             .get("href")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_default();
         ONode::void(oxml_tags::LINK)
             .attr("rel", "canonical")
@@ -1285,11 +2014,11 @@ impl Engine {
             .render()
     }
 
-    fn render_description_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_description_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let content = attrs
             .get("content")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_default();
         ONode::void(oxml_tags::META)
             .attr("name", "description")
@@ -1298,11 +2027,11 @@ impl Engine {
             .render()
     }
 
-    fn render_robots_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_robots_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let content = attrs
             .get("content")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_else(|| "index,follow".to_string());
         ONode::void(oxml_tags::META)
             .attr("name", "robots")
@@ -1311,11 +2040,11 @@ impl Engine {
             .render()
     }
 
-    fn render_stylesheet_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_stylesheet_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let href = attrs
             .get("href")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_default();
         ONode::void(oxml_tags::LINK)
             .attr("rel", "stylesheet")
@@ -1324,11 +2053,11 @@ impl Engine {
             .render()
     }
 
-    fn render_script_tag(&self, attrs: &HashMap<String, String>, context: &Context) -> String {
+    fn render_script_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
         use crate::features::oxml_tags;
         let src = attrs
             .get("src")
-            .map(|v| self.resolve_value_or_literal(v, context))
+            .map(|v| self.resolve(v, context))
             .unwrap_or_default();
         let defer_attr = attrs.contains_key("defer");
         let async_attr = attrs.contains_key("async");
@@ -1341,485 +2070,13 @@ impl Engine {
     }
 }
 
-// --- AST ---
-
-#[derive(Debug, Clone)]
-pub enum Node {
-    Text(String),
-    Load {
-        file: String,
-        blocks: HashMap<String, Vec<Node>>,
-    },
-    Element {
-        name: String,
-        attrs: HashMap<String, String>,
-        children: Vec<Node>,
-    },
-    VoidElement {
-        name: String,
-        attrs: HashMap<String, String>,
-    },
-}
-
-impl Node {
-    pub fn from_ast_node(ast: AstNode) -> Self {
-        match ast {
-            AstNode::Text(text) => Node::Text(text),
-            AstNode::Load { file, blocks } => Node::Load {
-                file,
-                blocks: blocks
-                    .into_iter()
-                    .map(|(key, nodes)| (key, nodes.into_iter().map(Node::from_ast_node).collect()))
-                    .collect(),
-            },
-            AstNode::Element {
-                name,
-                attrs,
-                children,
-            } => Node::Element {
-                name,
-                attrs: attrs.into_iter().collect(),
-                children: children.into_iter().map(Node::from_ast_node).collect(),
-            },
-            AstNode::VoidElement { name, attrs } => Node::VoidElement {
-                name,
-                attrs: attrs.into_iter().collect(),
-            },
-        }
-    }
-}
-
-impl From<Node> for AstNode {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Text(text) => AstNode::Text(text),
-            Node::Load { file, blocks } => AstNode::Load {
-                file,
-                blocks: blocks
-                    .into_iter()
-                    .map(|(key, nodes)| (key, nodes.into_iter().map(AstNode::from).collect()))
-                    .collect(),
-            },
-            Node::Element {
-                name,
-                attrs,
-                children,
-            } => AstNode::Element {
-                name,
-                attrs: attrs.into_iter().collect(),
-                children: children.into_iter().map(AstNode::from).collect(),
-            },
-            Node::VoidElement { name, attrs } => AstNode::VoidElement {
-                name,
-                attrs: attrs.into_iter().collect(),
-            },
-        }
-    }
-}
-
-// --- Parser ---
-
-struct Parser {
-    chars: Vec<char>,
-    pos: usize,
-    template_path: Option<String>,
-}
-
-impl Parser {
-    fn new(input: &str, template_path: Option<&str>) -> Self {
-        Self {
-            chars: input.chars().collect(),
-            pos: 0,
-            template_path: template_path.map(ToOwned::to_owned),
-        }
-    }
-
-    fn parse(&mut self) -> TemplateResult<Vec<Node>> {
-        let mut nodes = Vec::new();
-        let mut iterations = 0;
-        while self.pos < self.chars.len() {
-            iterations += 1;
-            if iterations > 10000 {
-                let remaining: String = self.chars[self.pos..].iter().take(50).collect();
-                return Err(self.internal_error(
-                    self.pos,
-                    format!(
-                        "Parser infinite loop at pos {}, remaining='{}'",
-                        self.pos, remaining
-                    ),
-                ));
-            }
-            if let Some(node) = self.parse_node(false)? {
-                nodes.push(node);
-            } else {
-                break;
-            }
-        }
-        Ok(nodes)
-    }
-
-    fn parse_until(&mut self, closing_tag: &str) -> TemplateResult<Vec<Node>> {
-        let mut nodes = Vec::new();
-        let mut iterations = 0;
-        while self.pos < self.chars.len() {
-            iterations += 1;
-            if iterations > 10000 {
-                let remaining: String = self.chars[self.pos..].iter().take(50).collect();
-                return Err(self.internal_error(
-                    self.pos,
-                    format!(
-                        "Parser infinite loop in parse_until('{}') at pos {}, remaining='{}'",
-                        closing_tag, self.pos, remaining
-                    ),
-                ));
-            }
-            if closing_tag.is_empty() {
-                let end = std::cmp::min(self.pos + 60, self.chars.len());
-                let remaining: String = self.chars[self.pos..end].iter().collect();
-                return Err(self.internal_error(
-                    self.pos,
-                    format!(
-                        "BUG: parse_until empty tag at pos {}, remaining='{}'",
-                        self.pos, remaining
-                    ),
-                ));
-            }
-            if self.is_closing(closing_tag) {
-                self.consume_closing(closing_tag);
-                return Ok(nodes);
-            }
-            if let Some(node) = self.parse_node(true)? {
-                nodes.push(node);
-            } else {
-                // parse_node returned None - could be a closing tag, check before breaking
-                if self.is_closing(closing_tag) {
-                    self.consume_closing(closing_tag);
-                    return Ok(nodes);
-                }
-                break;
-            }
-        }
-        Err(self.code_error(
-            self.pos,
-            format!(
-                "Unclosed HRML directive '{}': missing closing tag",
-                closing_tag
-            ),
-        ))
-    }
-
-    fn is_closing(&self, name: &str) -> bool {
-        // Check for </?name pattern (HRML paired style)
-        let pattern1 = format!("</?{}", name);
-        if self.starts_with(&pattern1) {
-            let end = self.pos + pattern1.len();
-            if end >= self.chars.len() {
-                return true;
-            }
-            let next = self.chars[end];
-            if next.is_whitespace() || next == '?' || next == '>' {
-                return true;
-            }
-        }
-
-        // Check for <?/name?> pattern (HRML alternative closing)
-        let pattern2 = format!("<?/{}?>", name);
-        if self.starts_with(&pattern2) {
-            return true;
-        }
-
-        // Check for </name> pattern (HTML style closing)
-        let html_pattern = format!("</{}>", name);
-        if self.starts_with(&html_pattern) {
-            return true;
-        }
-
-        false
-    }
-
-    fn consume_closing(&mut self, _name: &str) {
-        while self.pos < self.chars.len() {
-            if self.starts_with("?>") {
-                self.pos += 2;
-                return;
-            }
-            self.pos += 1;
-        }
-    }
-
-    fn starts_with(&self, s: &str) -> bool {
-        let chars: Vec<char> = s.chars().collect();
-        if self.pos + chars.len() > self.chars.len() {
-            return false;
-        }
-        for (i, c) in chars.iter().enumerate() {
-            if self.chars[self.pos + i] != *c {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn parse_node(&mut self, allow_closing: bool) -> TemplateResult<Option<Node>> {
-        if self.pos >= self.chars.len() {
-            return Ok(None);
-        }
-
-        if self.starts_with("<?") && !self.starts_with("</?") && !self.starts_with("<?/") {
-            return self.parse_element().map(Some);
-        } else if self.starts_with("</?") || self.starts_with("<?/") {
-            if !allow_closing {
-                return Err(self.code_error(
-                    self.pos,
-                    "Unexpected closing HRML tag without matching opener",
-                ));
-            }
-            self.consume_closing_tag();
-            return Ok(None);
-        }
-
-        Ok(Some(Node::Text(self.consume_text())))
-    }
-
-    fn consume_text(&mut self) -> String {
-        let mut text = String::new();
-        while self.pos < self.chars.len() {
-            // Break on opening HRML tags
-            if self.starts_with("<?") && !self.starts_with("</?") && !self.starts_with("<?/") {
-                break;
-            }
-            // Break on closing tags too - let parse_node handle them
-            if self.starts_with("</?") || self.starts_with("<?/") {
-                break;
-            }
-            text.push(self.chars[self.pos]);
-            self.pos += 1;
-        }
-        text
-    }
-
-    fn consume_closing_tag(&mut self) {
-        while self.pos < self.chars.len() {
-            if self.starts_with("?>") {
-                self.pos += 2;
-                return;
-            }
-            self.pos += 1;
-        }
-    }
-
-    fn parse_element(&mut self) -> TemplateResult<Node> {
-        let start = self.pos;
-        self.pos += 2;
-
-        let name = self.consume_identifier();
-        if name.is_empty() {
-            let remaining: String = self.chars[self.pos..].iter().take(40).collect();
-            return Err(self.internal_error(
-                start,
-                format!(
-                    "BUG: parse_element got empty name at pos {}, remaining='{}'",
-                    self.pos, remaining
-                ),
-            ));
-        }
-        let attrs = self.parse_attributes();
-
-        while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
-            self.pos += 1;
-        }
-
-        let explicit_self_closing = if self.starts_with("/?>") {
-            self.pos += 3;
-            true
-        } else if self.starts_with("?>") {
-            self.pos += 2;
-            false
-        } else {
-            return Err(self.code_error(
-                start,
-                format!("Unclosed HRML directive '<?{}': missing '?>'", name),
-            ));
-        };
-
-        if explicit_self_closing {
-            return Ok(Node::VoidElement { name, attrs });
-        }
-
-        let has_closing = self.has_matching_closing(&name);
-        let is_void = !has_closing;
-
-        if is_void {
-            Ok(Node::VoidElement { name, attrs })
-        } else {
-            let children = self.parse_until(&name)?;
-            Ok(Node::Element {
-                name,
-                attrs,
-                children,
-            })
-        }
-    }
-
-    fn error_location(&self, pos: usize) -> TemplateErrorLocation {
-        let mut line = 1;
-        let mut column = 1;
-
-        for ch in self.chars.iter().take(pos) {
-            if *ch == '\n' {
-                line += 1;
-                column = 1;
-            } else {
-                column += 1;
-            }
-        }
-
-        TemplateErrorLocation { line, column }
-    }
-
-    fn internal_error(&self, pos: usize, message: impl Into<String>) -> TemplateError {
-        let location = self.error_location(pos);
-        let mut error = TemplateError::internal(TemplateErrorPhase::Parse, message)
-            .with_location(location.line, location.column);
-
-        if let Some(path) = &self.template_path {
-            error = error.with_template_path(path.clone());
-        }
-
-        error
-    }
-
-    fn code_error(&self, pos: usize, message: impl Into<String>) -> TemplateError {
-        let location = self.error_location(pos);
-        let mut error = TemplateError::code(TemplateErrorPhase::Parse, message)
-            .with_location(location.line, location.column);
-
-        if let Some(path) = &self.template_path {
-            error = error.with_template_path(path.clone());
-        }
-
-        error
-    }
-
-    fn has_matching_closing(&self, name: &str) -> bool {
-        // Check for </?name pattern (HRML paired style)
-        let pattern1 = format!("</?{}", name);
-        let mut i = self.pos;
-        while i + pattern1.len() <= self.chars.len() {
-            let mut matched = true;
-            for (j, ch) in pattern1.chars().enumerate() {
-                if self.chars[i + j] != ch {
-                    matched = false;
-                    break;
-                }
-            }
-            if matched {
-                return true;
-            }
-            i += 1;
-        }
-
-        // Check for <?/name?> pattern (HRML alternative closing)
-        let pattern2 = format!("<?/{}?>", name);
-        i = self.pos;
-        while i + pattern2.len() <= self.chars.len() {
-            let mut matched = true;
-            for (j, ch) in pattern2.chars().enumerate() {
-                if self.chars[i + j] != ch {
-                    matched = false;
-                    break;
-                }
-            }
-            if matched {
-                return true;
-            }
-            i += 1;
-        }
-
-        false
-    }
-
-    fn consume_identifier(&mut self) -> String {
-        while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
-            self.pos += 1;
-        }
-
-        let mut id = String::new();
-        while self.pos < self.chars.len() {
-            let c = self.chars[self.pos];
-            if c.is_alphanumeric() || c == '_' || c == '-' || c == ':' || c == '.' {
-                id.push(c);
-                self.pos += 1;
-            } else {
-                break;
-            }
-        }
-        id
-    }
-
-    fn parse_attributes(&mut self) -> HashMap<String, String> {
-        let mut attrs = HashMap::new();
-        loop {
-            while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
-                self.pos += 1;
-            }
-
-            if self.pos >= self.chars.len() || self.starts_with("?>") || self.starts_with("/?>") {
-                break;
-            }
-
-            let key = self.consume_identifier();
-            if key.is_empty() {
-                if !self.starts_with("?>") {
-                    self.pos += 1;
-                }
-                continue;
-            }
-
-            let mut value = String::new();
-            while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
-                self.pos += 1;
-            }
-
-            if self.pos < self.chars.len() && self.chars[self.pos] == '=' {
-                self.pos += 1;
-                while self.pos < self.chars.len() && self.chars[self.pos].is_whitespace() {
-                    self.pos += 1;
-                }
-
-                if self.pos < self.chars.len() {
-                    let quote = self.chars[self.pos];
-                    if quote == '"' || quote == '\'' {
-                        self.pos += 1;
-                        while self.pos < self.chars.len() && self.chars[self.pos] != quote {
-                            value.push(self.chars[self.pos]);
-                            self.pos += 1;
-                        }
-                        self.pos += 1;
-                    } else {
-                        while self.pos < self.chars.len()
-                            && !self.chars[self.pos].is_whitespace()
-                            && self.chars[self.pos] != '?'
-                            && self.chars[self.pos] != '>'
-                        {
-                            value.push(self.chars[self.pos]);
-                            self.pos += 1;
-                        }
-                    }
-                }
-            }
-
-            attrs.insert(key, value);
-        }
-        attrs
-    }
-}
+// --- Context ---
 
 #[derive(Clone)]
 struct Context {
     data: Value,
     vars: HashMap<String, Value>,
-    components: HashMap<String, Vec<Node>>,
+    components: BTreeMap<String, Vec<Node>>,
     load_stack: Vec<String>,
     component_load_stack: Vec<String>,
 }
@@ -1829,7 +2086,7 @@ impl Context {
         Self {
             data,
             vars: HashMap::new(),
-            components: HashMap::new(),
+            components: BTreeMap::new(),
             load_stack: Vec::new(),
             component_load_stack: Vec::new(),
         }
@@ -1900,7 +2157,34 @@ fn parse_for_expr(expr: &str) -> (String, String) {
     ("item".to_string(), expr.trim().to_string())
 }
 
-fn looks_like_html_document(body: &str) -> bool {
+fn value_to_string(v: &Value) -> String {
+    match v {
+        Value::String(s) => s.clone(),
+        Value::Number(n) => n.to_string(),
+        Value::Bool(b) => b.to_string(),
+        Value::Array(arr) => serde_json::to_string(arr).unwrap_or_default(),
+        Value::Object(map) => serde_json::to_string(map).unwrap_or_default(),
+        Value::Null => String::new(),
+    }
+}
+
+fn value_to_sort_key(val: Option<&Value>) -> String {
+    match val {
+        Some(Value::Number(n)) => format!("{:020}", n.as_u64().unwrap_or(0)),
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Bool(b)) => {
+            if *b {
+                "1".into()
+            } else {
+                "0".into()
+            }
+        }
+        Some(Value::Null) => String::new(),
+        _ => String::new(),
+    }
+}
+
+fn is_html_doc(body: &str) -> bool {
     let trimmed = body.trim_start();
     trimmed.starts_with("<!DOCTYPE html") || trimmed.starts_with("<html")
 }

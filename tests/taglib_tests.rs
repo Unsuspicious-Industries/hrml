@@ -1,6 +1,6 @@
-use hrml::template::Engine;
+use xrml::template::Engine;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -41,12 +41,12 @@ fn test_meta_tag_library_tags_render() {
     assert!(html.contains("href=\"https://example.com\""), "{}", html);
 }
 
-fn custom_stamp(attrs: &HashMap<String, String>) -> Result<String, String> {
+fn custom_stamp(attrs: &BTreeMap<String, String>) -> Result<String, String> {
     let value = attrs.get("value").cloned().unwrap_or_default();
     Ok(format!("<span class=\"stamp\">{}</span>", value))
 }
 
-fn custom_wrap(attrs: &HashMap<String, String>, inner: &str) -> Result<String, String> {
+fn custom_wrap(attrs: &BTreeMap<String, String>, inner: &str) -> Result<String, String> {
     let class = attrs
         .get("class")
         .cloned()

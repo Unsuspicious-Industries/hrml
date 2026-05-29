@@ -680,3 +680,39 @@ pub fn hr() -> VoidBuilder {
 pub fn input() -> VoidBuilder {
     VoidBuilder::new(tags::INPUT)
 }
+
+pub fn render_element_tag(
+    name: &str,
+    attrs: &std::collections::HashMap<String, String>,
+    body: &str,
+) -> String {
+    let mut tag = String::from("<");
+    tag.push_str(name);
+    for (k, v) in attrs {
+        tag.push(' ');
+        tag.push_str(k);
+        tag.push_str("=\"");
+        tag.push_str(v);
+        tag.push('"');
+    }
+    tag.push('>');
+    tag.push_str(body);
+    tag.push_str("</");
+    tag.push_str(name);
+    tag.push('>');
+    tag
+}
+
+pub fn render_void_tag(name: &str, attrs: &std::collections::HashMap<String, String>) -> String {
+    let mut tag = String::from("<");
+    tag.push_str(name);
+    for (k, v) in attrs {
+        tag.push(' ');
+        tag.push_str(k);
+        tag.push_str("=\"");
+        tag.push_str(v);
+        tag.push('"');
+    }
+    tag.push_str(" />");
+    tag
+}

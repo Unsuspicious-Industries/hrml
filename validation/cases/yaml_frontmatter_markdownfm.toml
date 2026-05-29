@@ -1,6 +1,6 @@
 name = "yaml_frontmatter_markdownfm"
 type = "logic"
-hrml = '''
+xrml = '''
 <?bind var="post_body"?><?markdownfm file="posts/test.mdx" as="post"?><?/bind?>
 <h1><?get id="post.title"?></h1>
 <p><?get id="post.excerpt"?></p>

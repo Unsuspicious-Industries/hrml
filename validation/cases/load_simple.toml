@@ -1,6 +1,6 @@
 name = "load_simple"
 type = "logic"
-hrml = '''
+xrml = '''
 <?load file="components/header.hrml"?>
 '''
 expected = '''

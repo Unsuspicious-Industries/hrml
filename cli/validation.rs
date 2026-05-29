@@ -1,4 +1,4 @@
-use hrml::template::Engine;
+use xrml::template::Engine;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ pub struct ValidationCase {
     pub name: String,
     #[serde(rename = "type")]
     pub kind: String,
-    pub hrml: String,
+    pub xrml: String,
     pub expected: String,
     #[serde(default)]
     pub files: Vec<CaseFile>,
@@ -91,11 +91,11 @@ pub fn failure_message(record: &ValidationRecord) -> String {
         "{} ({}) mismatch\n  expected: {}\n  got: {}",
         record.name,
         record.kind,
-        preview(&normalize(&remove_spaces_between_tags(&extract_body(
-            &record.expected
+        preview(&sort_tag_attrs(&normalize(&remove_spaces_between_tags(
+            &extract_body(&record.expected)
         )))),
-        preview(&normalize(&remove_spaces_between_tags(&extract_body(
-            record.actual.as_deref().unwrap_or_default()
+        preview(&sort_tag_attrs(&normalize(&remove_spaces_between_tags(
+            &extract_body(record.actual.as_deref().unwrap_or_default())
         ))))
     )
 }
@@ -129,7 +129,7 @@ fn run_case_in_dir(case: &ValidationCase, root: &Path) -> Result<String, String>
     let page_path = root.join("pages/test.hrml");
     fs::create_dir_all(page_path.parent().unwrap())
         .map_err(|e| format!("Failed to create pages dir: {}", e))?;
-    fs::write(&page_path, &case.hrml).map_err(|e| format!("Failed to write case page: {}", e))?;
+    fs::write(&page_path, &case.xrml).map_err(|e| format!("Failed to write case page: {}", e))?;
 
     for file in &case.files {
         let file_path = root.join(&file.path);
@@ -162,10 +162,164 @@ fn compare_output(rendered: &str, expected: &str) -> bool {
     let expected_pre = remove_spaces_between_tags(expected_body);
     let rendered_pre = remove_spaces_between_tags(rendered_body);
 
-    let expected_norm = normalize(&expected_pre);
-    let rendered_norm = normalize(&rendered_pre);
+    let expected_norm = sort_tag_attrs(&normalize(&expected_pre));
+    let rendered_norm = sort_tag_attrs(&normalize(&rendered_pre));
 
     rendered_norm.contains(&expected_norm) || expected_norm.contains(&rendered_norm)
+}
+
+/// Rewrites HTML tags within `s` so that attributes appear in lexical order.
+/// Allows DOM-equivalent comparison without depending on parser insertion order.
+fn sort_tag_attrs(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = String::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] != b'<' {
+            out.push(bytes[i] as char);
+            i += 1;
+            continue;
+        }
+        let end = match find_tag_end(bytes, i) {
+            Some(e) => e,
+            None => {
+                out.push('<');
+                i += 1;
+                continue;
+            }
+        };
+        let tag = std::str::from_utf8(&bytes[i..end + 1]).unwrap_or_default();
+        out.push_str(&sort_one_tag(tag));
+        i = end + 1;
+    }
+    out
+}
+
+fn find_tag_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let mut j = start + 1;
+    let mut in_quote: Option<u8> = None;
+    while j < bytes.len() {
+        let b = bytes[j];
+        if let Some(q) = in_quote {
+            if b == q {
+                in_quote = None;
+            }
+        } else {
+            if b == b'"' || b == b'\'' {
+                in_quote = Some(b);
+            } else if b == b'>' {
+                return Some(j);
+            }
+        }
+        j += 1;
+    }
+    None
+}
+
+fn sort_one_tag(tag: &str) -> String {
+    let inner = match tag.strip_prefix('<').and_then(|s| s.strip_suffix('>')) {
+        Some(t) => t,
+        None => return tag.to_string(),
+    };
+    let (name_end, _) = match inner.char_indices().find(|(_, c)| c.is_whitespace()) {
+        Some(p) => p,
+        None => return tag.to_string(),
+    };
+    let name = &inner[..name_end];
+    let rest = &inner[name_end..];
+    let self_closing = rest.trim_end().ends_with('/');
+    let attr_body = if self_closing {
+        let trimmed = rest.trim_end();
+        &trimmed[..trimmed.len() - 1]
+    } else {
+        rest
+    };
+    let mut attrs = parse_attrs(attr_body);
+    attrs.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut out = String::new();
+    out.push('<');
+    out.push_str(name);
+    for (k, v) in &attrs {
+        out.push(' ');
+        out.push_str(k);
+        if let Some(v) = v {
+            out.push('=');
+            out.push('"');
+            out.push_str(v);
+            out.push('"');
+        }
+    }
+    if self_closing {
+        out.push_str(" />");
+    } else {
+        out.push('>');
+    }
+    out
+}
+
+fn parse_attrs(s: &str) -> Vec<(String, Option<String>)> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= bytes.len() {
+            break;
+        }
+        let key_start = i;
+        while i < bytes.len()
+            && !bytes[i].is_ascii_whitespace()
+            && bytes[i] != b'='
+            && bytes[i] != b'>'
+        {
+            i += 1;
+        }
+        let key = std::str::from_utf8(&bytes[key_start..i])
+            .unwrap_or_default()
+            .to_string();
+        if key.is_empty() {
+            i += 1;
+            continue;
+        }
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i < bytes.len() && bytes[i] == b'=' {
+            i += 1;
+            while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            if i < bytes.len() && (bytes[i] == b'"' || bytes[i] == b'\'') {
+                let q = bytes[i];
+                i += 1;
+                let val_start = i;
+                while i < bytes.len() && bytes[i] != q {
+                    i += 1;
+                }
+                let val = std::str::from_utf8(&bytes[val_start..i])
+                    .unwrap_or_default()
+                    .to_string();
+                if i < bytes.len() {
+                    i += 1;
+                }
+                out.push((key, Some(val)));
+            } else {
+                let val_start = i;
+                while i < bytes.len() && !bytes[i].is_ascii_whitespace() && bytes[i] != b'>' {
+                    i += 1;
+                }
+                let val = std::str::from_utf8(&bytes[val_start..i])
+                    .unwrap_or_default()
+                    .to_string();
+                out.push((key, Some(val)));
+            }
+        } else {
+            out.push((key, None));
+        }
+    }
+    out
 }
 
 fn extract_body(s: &str) -> &str {
@@ -226,7 +380,7 @@ fn normalize(s: &str) -> String {
 }
 
 fn preview(s: &str) -> String {
-    let limit = 160;
+    let limit = 600;
     if s.len() <= limit {
         s.to_string()
     } else {

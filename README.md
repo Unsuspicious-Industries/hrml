@@ -6,33 +6,33 @@ HRML is a Rust-first web framework focused on server-rendered HTML, small runtim
 
 - Rust-native backend runtime (no Python)
 - HTML templates with layout/slot/block directives
-- File-based API endpoints (`.hrml`, `.html`, `.json`)
-- Built-in lightweight frontend runtime at `/hrml.js`
+- File-based API endpoints (`.xrml`, `.html`, `.json`)
+- Built-in lightweight frontend runtime at `/xrml.js`
 - WebAssembly window directive for embeddable WASM spaces
 
 ## Install and Run
 
 ```bash
 cargo build --release
-./target/release/hrml new myapp
+./target/release/xrml new myapp
 cd myapp
-../target/release/hrml dev
+../target/release/xrml dev
 ```
 
 ## Project Structure
 
 ```text
 myapp/
-├── hrml.toml
+├── xrml.toml
 ├── templates/
 │   ├── layouts/
-│   │   └── base.hrml
+│   │   └── base.xrml
 │   ├── components/
 │   └── pages/
-│       └── index.hrml
+│       └── index.xrml
 ├── endpoints/
 │   └── api/
-│       └── hello.hrml
+│       └── hello.xrml
 └── static/
     ├── css/
     └── js/
@@ -74,11 +74,11 @@ Rust-native composable HTML utilities (OXML) are available under `src/features/o
 
 API requests map to files under `endpoints/api`:
 
-- `/api/todos` -> `endpoints/api/todos.hrml` (or `.html`, `.json`)
-- `/api/todos/create` -> `endpoints/api/todos/create.hrml`
-- `/api/todos/create` also supports flat fallback `endpoints/api/todos_create.hrml`
+- `/api/todos` -> `endpoints/api/todos.xrml` (or `.html`, `.json`)
+- `/api/todos/create` -> `endpoints/api/todos/create.xrml`
+- `/api/todos/create` also supports flat fallback `endpoints/api/todos_create.xrml`
 
-`.hrml` endpoints are rendered as fragments with request context:
+`.xrml` endpoints are rendered as fragments with request context:
 
 - `id` (if present in path)
 - `action` (if present in path)
@@ -101,7 +101,7 @@ Use the template directive:
 <?wasm module="/static/js/my_wasm_app.mjs" export="mount" props='{"scene":"main"}'?>
 ```
 
-This renders a WASM window placeholder. On page load, `/hrml.js` mounts the module export into that window.
+This renders a WASM window placeholder. On page load, `/xrml.js` mounts the module export into that window.
 
 ## OXML — Oxidized Markup Language
 
@@ -113,7 +113,7 @@ OXML is a type-safe, closed algebraic system for constructing valid HTML in Rust
 - Typed tag registry with compile-time void/content classification
 
 ```rust
-use hrml::oxml::{doc, tags, ONode};
+use xrml::oxml::{doc, tags, ONode};
 
 let html = doc(
     ONode::content(tags::TITLE).text("My Page").build(),
@@ -134,13 +134,13 @@ See `docs/oxml.md` for the full specification.
 
 ## CLI
 
-- `hrml new <name>`
-- `hrml dev [path]`
-- `hrml serve [path]`
-- `hrml check [path]`
-- `hrml build [path]` (placeholder)
-- `hrml version`
-- `hrml help`
+- `xrml new <name>`
+- `xrml dev [path]`
+- `xrml serve [path]`
+- `xrml check [path]`
+- `xrml build [path]` (placeholder)
+- `xrml version`
+- `xrml help`
 
 ## Publish to crates.io
 
@@ -150,4 +150,4 @@ See `docs/oxml.md` for the full specification.
    - `cargo package`
    - `cargo publish`
 
-The crate is configured as a standalone executable binary (`hrml`).
+The crate is configured as a standalone executable binary (`xrml`).

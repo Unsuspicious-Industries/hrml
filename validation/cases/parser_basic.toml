@@ -1,6 +1,6 @@
 name = "parser_basic"
 type = "structure"
-hrml = '''
+xrml = '''
 Hello Fixture
 '''
 expected = '''

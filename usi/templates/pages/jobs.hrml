@@ -1,11 +1,13 @@
 <?load file="layouts/base.hrml"?>
 <?load file="_imports.hrml"?>
+<?data from="static/data/jobs" as="jobs"?>
+<?sort over="jobs" by="priority" order="desc" as="jobs"?>
 
 <?block slot="content"?>
     <?use id="hero-cmp"?>
         <?bind var="label"?>Now Hiring<?/bind?>
         <?bind var="title"?>Build improbable systems with us<?/bind?>
-        <?bind var="description"?>Two live briefs from the real Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/bind?>
+        <?bind var="description"?>Open briefs from the Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/bind?>
     </?use?>
 
     <section class="section jobs-section">
@@ -16,32 +18,23 @@
         </div>
 
         <div class="job-grid">
+            <?map over="jobs" as="job"?>
             <?use id="job-card"?>
-                <?bind var="title" value="Itinerant polymath who shows up and solves problems"/?>
-                <?bind var="subtitle" value="Drop in, enlight us, and disseapear"/?>
-                <?bind var="excerpt" value="We occasionally need someone who can show up, absorb context fast, and fix the unsolvable."/?>
-                <?bind var="location" value="Earth and beyond / Remote"/?>
-                <?bind var="team" value="DFS"/?>
-                <?bind var="employmentType" value="Special Contract / Integration"/?>
-                <?bind var="href" value="/jobs/itinerant-polymath"/?>
-                <?bind var="applyUrl" value="mailto:jobs@unsuspicious.org?subject=Itinerant%20Polymath"/?>
+                <?bind var="title" from="job.title"/?>
+                <?bind var="subtitle" from="job.subtitle"/?>
+                <?bind var="excerpt" from="job.excerpt"/?>
+                <?bind var="location" from="job.location"/?>
+                <?bind var="team" from="job.team"/?>
+                <?bind var="employmentType" from="job.employmentType"/?>
+                <?bind var="href"?>/jobs/$job.slug<?/bind?>
+                <?bind var="applyUrl" from="job.applyUrl"/?>
             </?use?>
-
-            <?use id="job-card"?>
-                <?bind var="title" value="Ethics Researcher / Philosophy nerd"/?>
-                <?bind var="subtitle" value="Research new way to make shrimps happy"/?>
-                <?bind var="excerpt" value="Design and audit the frameworks that keep our research programs grounded in rigorous ethical practice."/?>
-                <?bind var="location" value="Paris, France / Remote EU"/?>
-                <?bind var="team" value="Research Ethics Departement"/?>
-                <?bind var="employmentType" value="Full-time"/?>
-                <?bind var="href" value="/jobs/ethics-researcher"/?>
-                <?bind var="applyUrl" value="mailto:jobs@unsuspicious.org?subject=Ethics%20Researcher"/?>
-            </?use?>
+            <?/map?>
         </div>
     </section>
 
     <?use id="cta-section"?>
-        <?bind var="title"?>Don’t fit the brief but fit the vibe?<?/bind?>
+        <?bind var="title"?>Don't fit the brief but fit the vibe?<?/bind?>
         <?bind var="primary"?>Write to us<?/bind?>
         <?bind var="primary-href"?>mailto:jobs@unsuspicious.org<?/bind?>
         <?bind var="secondary"?>Read our ethics note<?/bind?>

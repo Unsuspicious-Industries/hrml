@@ -1,5 +1,5 @@
 <?component id="icon"?>
 <?bind var="name"/?>
 <?bind var="size"/?>
-<svg class="icon-<?get id="size"?>"><use href="#icon-<?get id="name"?>"/></svg>
+<svg class="icon-$size"><use href="#icon-$name"/></svg>
 <?/component?>

@@ -1,8 +1,8 @@
 [package]
-name = "hrml"
+name = "xrml"
 version = "0.1.0"
 edition = "2021"
-description = "Minimal server-rendered web framework with Rust-native endpoints"
+description = "eXtensible Rust Markup Language — recursive acronym: HRML (HRML Markup Language) and TRML (TOML-like Markup Language)"
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.rs/hrml"
@@ -10,7 +10,7 @@ keywords = ["web", "framework", "html", "server", "axum"]
 categories = ["web-programming", "command-line-utilities"]
 
 [[bin]]
-name = "hrml"
+name = "xrml"
 path = "cli/main.rs"
 
 [[test]]
@@ -29,6 +29,10 @@ path = "validation/unit_tests.rs"
 name = "prop_tests"
 path = "validation/prop/mod.rs"
 
+[[test]]
+name = "trml_equivalence"
+path = "validation/trml_equivalence.rs"
+
 
 
 [dependencies]
@@ -45,6 +49,7 @@ urlencoding = "2.1"
 toml = "0.8"
 pulldown-cmark = "0.12"
 libc = "0.2"
+notify = "6"
 
 [dev-dependencies]
 regex = "1"

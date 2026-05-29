@@ -1,6 +1,6 @@
 name = "content"
 type = "structure"
-hrml = '''
+xrml = '''
 <section>Content Fixture</section>
 '''
 expected = '''

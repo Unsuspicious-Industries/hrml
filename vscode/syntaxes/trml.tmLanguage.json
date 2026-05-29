@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TRML",
+  "scopeName": "text.html.trml",
+  "patterns": [
+    {
+      "comment": "HRML directives with inline attrs: [data from=\"x\" as=\"y\"]",
+      "match": "^\\s*(\\[)(data|sort|filter|map|block|bind|use|record|list|field|item|get|if|for|slot|else|component|load|markdownfm|markdown|marksheet)(\\s+[^\\]]*)?(\\])",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.trml" },
+        "2": { "name": "keyword.control.directive.trml" },
+        "3": { "name": "entity.other.attribute-name.trml" },
+        "4": { "name": "punctuation.definition.tag.trml" }
+      }
+    },
+    {
+      "comment": "HTML tags: [div class=\"x\"], [span], [section]",
+      "match": "^\\s*(\\[)([a-zA-Z][a-zA-Z0-9_-]*)(\\s+[^\\]]*)?(\\])",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.trml" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "entity.other.attribute-name.html" },
+        "4": { "name": "punctuation.definition.tag.trml" }
+      }
+    },
+    {
+      "comment": "Attribute assignments: key = \"value\"",
+      "match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s]+)",
+      "captures": {
+        "1": { "name": "variable.other.property.trml" },
+        "2": { "name": "string.quoted.double.trml" }
+      }
+    },
+    {
+      "comment": "String values",
+      "match": "\"[^\"]*\"",
+      "name": "string.quoted.double.trml"
+    },
+    {
+      "comment": "Comments",
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.trml"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ A web application built with HRML - Minimal Web Framework
 
 ```
 {}/
-├── hrml.toml              # Configuration
+├── xrml.toml              # Configuration
 ├── templates/             # HTML templates
 │   ├── layouts/          # Layout templates
 │   ├── components/       # Reusable components

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@font-face {
+    font-family: 'HackTest';
+    src: url('/static/fonts/hack/Hack-Regular.woff2') format('woff2');
+    font-weight: 400; font-display: swap;
+}
+@font-face {
+    font-family: 'LibreBaskervilleTest';
+    src: url('/static/fonts/libre-baskerville/LibreBaskerville-Regular.ttf') format('truetype');
+    font-weight: 400; font-display: swap;
+}
+@font-face {
+    font-family: 'NaziTypewriterTest';
+    src: url('/static/fonts/nazi-typewriter/NaziTypewriter-Regular.ttf') format('truetype');
+    font-weight: 400; font-display: swap;
+}
+body { padding: 3rem; font-family: sans-serif; }
+.f1 { font-family: 'HackTest', monospace; font-size: 24px; }
+.f2 { font-family: 'LibreBaskervilleTest', serif; font-size: 24px; }
+.f3 { font-family: 'NaziTypewriterTest', monospace; font-size: 20px; }
+.box { margin: 1rem 0; padding: 1rem; border: 1px solid #ccc; }
+.green { background: #dfd; }
+.red { background: #fdd; }
+</style>
+</head>
+<body>
+<h2>Font Self-Check</h2>
+<p>If a font loads, its box turns green and shows ✓. If not, it turns red and shows the actual URL that failed.</p>
+
+<div class="box" id="b1"><div class="f1">Hack Mono — ABC abc 123 The quick brown fox jumps</div><pre id="s1">Loading...</pre></div>
+<div class="box" id="b2"><div class="f2">Libre Baskerville — ABC abc 123 The quick brown fox jumps</div><pre id="s2">Loading...</pre></div>
+<div class="box" id="b3"><div class="f3">Nazi Typewriter — ABC abc 123 The quick brown fox jumps</div><pre id="s3">Loading...</pre></div>
+
+<script>
+const fonts = [
+    { name: 'HackTest', el: document.getElementById('b1'), status: document.getElementById('s1'), url: '/static/fonts/hack/Hack-Regular.woff2' },
+    { name: 'LibreBaskervilleTest', el: document.getElementById('b2'), status: document.getElementById('s2'), url: '/static/fonts/libre-baskerville/LibreBaskerville-Regular.ttf' },
+    { name: 'NaziTypewriterTest', el: document.getElementById('b3'), status: document.getElementById('s3'), url: '/static/fonts/nazi-typewriter/NaziTypewriter-Regular.ttf' },
+];
+
+async function check() {
+    await document.fonts.ready;
+    for (const f of fonts) {
+        const loaded = document.fonts.check(`16px "${f.name}"`);
+        const used = getComputedStyle(f.el.querySelector('div')).fontFamily;
+        const lines = [
+            `Font family: ${f.name}`,
+            `Computed: ${used}`,
+            `Loaded: ${loaded}`,
+            `URL: ${f.url}`,
+        ];
+        // Also try to fetch the file to see if it's reachable
+        try {
+            const r = await fetch(f.url, { method: 'HEAD' });
+            lines.push(`HTTP: ${r.status} ${r.headers.get('content-type')} (${r.headers.get('content-length')} bytes)`);
+        } catch(e) {
+            lines.push(`HTTP: FAILED — ${e.message}`);
+        }
+        f.status.textContent = lines.join('\n');
+        f.el.className = 'box ' + (loaded ? 'green' : 'red');
+    }
+}
+check();
+</script>
+</body>
+</html>

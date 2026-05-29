@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
-pub type VoidTagHandler = fn(&HashMap<String, String>) -> Result<String, String>;
-pub type BlockTagHandler = fn(&HashMap<String, String>, &str) -> Result<String, String>;
+pub type VoidTagHandler = fn(&BTreeMap<String, String>) -> Result<String, String>;
+pub type BlockTagHandler = fn(&BTreeMap<String, String>, &str) -> Result<String, String>;
 
 #[derive(Clone, Default)]
 pub struct TagRegistry {
@@ -29,7 +29,7 @@ impl TagRegistry {
     pub fn render_void(
         &self,
         name: &str,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
     ) -> Option<Result<String, String>> {
         self.void_handlers.get(name).map(|h| h(attrs))
     }
@@ -37,7 +37,7 @@ impl TagRegistry {
     pub fn render_block(
         &self,
         name: &str,
-        attrs: &HashMap<String, String>,
+        attrs: &BTreeMap<String, String>,
         inner_html: &str,
     ) -> Option<Result<String, String>> {
         self.block_handlers.get(name).map(|h| h(attrs, inner_html))

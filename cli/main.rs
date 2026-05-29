@@ -11,6 +11,7 @@ mod validation;
 struct PathCommandOptions {
     path: PathBuf,
     log_ast: bool,
+    debug: bool,
 }
 
 fn print_help() {
@@ -27,7 +28,9 @@ fn print_help() {
     println!("  serve [path]        Run production server");
     println!("  build [path]        Build static site for deployment");
     println!("  check [path]        Validate templates and configuration");
+    println!("  convert [file]      Convert .hrml to .trml syntax");
     println!("  --log-ast           Regenerate ast.log before build/serve/dev");
+    println!("  --debug, -d         Enable verbose render diagnostics");
     println!("  version             Show version information");
     println!("  help                Show this help message");
     println!();
@@ -42,10 +45,13 @@ fn print_help() {
 fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, String> {
     let mut path = None;
     let mut log_ast = false;
+    let mut debug = false;
 
     for arg in args {
         if arg == "--log-ast" {
             log_ast = true;
+        } else if arg == "--debug" || arg == "-d" {
+            debug = true;
         } else if arg.starts_with('-') {
             return Err(format!("Unknown option: {}", arg));
         } else if path.is_none() {
@@ -58,6 +64,7 @@ fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, Str
     Ok(PathCommandOptions {
         path: path.unwrap_or_else(|| PathBuf::from(".")),
         log_ast,
+        debug,
     })
 }
 
@@ -103,7 +110,7 @@ async fn main() {
                     process::exit(1);
                 }
             };
-            if let Err(e) = server::run_dev(&options.path, options.log_ast).await {
+            if let Err(e) = server::run_dev(&options.path, options.log_ast, options.debug).await {
                 eprintln!("Error: {}", e);
                 process::exit(1);
             }
@@ -158,6 +165,15 @@ async fn main() {
             if let Err(e) = project::check_project(&options.path) {
                 eprintln!("Check failed: {}", e);
                 process::exit(1);
+            }
+        }
+        "convert" => {
+            let path = args.get(2).map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+            let source = std::fs::read_to_string(&path)
+                .unwrap_or_else(|e| { eprintln!("Read error: {e}"); process::exit(1); });
+            match xrml::convert::to_trml(&source) {
+                Ok(trml) => println!("{trml}"),
+                Err(e) => { eprintln!("Convert error: {e}"); process::exit(1); }
             }
         }
         _ => {
