@@ -639,11 +639,6 @@ fn walk_assert_no_html_in_text(nodes: &[xrml::template::Node]) {
             }
             Node::Element { children, .. } => walk_assert_no_html_in_text(children),
             Node::VoidElement { .. } => {}
-            Node::Load { blocks, .. } => {
-                for v in blocks.values() {
-                    walk_assert_no_html_in_text(v);
-                }
-            }
         }
     }
 }

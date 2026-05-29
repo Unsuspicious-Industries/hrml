@@ -191,6 +191,7 @@ use std::path::PathBuf;
 
 mod ast;
 mod error;
+pub mod resolve;
 
 fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
     if template_path.ends_with(".trml") {
@@ -279,48 +280,20 @@ impl Engine {
     }
 
     pub fn render(&self, template_path: &str, data: &Value) -> TemplateResult<String> {
-        let mut context = self.build_context(data);
-        let mut visited = std::collections::HashSet::new();
-        let (resolved_nodes, loaded_components) =
-            self.resolve_with_tracking(template_path, &mut visited)?;
-
-        for (id, nodes) in loaded_components {
-            context.set_component(&id, nodes);
-        }
-
-        self.register_components_from_tree(&resolved_nodes, &mut context)?;
-
-        let body_node = self.render_nodes(&resolved_nodes, &mut context, template_path)?;
-        let body = body_node.render();
-
-        if is_html_doc(&body) {
-            Ok(body)
-        } else {
-            Ok(self.wrap_html(body_node))
-        }
+        let content = self.read_template(template_path)?;
+        self.render_resolved(&content, template_path, data, true)
     }
 
     pub fn render_fragment(&self, template_path: &str, data: &Value) -> TemplateResult<String> {
-        let mut context = self.build_context(data);
-        let mut visited = std::collections::HashSet::new();
-        let (resolved_nodes, loaded_components) =
-            self.resolve_with_tracking(template_path, &mut visited)?;
-
-        for (id, nodes) in loaded_components {
-            context.set_component(&id, nodes);
-        }
-
-        self.register_components_from_tree(&resolved_nodes, &mut context)?;
-
-        Ok(self
-            .render_nodes(&resolved_nodes, &mut context, template_path)?
-            .render())
+        let content = self.read_template(template_path)?;
+        self.render_resolved(&content, template_path, data, false)
     }
 
     pub fn parse_template(&self, template_path: &str) -> TemplateResult<TemplateAst> {
-        let mut visited = std::collections::HashSet::new();
-        let (nodes, _) = self.resolve_with_tracking(template_path, &mut visited)?;
-        Ok(TemplateAst { nodes })
+        let content = self.read_template(template_path)?;
+        Ok(TemplateAst {
+            nodes: self.resolve_source(&content, template_path)?,
+        })
     }
 
     pub fn parse_source(source: &str) -> TemplateResult<TemplateAst> {
@@ -342,28 +315,7 @@ impl Engine {
         path: &str,
         data: &Value,
     ) -> TemplateResult<String> {
-        let mut context = self.build_context(data);
-        let ast = parse_with_extension(content, path)?;
-
-        let blocks = self.extract_blocks_local(&ast);
-        let components = self.extract_components(&ast);
-
-        for (id, nodes) in components {
-            context.set_component(&id, nodes);
-        }
-
-        self.register_components_from_ast(&ast, &mut context)?;
-
-        let resolved_nodes = self.resolve_nodes_from_ast(&ast, &blocks)?;
-
-        let body_node = self.render_nodes(&resolved_nodes, &mut context, path)?;
-        let body = body_node.render();
-
-        if is_html_doc(&body) {
-            Ok(body)
-        } else {
-            Ok(self.wrap_html(body_node))
-        }
+        self.render_resolved(content, path, data, true)
     }
 
     pub fn render_content_fragment(
@@ -372,23 +324,7 @@ impl Engine {
         path: &str,
         data: &Value,
     ) -> TemplateResult<String> {
-        let mut context = self.build_context(data);
-        let ast = parse_with_extension(content, path)?;
-
-        let blocks = self.extract_blocks_local(&ast);
-        let components = self.extract_components(&ast);
-
-        for (id, nodes) in components {
-            context.set_component(&id, nodes);
-        }
-
-        self.register_components_from_ast(&ast, &mut context)?;
-
-        let resolved_nodes = self.resolve_nodes_from_ast(&ast, &blocks)?;
-
-        Ok(self
-            .render_nodes(&resolved_nodes, &mut context, path)?
-            .render())
+        self.render_resolved(content, path, data, false)
     }
 
     pub fn render_nodes_from_tree(&self, nodes: &[Node], data: &Value) -> TemplateResult<ONode> {
@@ -397,113 +333,44 @@ impl Engine {
         self.render_nodes(nodes, &mut context, "")
     }
 
-    fn extract_blocks_local(&self, nodes: &[Node]) -> BTreeMap<String, Vec<Node>> {
-        let mut blocks = BTreeMap::new();
-        for node in nodes {
-            if let Node::Element {
-                name,
-                attrs,
-                children,
-            } = node
-            {
-                if name == "block" {
-                    if let Some(slot) = attrs.get("slot") {
-                        blocks.insert(slot.clone(), children.clone());
-                    }
-                }
-            }
-        }
-        blocks
+    /// Read a template file relative to the engine's base path.
+    fn read_template(&self, file: &str) -> TemplateResult<String> {
+        fs::read_to_string(self.base_path.join(file)).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Io,
+                format!("Failed to read template {}: {}", file, e),
+            )
+            .with_template_path(file)
+        })
     }
 
-    fn extract_components(&self, nodes: &[Node]) -> Vec<(String, Vec<Node>)> {
-        let mut components = Vec::new();
-        for node in nodes {
-            if let Node::Element {
-                name,
-                attrs,
-                children,
-            } = node
-            {
-                if name == "component" {
-                    if let Some(id) = attrs.get("id") {
-                        components.push((id.clone(), children.clone()));
-                    }
-                }
-            }
-        }
-        components
+    /// Parse `content` and expand all `<?load?>`s into a fully-resolved tree,
+    /// reading loaded files from disk relative to the base path.
+    fn resolve_source(&self, content: &str, path: &str) -> TemplateResult<Vec<Node>> {
+        let nodes = parse_with_extension(content, path)?;
+        let fetch = |file: &str| parse_with_extension(&self.read_template(file)?, file);
+        let mut visited = vec![path.to_string()];
+        resolve::resolve_loads(&nodes, &fetch, &mut visited, true)
     }
 
-    fn register_components_from_ast(
+    /// Resolve, render, and (when `wrap`) wrap a bare fragment in an HTML shell.
+    fn render_resolved(
         &self,
-        nodes: &[Node],
-        context: &mut Context,
-    ) -> TemplateResult<()> {
-        for node in nodes {
-            match node {
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    if name == "component" {
-                        if let Some(id) = attrs.get("id") {
-                            context.set_component(id, children.clone());
-                        }
-                    }
-                    self.register_components_from_ast(children, context)?;
-                }
-                _ => {}
-            }
+        content: &str,
+        path: &str,
+        data: &Value,
+        wrap: bool,
+    ) -> TemplateResult<String> {
+        let nodes = self.resolve_source(content, path)?;
+        let mut context = self.build_context(data);
+        self.register_components_from_tree(&nodes, &mut context)?;
+        let body_node = self.render_nodes(&nodes, &mut context, path)?;
+        let body = body_node.render();
+        if !wrap || is_html_doc(&body) {
+            Ok(body)
+        } else {
+            Ok(self.wrap_html(body_node))
         }
-        Ok(())
-    }
-
-    fn resolve_nodes_from_ast(
-        &self,
-        nodes: &[Node],
-        blocks: &BTreeMap<String, Vec<Node>>,
-    ) -> TemplateResult<Vec<Node>> {
-        let mut resolved = Vec::new();
-        for node in nodes {
-            match node {
-                Node::VoidElement { name, attrs } if name == "load" => {
-                    if let Some(file) = attrs.get("file") {
-                        resolved.push(Node::Load {
-                            file: file.clone(),
-                            blocks: blocks.clone(),
-                        });
-                    }
-                }
-                Node::VoidElement { name, attrs } if name == "slot" => {
-                    if let Some(id) = attrs.get("id") {
-                        if let Some(block_content) = blocks.get(id) {
-                            resolved.extend(block_content.clone());
-                            continue;
-                        }
-                    }
-                    resolved.push(Node::VoidElement {
-                        name: name.clone(),
-                        attrs: attrs.clone(),
-                    });
-                }
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    let resolved_children = self.resolve_nodes_from_ast(children, blocks)?;
-                    resolved.push(Node::Element {
-                        name: name.clone(),
-                        attrs: attrs.clone(),
-                        children: resolved_children,
-                    });
-                }
-                other => resolved.push(other.clone()),
-            }
-        }
-        Ok(resolved)
     }
 
     fn build_context(&self, data: &Value) -> Context {
@@ -522,189 +389,14 @@ impl Engine {
         context
     }
 
-    fn resolve_with_tracking(
-        &self,
-        template_path: &str,
-        visited: &mut std::collections::HashSet<String>,
-    ) -> TemplateResult<(Vec<Node>, Vec<(String, Vec<Node>)>)> {
-        if visited.contains(template_path) {
-            return Err(TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("Circular template dependency detected: {}", template_path),
-            )
-            .with_template_path(template_path));
-        }
-        visited.insert(template_path.to_string());
-
-        let full_path = self.base_path.join(template_path);
-        let content = fs::read_to_string(&full_path).map_err(|e| {
-            TemplateError::code(
-                TemplateErrorPhase::Io,
-                format!("Failed to read template {}: {}", template_path, e),
-            )
-            .with_template_path(template_path)
-        })?;
-
-        let mut nodes = parse_with_extension(&content, template_path)?;
-
-        // 1. Extract blocks defined in this template
-        let blocks = self.extract_blocks(&nodes, visited)?;
-
-        // 2. Extract components defined in this template
-        let local_components = self.extract_components(&nodes);
-
-        // 3. Remove block and component Nodes from the tree
-        nodes.retain(|n| match n {
-            Node::Element { name, .. } if name == "block" => false,
-            Node::Element { name, attrs, .. } if name == "component" => {
-                if attrs.get("id").is_some() {
-                    return false;
-                }
-                false
-            }
-            _ => true,
-        });
-
-        // 4. Process loads recursively and resolve nested loads in all elements
-        let mut resolved_nodes = Vec::new();
-        let all_components = local_components;
-
-        for node in nodes {
-            match node {
-                Node::VoidElement { name, attrs } if name == "load" => {
-                    if let Some(file) = attrs.get("file") {
-                        resolved_nodes.push(Node::Load {
-                            file: file.clone(),
-                            blocks: blocks.clone(),
-                        });
-                        continue;
-                    }
-                }
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    let resolved_children =
-                        self.resolve_nodes_recursive(children, visited, &blocks)?;
-                    resolved_nodes.push(Node::Element {
-                        name,
-                        attrs,
-                        children: resolved_children,
-                    });
-                }
-                other => resolved_nodes.push(other),
-            }
-        }
-
-        visited.remove(template_path);
-        Ok((resolved_nodes, all_components))
-    }
-
+    /// Register every `<?component?>` definition in the resolved tree so a
+    /// `<?use?>` can reference it regardless of source order. Loads have already
+    /// been expanded by [`resolve::resolve_loads`], so this is a plain walk.
     fn register_components_from_tree(
         &self,
         nodes: &[Node],
         context: &mut Context,
     ) -> TemplateResult<()> {
-        for node in nodes {
-            match node {
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    if name == "component" {
-                        if let Some(id) = attrs.get("id") {
-                            context.set_component(id, children.clone());
-                        }
-                    }
-                    self.register_components_from_tree(children, context)?;
-                }
-                Node::Load { file, .. } => {
-                    if context
-                        .component_load_stack
-                        .iter()
-                        .any(|loaded| loaded == file)
-                    {
-                        continue;
-                    }
-
-                    context.component_load_stack.push(file.clone());
-                    let register_result = (|| {
-                        let mut visited = std::collections::HashSet::new();
-                        let (linked_nodes, linked_components) =
-                            self.resolve_with_tracking(file, &mut visited)?;
-
-                        for (id, component_nodes) in linked_components {
-                            context.set_component(&id, component_nodes);
-                        }
-
-                        self.register_components_from_tree(&linked_nodes, context)
-                    })();
-                    context.component_load_stack.pop();
-                    register_result?;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
-    fn resolve_nodes_recursive(
-        &self,
-        nodes: Vec<Node>,
-        visited: &mut std::collections::HashSet<String>,
-        blocks: &BTreeMap<String, Vec<Node>>,
-    ) -> TemplateResult<Vec<Node>> {
-        let mut resolved = Vec::new();
-
-        for node in nodes {
-            match node {
-                Node::VoidElement { name, attrs } if name == "load" => {
-                    if let Some(file) = attrs.get("file") {
-                        resolved.push(Node::Load {
-                            file: file.clone(),
-                            blocks: blocks.clone(),
-                        });
-                    }
-                }
-                Node::VoidElement { name, attrs } if name == "slot" => {
-                    if let Some(id) = attrs.get("id") {
-                        if let Some(block_content) = blocks.get(id) {
-                            resolved.extend(block_content.clone());
-                            continue;
-                        }
-                    }
-                    // Keep void slot as-is if no block matches
-                    resolved.push(Node::VoidElement { name, attrs });
-                }
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    let resolved_children =
-                        self.resolve_nodes_recursive(children, visited, blocks)?;
-                    resolved.push(Node::Element {
-                        name,
-                        attrs,
-                        children: resolved_children,
-                    });
-                }
-                other => resolved.push(other),
-            }
-        }
-
-        Ok(resolved)
-    }
-
-    fn extract_blocks(
-        &self,
-        nodes: &[Node],
-        visited: &mut std::collections::HashSet<String>,
-    ) -> TemplateResult<BTreeMap<String, Vec<Node>>> {
-        let mut blocks = BTreeMap::new();
         for node in nodes {
             if let Node::Element {
                 name,
@@ -712,65 +404,15 @@ impl Engine {
                 children,
             } = node
             {
-                if name == "block" {
-                    if let Some(slot) = attrs.get("slot") {
-                        let resolved_children = self.resolve_nodes_recursive(
-                            children.clone(),
-                            visited,
-                            &BTreeMap::new(),
-                        )?;
-                        blocks.insert(slot.clone(), resolved_children);
-                    }
-                }
-            }
-        }
-        Ok(blocks)
-    }
-
-    fn inject_blocks(
-        &self,
-        parent_nodes: Vec<Node>,
-        blocks: &BTreeMap<String, Vec<Node>>,
-    ) -> Vec<Node> {
-        let mut new_nodes = Vec::new();
-
-        for node in parent_nodes {
-            match node {
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    if name == "slot" {
-                        if let Some(id) = attrs.get("id") {
-                            if let Some(block_content) = blocks.get(id) {
-                                new_nodes.extend(block_content.clone());
-                                continue;
-                            }
-                        }
-                        let processed_children = self.inject_blocks(children, blocks);
-                        new_nodes.extend(processed_children);
-                    } else {
-                        new_nodes.push(Node::Element {
-                            name,
-                            attrs,
-                            children: self.inject_blocks(children, blocks),
-                        });
-                    }
-                }
-                Node::VoidElement { name, attrs } if name == "slot" => {
+                if name == "component" {
                     if let Some(id) = attrs.get("id") {
-                        if let Some(block_content) = blocks.get(id) {
-                            new_nodes.extend(block_content.clone());
-                            continue;
-                        }
+                        context.set_component(id, children.clone());
                     }
                 }
-                other => new_nodes.push(other),
+                self.register_components_from_tree(children, context)?;
             }
         }
-
-        new_nodes
+        Ok(())
     }
 
     fn render_nodes(
@@ -794,7 +436,6 @@ impl Engine {
     ) -> TemplateResult<ONode> {
         match node {
             Node::Text(text) => Ok(ONode::raw(self.resolve(text, context))),
-            Node::Load { file, blocks } => self.render_load(file, blocks, context),
             Node::VoidElement { name, attrs } if is_html_node(name) => {
                 let tag = strip_html_prefix(name);
                 let resolved = self.resolve_attrs(attrs, context);
@@ -1552,7 +1193,7 @@ impl Engine {
         };
 
         let mut scoped = context.clone();
-        let blocks = self.extract_blocks_local(children);
+        let blocks = resolve::extract_blocks(children);
         let setup_nodes: Vec<Node> = children
             .iter()
             .filter(|node| match node {
@@ -1563,41 +1204,8 @@ impl Engine {
             .collect();
         let _ = self.render_nodes(&setup_nodes, &mut scoped, template_path)?;
 
-        let resolved = self.inject_blocks(component_nodes, &blocks);
+        let resolved = resolve::inject_blocks(component_nodes, &blocks);
         self.render_nodes(&resolved, &mut scoped, template_path)
-    }
-
-    fn render_load(
-        &self,
-        file: &str,
-        blocks: &BTreeMap<String, Vec<Node>>,
-        context: &mut Context,
-    ) -> TemplateResult<ONode> {
-        if context.load_stack.iter().any(|loaded| loaded == file) {
-            return Err(TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("Circular template dependency detected: {}", file),
-            )
-            .with_template_path(file)
-            .with_directive("load"));
-        }
-
-        context.load_stack.push(file.to_string());
-        let result = (|| {
-            let mut visited = std::collections::HashSet::new();
-            let (loaded_nodes, loaded_components) =
-                self.resolve_with_tracking(file, &mut visited)?;
-
-            for (id, nodes) in loaded_components {
-                context.set_component(&id, nodes);
-            }
-
-            let linked_nodes = self.inject_blocks(loaded_nodes, blocks);
-            self.render_nodes(&linked_nodes, context, file)
-        })();
-        context.load_stack.pop();
-
-        result
     }
 
     fn eval(&self, condition: &str, context: &Context) -> bool {
@@ -2077,8 +1685,6 @@ struct Context {
     data: Value,
     vars: HashMap<String, Value>,
     components: BTreeMap<String, Vec<Node>>,
-    load_stack: Vec<String>,
-    component_load_stack: Vec<String>,
 }
 
 impl Context {
@@ -2087,8 +1693,6 @@ impl Context {
             data,
             vars: HashMap::new(),
             components: BTreeMap::new(),
-            load_stack: Vec::new(),
-            component_load_stack: Vec::new(),
         }
     }
 

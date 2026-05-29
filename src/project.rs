@@ -1,6 +1,7 @@
 use crate::config::Config;
+use crate::template::resolve::{self, extract_load_targets};
 use crate::template::{
-    Node, Engine, TemplateAst, TemplateError, TemplateErrorPhase, TemplateResult,
+    Engine, Node, TemplateAst, TemplateError, TemplateErrorPhase, TemplateResult,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -161,171 +162,40 @@ impl Project {
         Ok(order)
     }
 
-    /// Inject block content into slot placeholders at the AST level.
-    fn inject_blocks_ast(
-        nodes: Vec<Node>,
-        blocks: &BTreeMap<String, Vec<Node>>,
-    ) -> Vec<Node> {
-        let mut result = Vec::new();
-        for node in nodes {
-            match &node {
-                // Component definitions own their own slots; never inject page-level blocks into them.
-                Node::Element { name, .. } if name == "component" => {
-                    result.push(node);
-                }
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } if name == "slot" => {
-                    if let Some(id) = attrs.get("id") {
-                        if let Some(block_content) = blocks.get(id) {
-                            result.extend(block_content.clone());
-                            continue;
-                        }
-                    }
-                    result.push(Node::Element {
-                        name: name.clone(),
-                        attrs: attrs.clone(),
-                        children: Self::inject_blocks_ast(children.clone(), blocks),
-                    });
-                }
-                Node::VoidElement { name, attrs } if name == "slot" => {
-                    if let Some(id) = attrs.get("id") {
-                        if let Some(block_content) = blocks.get(id) {
-                            result.extend(block_content.clone());
-                            continue;
-                        }
-                    }
-                    result.push(node);
-                }
-                _ => match node {
-                    Node::Element {
-                        name,
-                        attrs,
-                        children,
-                    } => {
-                        result.push(Node::Element {
-                            name: name.clone(),
-                            attrs: attrs.clone(),
-                            children: Self::inject_blocks_ast(children.clone(), blocks),
-                        });
-                    }
-                    other => result.push(other),
-                },
-            }
-        }
-        result
-    }
+    /// Fully resolve a file's `<?load?>`s against the in-memory file map (no I/O).
+    fn resolve(&self, path: &str) -> TemplateResult<Vec<Node>> {
+        let tree = self
+            .files
+            .get(path)
+            .and_then(|f| f.tree.as_ref())
+            .ok_or_else(|| {
+                TemplateError::code(
+                    TemplateErrorPhase::Resolve,
+                    format!("File not parsed: {}", path),
+                )
+                .with_template_path(path)
+            })?;
 
-    /// Resolve `<?load file="...">` through the in-memory project tree (no disk I/O).
-    ///
-    /// When `hoist_preamble` is true (top-level page only), context-setting void
-    /// directives (data, sort, bind, etc.) are hoisted before any expanded load
-    /// content so they execute before injected block content that references their
-    /// output variables.  Loaded sub-files pass `false` to preserve structural order.
-    fn resolve_loads_in_ast(
-        &self,
-        nodes: &[Node],
-        path: &str,
-        visited: &mut Vec<String>,
-        hoist_preamble: bool,
-    ) -> TemplateResult<Vec<Node>> {
-        let blocks = extract_ast_blocks(nodes);
-        let mut preamble = Vec::new();
-        let mut body = Vec::new();
+        let fetch = |file: &str| -> TemplateResult<Vec<Node>> {
+            self.files
+                .get(file)
+                .and_then(|f| f.tree.as_ref())
+                .map(|t| t.nodes.clone())
+                .ok_or_else(|| {
+                    TemplateError::code(
+                        TemplateErrorPhase::Resolve,
+                        format!("Loaded file not found: {}", file),
+                    )
+                    .with_template_path(file)
+                })
+        };
 
-        for node in nodes {
-            match node {
-                Node::VoidElement { name, attrs } if name == "load" => {
-                    let file = attrs.get("file").ok_or_else(|| {
-                        TemplateError::code(
-                            TemplateErrorPhase::Resolve,
-                            "Load missing 'file' attribute".to_string(),
-                        )
-                        .with_template_path(path)
-                    })?;
-
-                    if visited.contains(&file.to_string()) {
-                        let cycle: Vec<&str> = visited.iter().map(|s| s.as_str()).collect();
-                        return Err(TemplateError::code(
-                            TemplateErrorPhase::Resolve,
-                            format!("Circular dependency: {} -> {}", cycle.join(" -> "), file),
-                        )
-                        .with_template_path(path));
-                    }
-                    visited.push(file.to_string());
-
-                    let loaded = self.files.get(file).ok_or_else(|| {
-                        TemplateError::code(
-                            TemplateErrorPhase::Resolve,
-                            format!("Loaded file not found: {}", file),
-                        )
-                        .with_template_path(path)
-                    })?;
-                    let loaded_ast = loaded.tree.as_ref().ok_or_else(|| {
-                        TemplateError::code(
-                            TemplateErrorPhase::Resolve,
-                            format!("File not parsed: {}", file),
-                        )
-                        .with_template_path(path)
-                    })?;
-
-                    let resolved_loaded =
-                        self.resolve_loads_in_ast(&loaded_ast.nodes, file, visited, false)?;
-                    let injected = Self::inject_blocks_ast(resolved_loaded, &blocks);
-                    visited.pop();
-                    body.extend(injected);
-                }
-                Node::Element { name, .. } if name == "block" => {
-                    // blocks are extracted into `blocks` above; skip the node itself
-                }
-                Node::VoidElement { .. } if hoist_preamble => {
-                    // data, sort, bind, markdownfm, etc. — hoist before expanded layout
-                    // so they execute before injected block content references their output
-                    preamble.push(node.clone());
-                }
-                Node::Element {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    let resolved_children =
-                        self.resolve_loads_in_ast(children, path, visited, false)?;
-                    body.push(Node::Element {
-                        name: name.clone(),
-                        attrs: attrs.clone(),
-                        children: resolved_children,
-                    });
-                }
-                _ => body.push(node.clone()),
-            }
-        }
-
-        preamble.extend(body);
-        Ok(preamble)
+        let mut visited = vec![path.to_string()];
+        resolve::resolve_loads(&tree.nodes, &fetch, &mut visited, true)
     }
 
     pub fn render(&self, path: &str, data: &Value) -> TemplateResult<String> {
-        let file = self.files.get(path).ok_or_else(|| {
-            TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("File not found: {}", path),
-            )
-            .with_template_path(path)
-        })?;
-
-        let tree = file.tree.as_ref().ok_or_else(|| {
-            TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("File not parsed: {}", path),
-            )
-            .with_template_path(path)
-        })?;
-
-        let mut visited = Vec::new();
-        let nodes = self.resolve_loads_in_ast(&tree.nodes, path, &mut visited, true)?;
-
+        let nodes = self.resolve(path)?;
         let result = self.engine.render_nodes_from_tree(&nodes, data)?;
 
         if std::env::var("HRML_DEBUG").is_ok() {
@@ -343,25 +213,7 @@ impl Project {
     }
 
     pub fn render_fragment(&self, path: &str, data: &Value) -> TemplateResult<String> {
-        let file = self.files.get(path).ok_or_else(|| {
-            TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("File not found: {}", path),
-            )
-            .with_template_path(path)
-        })?;
-
-        let tree = file.tree.as_ref().ok_or_else(|| {
-            TemplateError::code(
-                TemplateErrorPhase::Resolve,
-                format!("File not parsed: {}", path),
-            )
-            .with_template_path(path)
-        })?;
-
-        let mut visited = Vec::new();
-        let nodes = self.resolve_loads_in_ast(&tree.nodes, path, &mut visited, true)?;
-
+        let nodes = self.resolve(path)?;
         let result = self.engine.render_nodes_from_tree(&nodes, data)?;
         Ok(result.render())
     }
@@ -378,41 +230,4 @@ impl Default for Project {
     fn default() -> Self {
         Self::new(Config::default())
     }
-}
-
-fn extract_load_targets(nodes: &[Node]) -> Vec<String> {
-    let mut targets = Vec::new();
-    for node in nodes {
-        match node {
-            Node::VoidElement { name, attrs } if name == "load" => {
-                if let Some(file) = attrs.get("file") {
-                    targets.push(file.clone());
-                }
-            }
-            Node::Element { children, .. } => {
-                targets.extend(extract_load_targets(children));
-            }
-            _ => {}
-        }
-    }
-    targets
-}
-
-fn extract_ast_blocks(nodes: &[Node]) -> BTreeMap<String, Vec<Node>> {
-    let mut blocks = BTreeMap::new();
-    for node in nodes {
-        if let Node::Element {
-            name,
-            attrs,
-            children,
-        } = node
-        {
-            if name == "block" {
-                if let Some(slot) = attrs.get("slot") {
-                    blocks.insert(slot.clone(), children.clone());
-                }
-            }
-        }
-    }
-    blocks
 }
