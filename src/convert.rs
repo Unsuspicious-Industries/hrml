@@ -48,15 +48,6 @@ fn serialize_ast(nodes: &[Node], indent: usize) -> String {
                 }
                 out.push_str(&serialize_ast(children, indent + 1));
             }
-            Node::Load { file, blocks } => {
-                out.push_str(&format!("{p}[load]\n"));
-                out.push_str(&format!("{pi}file = {:?}\n", file));
-                for (slot, block_nodes) in blocks {
-                    out.push_str(&format!("{p}[block]\n"));
-                    out.push_str(&format!("{pi}slot = {:?}\n", slot));
-                    out.push_str(&serialize_ast(block_nodes, indent + 1));
-                }
-            }
         }
     }
     out
