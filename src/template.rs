@@ -192,6 +192,7 @@ use std::path::PathBuf;
 mod ast;
 mod error;
 mod head;
+mod predicate;
 pub mod resolve;
 
 fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
@@ -1184,18 +1185,7 @@ impl Engine {
     }
 
     fn eval(&self, condition: &str, context: &Context) -> bool {
-        if condition.contains("==") {
-            let parts: Vec<&str> = condition.split("==").collect();
-            if parts.len() == 2 {
-                let left_key = parts[0].trim().trim_start_matches('$');
-                let left = context.get(left_key);
-                let right = parts[1].trim().trim_matches('"').trim_matches('\'');
-                return left == right;
-            }
-        }
-
-        let lookup = condition.trim().trim_start_matches('$');
-        !context.get(lookup).is_empty()
+        predicate::eval(condition, &|path| context.get(path))
     }
 
     fn wrap_html(&self, body: ONode) -> String {
