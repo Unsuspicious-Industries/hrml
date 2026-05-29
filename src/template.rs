@@ -191,6 +191,7 @@ use std::path::PathBuf;
 
 mod ast;
 mod error;
+mod head;
 pub mod resolve;
 
 fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
@@ -526,18 +527,10 @@ impl Engine {
                         .render_markdownfm(attrs, context, template_path)
                         .map(ONode::raw),
                     "latex" => self.render_latex(attrs, template_path).map(ONode::raw),
-                    "meta" => Ok(ONode::raw(self.render_meta_tag(attrs, context))),
-                    "linktag" => Ok(ONode::raw(self.render_link_tag(attrs, context))),
-                    "title" => Ok(ONode::raw(self.render_title_tag(attrs, context))),
-                    "og" => Ok(ONode::raw(self.render_og_tag(attrs, context))),
-                    "twitter" => Ok(ONode::raw(self.render_twitter_tag(attrs, context))),
-                    "charset" => Ok(ONode::raw(self.render_charset_tag(attrs))),
-                    "viewport" => Ok(ONode::raw(self.render_viewport_tag(attrs, context))),
-                    "canonical" => Ok(ONode::raw(self.render_canonical_tag(attrs, context))),
-                    "description" => Ok(ONode::raw(self.render_description_tag(attrs, context))),
-                    "robots" => Ok(ONode::raw(self.render_robots_tag(attrs, context))),
-                    "stylesheet" => Ok(ONode::raw(self.render_stylesheet_tag(attrs, context))),
-                    "script" => Ok(ONode::raw(self.render_script_tag(attrs, context))),
+                    head if head::is_head_directive(head) => Ok(ONode::raw(
+                        head::render(head, attrs, &|s| self.resolve(s, context))
+                            .unwrap_or_default(),
+                    )),
                     "use" => self.render_component_use(attrs, &[], context, template_path),
                     "bind" => {
                         if let Some(from) = attrs.get("from") {
@@ -1341,76 +1334,6 @@ impl Engine {
         result
     }
 
-    fn render_meta_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let mut node = ONode::void(oxml_tags::META);
-        let mut keys = attrs.keys().cloned().collect::<Vec<_>>();
-        keys.sort();
-        for key in keys {
-            let resolved = self.resolve(attrs.get(&key).unwrap(), context);
-            node = node.attr(key, resolved);
-        }
-        node.build().render()
-    }
-
-    fn render_link_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let mut node = ONode::void(oxml_tags::LINK);
-        let mut keys = attrs.keys().cloned().collect::<Vec<_>>();
-        keys.sort();
-        for key in keys {
-            let resolved = self.resolve(attrs.get(&key).unwrap(), context);
-            node = node.attr(key, resolved);
-        }
-        node.build().render()
-    }
-
-    fn render_title_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let value = attrs
-            .get("value")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_default();
-        ONode::content(oxml_tags::TITLE)
-            .text(&value)
-            .build()
-            .render()
-    }
-
-    fn render_og_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let Some(name) = attrs.get("name") else {
-            return String::new();
-        };
-        let Some(content) = attrs.get("content") else {
-            return String::new();
-        };
-        let resolved_content = self.resolve(content, context);
-        let property = format!("og:{}", name);
-        ONode::void(oxml_tags::META)
-            .attr("property", &property)
-            .attr("content", &resolved_content)
-            .build()
-            .render()
-    }
-
-    fn render_twitter_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let Some(name) = attrs.get("name") else {
-            return String::new();
-        };
-        let Some(content) = attrs.get("content") else {
-            return String::new();
-        };
-        let resolved_content = self.resolve(content, context);
-        let key = format!("twitter:{}", name);
-        ONode::void(oxml_tags::META)
-            .attr("name", &key)
-            .attr("content", &resolved_content)
-            .build()
-            .render()
-    }
-
     fn render_markdown(
         &self,
         attrs: &BTreeMap<String, String>,
@@ -1566,98 +1489,6 @@ impl Engine {
         Ok(html)
     }
 
-    fn render_charset_tag(&self, attrs: &BTreeMap<String, String>) -> String {
-        use crate::features::oxml_tags;
-        let charset = attrs
-            .get("value")
-            .cloned()
-            .unwrap_or_else(|| "UTF-8".to_string());
-        ONode::void(oxml_tags::META)
-            .attr("charset", &charset)
-            .build()
-            .render()
-    }
-
-    fn render_viewport_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let content = attrs
-            .get("content")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_else(|| "width=device-width,initial-scale=1".to_string());
-        ONode::void(oxml_tags::META)
-            .attr("name", "viewport")
-            .attr("content", &content)
-            .build()
-            .render()
-    }
-
-    fn render_canonical_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let href = attrs
-            .get("href")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_default();
-        ONode::void(oxml_tags::LINK)
-            .attr("rel", "canonical")
-            .attr("href", &href)
-            .build()
-            .render()
-    }
-
-    fn render_description_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let content = attrs
-            .get("content")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_default();
-        ONode::void(oxml_tags::META)
-            .attr("name", "description")
-            .attr("content", &content)
-            .build()
-            .render()
-    }
-
-    fn render_robots_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let content = attrs
-            .get("content")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_else(|| "index,follow".to_string());
-        ONode::void(oxml_tags::META)
-            .attr("name", "robots")
-            .attr("content", &content)
-            .build()
-            .render()
-    }
-
-    fn render_stylesheet_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let href = attrs
-            .get("href")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_default();
-        ONode::void(oxml_tags::LINK)
-            .attr("rel", "stylesheet")
-            .attr("href", &href)
-            .build()
-            .render()
-    }
-
-    fn render_script_tag(&self, attrs: &BTreeMap<String, String>, context: &Context) -> String {
-        use crate::features::oxml_tags;
-        let src = attrs
-            .get("src")
-            .map(|v| self.resolve(v, context))
-            .unwrap_or_default();
-        let defer_attr = attrs.contains_key("defer");
-        let async_attr = attrs.contains_key("async");
-        ONode::content(oxml_tags::SCRIPT)
-            .attr("src", &src)
-            .attr_if(defer_attr, "defer", "defer")
-            .attr_if(async_attr, "async", "async")
-            .build()
-            .render()
-    }
 }
 
 // --- Context ---
