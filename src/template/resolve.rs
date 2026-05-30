@@ -38,6 +38,39 @@ const PREAMBLE_DIRECTIVES: &[&str] = &["data", "sort", "filter", "slice"];
 /// fetcher's.
 pub type Fetch<'a> = dyn Fn(&str) -> TemplateResult<Vec<Node>> + 'a;
 
+/// Wrap a page in the configured default layout when it declares no `<?load?>`
+/// of its own. A page then needs only its `<?block?>` fills (and any preamble
+/// directives); the engine prepends the auto-imports and the layout load, after
+/// which ordinary load resolution injects the page's blocks into the layout's
+/// slots. A page that loads anything explicitly is left untouched — it is
+/// taken to be managing its own document.
+pub fn with_default_layout(nodes: &[Node], layout: Option<&str>, imports: &[String]) -> Vec<Node> {
+    let Some(layout) = layout else {
+        return nodes.to_vec();
+    };
+    let declares_load = nodes
+        .iter()
+        .any(|n| matches!(n, Node::VoidElement { name, .. } if name == "load"));
+    if declares_load {
+        return nodes.to_vec();
+    }
+
+    let mut wrapped: Vec<Node> = imports.iter().map(|f| load_node(f)).collect();
+    wrapped.push(load_node(layout));
+    wrapped.extend(nodes.iter().cloned());
+    wrapped
+}
+
+/// Synthesise a `<?load file="…"?>` node.
+fn load_node(file: &str) -> Node {
+    let mut attrs = BTreeMap::new();
+    attrs.insert("file".to_string(), file.to_string());
+    Node::VoidElement {
+        name: "load".to_string(),
+        attrs,
+    }
+}
+
 /// Substitute `<?slot id=k?>` placeholders with `blocks[k]`.
 ///
 /// `<?component?>` subtrees are left untouched — they are substitution

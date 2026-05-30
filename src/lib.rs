@@ -5,6 +5,7 @@ pub mod convert;
 pub mod features;
 pub mod generate;
 pub mod oxml;
+pub mod paths;
 pub mod project;
 pub mod router;
 pub mod security;

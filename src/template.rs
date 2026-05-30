@@ -217,6 +217,8 @@ pub struct Engine {
     favicon: Option<String>,
     site_url: Option<String>,
     globals: serde_json::Value,
+    default_layout: Option<String>,
+    auto_imports: Vec<String>,
     tag_registry: crate::features::TagRegistry,
 }
 
@@ -229,6 +231,8 @@ impl Engine {
             favicon: None,
             site_url: None,
             globals: serde_json::Value::Object(serde_json::Map::new()),
+            default_layout: None,
+            auto_imports: Vec::new(),
             tag_registry: crate::features::TagRegistry::new(),
         }
     }
@@ -245,6 +249,8 @@ impl Engine {
             favicon: config.favicon.clone(),
             site_url: config.site_url.clone(),
             globals: config.globals.clone(),
+            default_layout: config.default_layout.clone(),
+            auto_imports: config.auto_imports.clone(),
             tag_registry: crate::features::TagRegistry::new(),
         }
     }
@@ -271,6 +277,18 @@ impl Engine {
 
     pub fn with_globals(mut self, globals: serde_json::Value) -> Self {
         self.globals = globals;
+        self
+    }
+
+    /// The layout wrapping pages that declare no `<?load?>` of their own.
+    pub fn with_default_layout(mut self, layout: Option<String>) -> Self {
+        self.default_layout = layout;
+        self
+    }
+
+    /// Files auto-loaded ahead of the default layout for every wrapped page.
+    pub fn with_auto_imports(mut self, imports: Vec<String>) -> Self {
+        self.auto_imports = imports;
         self
     }
 
@@ -350,7 +368,12 @@ impl Engine {
     /// Parse `content` and expand all `<?load?>`s into a fully-resolved tree,
     /// reading loaded files from disk relative to the base path.
     fn resolve_source(&self, content: &str, path: &str) -> TemplateResult<Vec<Node>> {
-        let nodes = parse_with_extension(content, path)?;
+        let parsed = parse_with_extension(content, path)?;
+        let nodes = resolve::with_default_layout(
+            &parsed,
+            self.default_layout.as_deref(),
+            &self.auto_imports,
+        );
         let fetch = |file: &str| parse_with_extension(&self.read_template(file)?, file);
         let mut visited = vec![path.to_string()];
         resolve::resolve_loads(&nodes, &fetch, &mut visited, true)

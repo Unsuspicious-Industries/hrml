@@ -190,8 +190,13 @@ impl Project {
                 })
         };
 
+        let nodes = resolve::with_default_layout(
+            &tree.nodes,
+            self.config.default_layout.as_deref(),
+            &self.config.auto_imports,
+        );
         let mut visited = vec![path.to_string()];
-        resolve::resolve_loads(&tree.nodes, &fetch, &mut visited, true)
+        resolve::resolve_loads(&nodes, &fetch, &mut visited, true)
     }
 
     pub fn render(&self, path: &str, data: &Value) -> TemplateResult<String> {

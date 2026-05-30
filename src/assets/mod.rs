@@ -21,6 +21,8 @@ pub fn default_config(name: &str) -> String {
         favicon: Some("/static/favicon.ico".to_string()),
         site_url: None,
         globals: serde_json::Value::Object(serde_json::Map::new()),
+        default_layout: None,
+        auto_imports: Vec::new(),
     };
     toml::to_string_pretty(&config).unwrap()
 }

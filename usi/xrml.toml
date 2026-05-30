@@ -6,6 +6,12 @@ site_name = "Unsuspicious Industries"
 site_description = "An open multidisciplinary research collective"
 favicon = "/static/favicon.ico"
 
+# Pages with no <?load?> of their own are wrapped in this layout, with these
+# imports loaded ahead of it — so a page is just its <?block?> fills.
+[templates]
+layout = "layouts/base.hrml"
+imports = ["_imports.hrml"]
+
 [globals]
 primary = "#1f2937"
 secondary = "#1f2937"
