@@ -1,5 +1,3 @@
-<?load file="layouts/base.hrml"?>
-<?load file="_imports.hrml"?>
 
 <?component id="section-header"?>
 <?bind var="label"/?><?bind var="title"/?><?bind var="subtitle"/?>

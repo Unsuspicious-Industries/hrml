@@ -52,7 +52,11 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
                 fs::create_dir_all(parent)
                     .map_err(|e| format!("Failed to create {}: {}", parent.display(), e))?;
             }
-            fs::write(&out_path, &html)
+            // A finished page carries no meaningful surrounding whitespace; emit it
+            // tidily (trimmed, single trailing newline) so output is stable however
+            // the page was authored — explicit loads or auto-layout.
+            let document = format!("{}\n", html.trim());
+            fs::write(&out_path, &document)
                 .map_err(|e| format!("Failed to write {}: {}", out_name, e))?;
             rendered_count += 1;
         }
