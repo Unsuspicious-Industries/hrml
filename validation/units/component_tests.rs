@@ -234,7 +234,10 @@ fn real_usi_index_renders_imported_cards() {
     }
 
     let out = env
-        .render_with_data(
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .with_auto_imports(vec!["_imports.hrml".to_string()])
+        .render(
             "pages/index.hrml",
             &serde_json::json!({
                 "globals": {
@@ -277,7 +280,12 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
     use xrml::project::Project;
     use std::path::Path;
 
-    let mut project = Project::new(Config::default());
+    let config = Config {
+        default_layout: Some("layouts/base.hrml".to_string()),
+        auto_imports: vec!["_imports.hrml".to_string()],
+        ..Config::default()
+    };
+    let mut project = Project::new(config);
     let templates_root = Path::new("usi/templates");
 
     for path in [
@@ -299,11 +307,6 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
     }
 
     project.parse_all().unwrap();
-
-    let order = project.resolve_order().unwrap();
-    let idx_pos = order.iter().position(|p| p == "pages/index.hrml").unwrap();
-    let imp_pos = order.iter().position(|p| p == "_imports.hrml").unwrap();
-    assert!(imp_pos < idx_pos, "_imports should resolve before index");
 
     let out = project
         .render(
@@ -347,6 +350,8 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 fn direct_usi_templates_path_renders_cards() {
     let engine = xrml::template::Engine::new("usi/templates")
         .with_site_name("Unsuspicious Industries".to_string())
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .with_auto_imports(vec!["_imports.hrml".to_string()])
         .with_globals(serde_json::json!({
             "primary": "#1f2937",
             "secondary": "#1f2937",

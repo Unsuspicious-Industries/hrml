@@ -1,5 +1,3 @@
-<?load file="layouts/base.hrml"?>
-<?load file="_imports.hrml"?>
 
 <?block slot="content"?>
     <?use id="prose-page"?>

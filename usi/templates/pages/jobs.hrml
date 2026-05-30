@@ -1,5 +1,3 @@
-<?load file="layouts/base.hrml"?>
-<?load file="_imports.hrml"?>
 <?data from="data/jobs" as="jobs"?>
 <?sort over="jobs" by="priority" order="desc" as="jobs"?>
 
