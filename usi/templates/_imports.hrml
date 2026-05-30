@@ -1,5 +1,9 @@
+<?load file="components/section.hrml"?>
+<?load file="components/section-header.hrml"?>
+<?load file="components/card-grid.hrml"?>
 <?load file="components/card.hrml"?>
 <?load file="components/stat.hrml"?>
+<?load file="components/stats.hrml"?>
 <?load file="components/nav.hrml"?>
 <?load file="components/footer.hrml"?>
 <?load file="components/post-card.hrml"?>

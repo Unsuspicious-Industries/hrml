@@ -1,5 +1,6 @@
 <?component id="cta-section"?>
 <?bind var="title"/?>
+<?bind var="subtitle"/?>
 <?bind var="primary"/?>
 <?bind var="primary-href"/?>
 <?bind var="secondary"/?>
@@ -7,6 +8,9 @@
 <section class="section cta-section">
     <?if cond="$title"?>
     <h2 class="section-title"><?get id="title"?></h2>
+    <?/if?>
+    <?if cond="$subtitle"?>
+    <p class="section-subtitle"><?get id="subtitle"?></p>
     <?/if?>
     <div class="cta-buttons">
         <?if cond="$primary"?>

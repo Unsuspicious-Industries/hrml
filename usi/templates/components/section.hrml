@@ -1,6 +1,12 @@
 <?component id="section-cmp"?>
-<?bind var="class"/?>
-<section class="section $class">
+<?bind var="modifier"/?>
+<?if cond="$modifier"?>
+<section class="section $modifier">
     <?slot id="content"?>
 </section>
+<?else?>
+<section class="section">
+    <?slot id="content"?>
+</section>
+<?/if?>
 <?/component?>

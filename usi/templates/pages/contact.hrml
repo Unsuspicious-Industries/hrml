@@ -1,35 +1,32 @@
-
 <?block slot="content"?>
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">Contact Us</h1>
-            <p class="hero-description">
-                Interested in research collaboration? Get in touch with us.
-            </p>
-        </div>
-    </section>
+    <?use id="hero-cmp"?>
+        <?bind var="title"?>Contact Us<?/bind?>
+        <?bind var="description"?>Interested in research collaboration? Get in touch with us.<?/bind?>
+    </?use?>
 
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">Research Opportunities</h2>
-            <p class="section-subtitle">We are always looking for collaborators</p>
-        </div>
-        
-        <div class="grid-3">
-            <div class="card">
-                <h3 class="card-title">Email</h3>
-                <p class="card-text">Contact us at research@unsuspicious.org for collaboration inquiries.</p>
-            </div>
-            
-            <div class="card">
-                <h3 class="card-title">GitHub</h3>
-                <p class="card-text">Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.</p>
-            </div>
-            
-            <div class="card">
-                <h3 class="card-title">Social</h3>
-                <p class="card-text">Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.</p>
-            </div>
-        </div>
-    </section>
+    <?use id="section-cmp"?>
+        <?block slot="content"?>
+            <?use id="section-header"?>
+                <?bind var="title"?>Research Opportunities<?/bind?>
+                <?bind var="subtitle"?>We are always looking for collaborators<?/bind?>
+            </?use?>
+            <?use id="card-grid"?>
+                <?bind var="cols"?>3<?/bind?>
+                <?block slot="content"?>
+                    <?use id="card-cmp"?>
+                        <?bind var="title"?>Email<?/bind?>
+                        <?bind var="text"?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/bind?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?bind var="title"?>GitHub<?/bind?>
+                        <?bind var="text"?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/bind?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?bind var="title"?>Social<?/bind?>
+                        <?bind var="text"?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/bind?>
+                    </?use?>
+                </?block?>
+            </?use?>
+        </?block?>
+    </?use?>
 </?block?>
