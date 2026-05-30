@@ -192,6 +192,7 @@ use std::path::PathBuf;
 mod ast;
 mod error;
 mod head;
+mod pipeline;
 mod predicate;
 pub mod resolve;
 
@@ -515,15 +516,9 @@ impl Engine {
                         .map(ONode::raw),
                     "item" => Ok(ONode::empty()),
                     "field" => Ok(ONode::empty()),
-                    "filter" => self
-                        .render_filter(attrs, context, template_path)
-                        .map(ONode::raw),
-                    "sort" => self
-                        .render_sort(attrs, context, template_path)
-                        .map(ONode::raw),
-                    "slice" => self
-                        .render_slice(attrs, context, template_path)
-                        .map(ONode::raw),
+                    pipe @ ("filter" | "sort" | "slice") => {
+                        Ok(self.render_pipeline(pipe, attrs, context))
+                    }
                     "markdownfm" => self
                         .render_markdownfm(attrs, context, template_path)
                         .map(ONode::raw),
@@ -1016,118 +1011,24 @@ impl Engine {
     ///
     /// This is a *natural transformation* in the subcategory of decidable
     /// predicates (Burstall 1969, §3: structural induction on the array).
-    fn render_filter(
+    /// The shared Kleisli wrapper for the array transforms `<?filter?>`,
+    /// `<?sort?>`, `<?slice?>`: read the `over` array, apply the pure
+    /// [`pipeline`] transform, bind the result to `as` (defaulting to `over`).
+    fn render_pipeline(
         &self,
+        name: &str,
         attrs: &BTreeMap<String, String>,
         context: &mut Context,
-        _template_path: &str,
-    ) -> TemplateResult<String> {
+    ) -> ONode {
         let over = attrs.get("over").cloned().unwrap_or_default();
-        let where_key = attrs.get("where").cloned().unwrap_or_default();
         let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
 
-        let Some(Value::Array(items)) = context.get_value(&over) else {
-            return Ok(String::new());
-        };
-
-        let filtered: Vec<Value> = items
-            .into_iter()
-            .filter(|item| {
-                if let Some(val) = item.get(&where_key) {
-                    match val {
-                        Value::String(s) => !s.is_empty(),
-                        Value::Bool(b) => *b,
-                        Value::Number(_) => true,
-                        Value::Array(a) => !a.is_empty(),
-                        Value::Object(_) => true,
-                        Value::Null => false,
-                    }
-                } else {
-                    false
-                }
-            })
-            .collect();
-
-        context.set_value(&as_key, Value::Array(filtered));
-        Ok(String::new())
-    }
-
-    /// `<?sort over="xs" by="field" order="desc" as="name"?>`
-    ///
-    /// The **lexicographic ordering** of an array by a named field:
-    /// ```text
-    /// sort : [A] → Field → Order → [A]
-    /// Order = { asc, desc }
-    /// sort(xs)(k)(asc)  ≜ sort_by str_cmp(x[k], y[k])
-    /// sort(xs)(k)(desc) ≜ reverse ∘ sort(xs)(k)(asc)
-    /// ```
-    ///
-    /// Sorting is *stable* (by construction of `Vec::sort_by`).  The type is
-    /// a forgetful functor from the category of ordered sets to the category
-    /// of plain sets (Mac Lane 1971, §II.1).
-    fn render_sort(
-        &self,
-        attrs: &BTreeMap<String, String>,
-        context: &mut Context,
-        _template_path: &str,
-    ) -> TemplateResult<String> {
-        let over = attrs.get("over").cloned().unwrap_or_default();
-        let by = attrs.get("by").cloned().unwrap_or_default();
-        let desc = attrs.get("order").map(|o| o == "desc").unwrap_or(false);
-        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
-
-        let Some(Value::Array(items)) = context.get_value(&over) else {
-            return Ok(String::new());
-        };
-
-        let by_clone = by.clone();
-        let mut sorted: Vec<Value> = items;
-        sorted.sort_by(|a, b| {
-            let a_val = value_to_sort_key(a.get(&by_clone));
-            let b_val = value_to_sort_key(b.get(&by_clone));
-            if desc {
-                b_val.cmp(&a_val)
-            } else {
-                a_val.cmp(&b_val)
+        if let Some(Value::Array(items)) = context.get_value(&over) {
+            if let Some(out) = pipeline::transform(name, items, attrs) {
+                context.set_value(&as_key, Value::Array(out));
             }
-        });
-
-        context.set_value(&as_key, Value::Array(sorted));
-        Ok(String::new())
-    }
-
-    fn render_slice(
-        &self,
-        attrs: &BTreeMap<String, String>,
-        context: &mut Context,
-        _template_path: &str,
-    ) -> TemplateResult<String> {
-        let over = attrs.get("over").cloned().unwrap_or_default();
-        let start: usize = attrs
-            .get("start")
-            .unwrap_or(attrs.get("from").unwrap_or(&"0".to_string()))
-            .parse()
-            .unwrap_or(0);
-        let count: usize = attrs
-            .get("count")
-            .unwrap_or(attrs.get("to").unwrap_or(&"0".to_string()))
-            .parse()
-            .unwrap_or(0);
-        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
-
-        let Some(Value::Array(items)) = context.get_value(&over) else {
-            return Ok(String::new());
-        };
-
-        let end = if count > 0 {
-            (start + count).min(items.len())
-        } else {
-            items.len()
-        };
-        let sliced: Vec<Value> = items.into_iter().skip(start).take(end - start).collect();
-
-        context.set_value(&as_key, Value::Array(sliced));
-        Ok(String::new())
+        }
+        ONode::empty()
     }
 
     fn render_bind(
@@ -1572,22 +1473,6 @@ fn value_to_string(v: &Value) -> String {
         Value::Array(arr) => serde_json::to_string(arr).unwrap_or_default(),
         Value::Object(map) => serde_json::to_string(map).unwrap_or_default(),
         Value::Null => String::new(),
-    }
-}
-
-fn value_to_sort_key(val: Option<&Value>) -> String {
-    match val {
-        Some(Value::Number(n)) => format!("{:020}", n.as_u64().unwrap_or(0)),
-        Some(Value::String(s)) => s.clone(),
-        Some(Value::Bool(b)) => {
-            if *b {
-                "1".into()
-            } else {
-                "0".into()
-            }
-        }
-        Some(Value::Null) => String::new(),
-        _ => String::new(),
     }
 }
 
