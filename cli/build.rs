@@ -2,6 +2,7 @@ use crate::ast_log;
 use crate::project::load_project;
 use std::fs;
 use std::path::Path;
+use xrml::paths;
 
 pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
     let mut project = load_project(project_path)?;
@@ -21,40 +22,40 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
 
     project.parse_all().map_err(|e| e.to_string())?;
 
+    // Each page expands to one or more concrete routes: a static page is a single
+    // route, while a dynamic `[param]` page fans out over the collection it binds
+    // (see `xrml::paths`). Render every concrete route and write it under dist/.
+    let page_paths: Vec<String> = project.pages().map(String::from).collect();
     let mut rendered_count = 0;
-    for path in project.pages() {
+    for path in page_paths {
         if !path.starts_with("pages/") {
             continue;
         }
 
-        let html = match project.render(path, &serde_json::json!({})) {
-            Ok(html) => html,
-            Err(e) => {
-                return Err(format!("Failed to render {}: {}", path, e));
-            }
-        };
+        let params = paths::route_params(&path);
+        let page_nodes = project
+            .get_file(&path)
+            .and_then(|f| f.tree.as_ref())
+            .map(|t| t.nodes.clone())
+            .unwrap_or_default();
+        let bindings = paths::expand(&params, &page_nodes, project_path);
 
-        let out_name = if path.starts_with("pages/") {
-            let name = path.strip_prefix("pages/").unwrap().to_string();
-            if let Some(stem) = name.strip_suffix(".hrml").or_else(|| name.strip_suffix(".trml")) {
-                stem.to_string() + ".html"
-            } else {
-                name
-            }
-        } else if let Some(stem) = path.strip_suffix(".hrml").or_else(|| path.strip_suffix(".trml")) {
-            stem.to_string() + ".html"
-        } else {
-            path.to_string()
-        };
+        for binding in bindings {
+            let data = serde_json::to_value(&binding).unwrap_or_else(|_| serde_json::json!({}));
+            let html = project
+                .render(&path, &data)
+                .map_err(|e| format!("Failed to render {}: {}", path, e))?;
 
-        let out_path = dist_path.join(&out_name);
-        if let Some(parent) = out_path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create {}: {}", parent.display(), e))?;
+            let out_name = paths::output_path(&path, &binding);
+            let out_path = dist_path.join(&out_name);
+            if let Some(parent) = out_path.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create {}: {}", parent.display(), e))?;
+            }
+            fs::write(&out_path, &html)
+                .map_err(|e| format!("Failed to write {}: {}", out_name, e))?;
+            rendered_count += 1;
         }
-
-        fs::write(&out_path, &html).map_err(|e| format!("Failed to write {}: {}", out_name, e))?;
-        rendered_count += 1;
     }
 
     let static_src = project_path.join(&project.config.static_path);

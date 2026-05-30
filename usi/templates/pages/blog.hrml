@@ -1,6 +1,6 @@
 <?load file="layouts/base.hrml"?>
 <?load file="_imports.hrml"?>
-<?data from="posts" as="posts"?>
+<?data from="data/posts" as="posts"?>
 <?sort over="posts" by="publishDate" order="desc" as="posts"?>
 
 <?block slot="content"?>

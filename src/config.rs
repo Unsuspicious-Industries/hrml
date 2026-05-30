@@ -57,6 +57,17 @@ pub struct Config {
 
     #[serde(default = "default_globals")]
     pub globals: Value,
+
+    /// The layout a page is wrapped in when it declares no `<?load?>` of its own.
+    /// Lets authors write only their `<?block?>` fills; the engine supplies the
+    /// surrounding document. Configured as `[templates] layout = "…"`.
+    #[serde(default)]
+    pub default_layout: Option<String>,
+
+    /// Files auto-loaded ahead of the default layout (component libraries, etc.),
+    /// so pages never repeat their imports. Configured as `[templates] imports = […]`.
+    #[serde(default)]
+    pub auto_imports: Vec<String>,
 }
 
 fn default_globals() -> Value {
@@ -68,6 +79,7 @@ struct RawConfig {
     server: Option<RawServer>,
     paths: Option<RawPaths>,
     site: Option<RawSite>,
+    templates: Option<RawTemplates>,
     host: Option<String>,
     port: Option<u16>,
     templates_path: Option<String>,
@@ -102,6 +114,13 @@ struct RawSite {
     url: Option<String>,
 }
 
+#[derive(Deserialize, Default)]
+struct RawTemplates {
+    layout: Option<String>,
+    #[serde(default)]
+    imports: Vec<String>,
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -115,6 +134,8 @@ impl Default for Config {
             favicon: None,
             site_url: None,
             globals: default_globals(),
+            default_layout: None,
+            auto_imports: Vec::new(),
         }
     }
 }
@@ -158,6 +179,15 @@ impl Config {
             }
             if let Some(url) = site.url {
                 config.site_url = Some(url);
+            }
+        }
+
+        if let Some(templates) = raw.templates {
+            if let Some(layout) = templates.layout {
+                config.default_layout = Some(layout);
+            }
+            if !templates.imports.is_empty() {
+                config.auto_imports = templates.imports;
             }
         }
 

@@ -1,6 +1,6 @@
 <?load file="layouts/base.hrml"?>
 <?load file="_imports.hrml"?>
-<?data from="static/data/jobs" as="jobs"?>
+<?data from="data/jobs" as="jobs"?>
 <?sort over="jobs" by="priority" order="desc" as="jobs"?>
 
 <?block slot="content"?>

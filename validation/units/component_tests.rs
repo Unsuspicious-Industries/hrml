@@ -123,6 +123,38 @@ fn usi_card_component_renders_bound_content() {
 }
 
 #[test]
+fn default_layout_wraps_a_page_with_no_loads() {
+    // A page that declares no <?load?> is wrapped in the configured layout,
+    // with the auto-imports loaded ahead of it — so the author writes only blocks.
+    let env = TestEnv::new("unit_default_layout");
+    env.write(
+        "layouts/base.hrml",
+        r#"<main><?slot id="content"?></?slot?></main>"#,
+    );
+    env.write(
+        "components/hi.hrml",
+        r#"<?component id="hi"?><p class="hi">Hello</p></?component?>"#,
+    );
+    env.write("_imports.hrml", r#"<?load file="components/hi.hrml"?>"#);
+    // No <?load?> here — just the content block and a component use.
+    env.write(
+        "pages/test.hrml",
+        r#"<?block slot="content"?><?use id="hi"?></?use?><span>body</span></?block?>"#,
+    );
+
+    let out = env
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .with_auto_imports(vec!["_imports.hrml".to_string()])
+        .render("pages/test.hrml", &serde_json::json!({}))
+        .unwrap();
+
+    assert!(out.contains("<main>"), "layout not applied: {}", out);
+    assert!(out.contains("class=\"hi\">Hello"), "auto-import missing: {}", out);
+    assert!(out.contains("<span>body</span>"), "page body missing: {}", out);
+}
+
+#[test]
 fn imported_component_available_inside_loaded_layout_slot() {
     let env = TestEnv::new("unit_imported_component_layout_slot");
     env.write(
@@ -420,6 +452,8 @@ fn blog_and_jobs_pages_render() {
             "brand_accent_1":"#54005b","brand_accent_2":"#06b6d4",
             "font_mono":"mono","font_serif":"serif","font_typewriter":"tw"
         }),
+        default_layout: Some("layouts/base.hrml".to_string()),
+        auto_imports: vec!["_imports.hrml".to_string()],
         ..Config::default()
     };
 
@@ -434,16 +468,7 @@ fn blog_and_jobs_pages_render() {
     }
     project.parse_all().unwrap();
 
-    for page in &[
-        "pages/blog.hrml",
-        "pages/jobs.hrml",
-        "pages/jobs/ethics-researcher.hrml",
-        "pages/jobs/itinerant-polymath.hrml",
-    ] {
-        let result = project.render(page, &serde_json::json!({}));
-        assert!(result.is_ok(), "page {} failed: {}", page, result.err().unwrap());
-    }
-
+    // The listing pages render with no params.
     let blog_out = project.render("pages/blog.hrml", &serde_json::json!({})).unwrap();
     assert!(blog_out.contains("completing-regex") || blog_out.contains("proposition-7") || blog_out.contains("post-card"),
         "blog page missing post content: {}", &blog_out[..blog_out.len().min(500)]);
@@ -451,6 +476,23 @@ fn blog_and_jobs_pages_render() {
     let jobs_out = project.render("pages/jobs.hrml", &serde_json::json!({})).unwrap();
     assert!(jobs_out.contains("ethics") || jobs_out.contains("polymath") || jobs_out.contains("job-card"),
         "jobs page missing job content: {}", &jobs_out[..jobs_out.len().min(500)]);
+
+    // Dynamic [slug] pages: the generic path system expands the route over its
+    // collection, then each concrete page is rendered with its slug bound.
+    for (page, base) in &[
+        ("pages/blog/[slug].hrml", "data/posts"),
+        ("pages/jobs/[slug].hrml", "data/jobs"),
+    ] {
+        let nodes = project.get_file(page).unwrap().tree.as_ref().unwrap().nodes.clone();
+        let bindings = xrml::paths::expand(&xrml::paths::route_params(page), &nodes, project_root);
+        assert!(!bindings.is_empty(), "{} expanded to no pages (collection {} empty?)", page, base);
+        for binding in bindings {
+            let data = serde_json::to_value(&binding).unwrap();
+            let result = project.render(page, &data);
+            assert!(result.is_ok(), "page {} {:?} failed: {}", page, binding, result.err().unwrap());
+            assert!(result.unwrap().contains("hero-title"), "{} {:?} missing title", page, binding);
+        }
+    }
 }
 
 fn walkdir(dir: &std::path::Path) -> Vec<String> {
