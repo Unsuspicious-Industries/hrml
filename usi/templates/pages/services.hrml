@@ -1,103 +1,74 @@
-
 <?block slot="content"?>
-    <section class="hero">
-        <div class="hero-content">
-            <p class="hero-label">Services</p>
-            <h1 class="hero-title">Expert Consultation & Development</h1>
-            <p class="hero-description">
-                We provide specialized consulting services in formal methods, type theory, 
-                and advanced software engineering.
-            </p>
-        </div>
-    </section>
+    <?use id="hero-cmp"?>
+        <?label?>Services<?/label?>
+        <?title?>Expert Consultation & Development<?/title?>
+        <?description?>We provide specialized consulting services in formal methods, type theory, and advanced software engineering.<?/description?>
+    </?use?>
 
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">What We Offer</h2>
-            <p class="section-subtitle">Specialized expertise for complex problems</p>
-        </div>
-        
-        <div class="grid-3">
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⟨/⟩</div>
-                    <h3 class="card-title">Formal Verification</h3>
-                    <p class="card-text">Rigorous verification of software correctness using theorem provers and model checkers.</p>
-                </div>
-            </a>
-            
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⧉</div>
-                    <h3 class="card-title">Type System Design</h3>
-                    <p class="card-text">Custom type systems for domain-specific languages and verification tools.</p>
-                </div>
-            </a>
-            
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⚙</div>
-                    <h3 class="card-title">Compiler Development</h3>
-                    <p class="card-text">Building high-performance compilers with formal correctness guarantees.</p>
-                </div>
-            </a>
-            
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">◈</div>
-                    <h3 class="card-title">Proof Assistant Consulting</h3>
-                    <p class="card-text">Expert guidance on using Coq, Lean, Agda, and other proof assistants.</p>
-                </div>
-            </a>
-            
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⬡</div>
-                    <h3 class="card-title">Distributed Systems</h3>
-                    <p class="card-text">Architecture and verification of fault-tolerant distributed systems.</p>
-                </div>
-            </a>
-            
-            <a href="/contact" class="card-link">
-                <div class="card">
-                    <div class="card-icon">∫</div>
-                    <h3 class="card-title">Research Partnerships</h3>
-                    <p class="card-text">Collaborative research projects with academic and industry partners.</p>
-                </div>
-            </a>
-        </div>
-    </section>
+    <?use id="section-cmp"?>
+        <?block slot="content"?>
+            <?use id="section-header"?>
+                <?title?>What We Offer<?/title?>
+                <?subtitle?>Specialized expertise for complex problems<?/subtitle?>
+            </?use?>
+            <?use id="card-grid"?>
+                <?cols?>3<?/cols?>
+                <?block slot="content"?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>⟨/⟩<?/glyph?>
+                        <?title?>Formal Verification<?/title?>
+                        <?text?>Rigorous verification of software correctness using theorem provers and model checkers.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>⧉<?/glyph?>
+                        <?title?>Type System Design<?/title?>
+                        <?text?>Custom type systems for domain-specific languages and verification tools.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>⚙<?/glyph?>
+                        <?title?>Compiler Development<?/title?>
+                        <?text?>Building high-performance compilers with formal correctness guarantees.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>◈<?/glyph?>
+                        <?title?>Proof Assistant Consulting<?/title?>
+                        <?text?>Expert guidance on using Coq, Lean, Agda, and other proof assistants.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>⬡<?/glyph?>
+                        <?title?>Distributed Systems<?/title?>
+                        <?text?>Architecture and verification of fault-tolerant distributed systems.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/contact<?/href?>
+                        <?glyph?>∫<?/glyph?>
+                        <?title?>Research Partnerships<?/title?>
+                        <?text?>Collaborative research projects with academic and industry partners.<?/text?>
+                    </?use?>
+                </?block?>
+            </?use?>
+        </?block?>
+    </?use?>
 
-    <section class="section stats-section">
-        <div class="section-header">
-            <h2 class="section-title">Our Track Record</h2>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-number">50+</div>
-                <div class="stat-label">Projects Delivered</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">20+</div>
-                <div class="stat-label">Happy Clients</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">On-Time Delivery</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">Support Available</div>
-            </div>
-        </div>
-    </section>
+    <?use id="stats-section"?>
+        <?title?>Our Track Record<?/title?>
+        <?block slot="content"?>
+            <?use id="stat-item"?><?number?>50+<?/number?><?label?>Projects Delivered<?/label?></?use?>
+            <?use id="stat-item"?><?number?>20+<?/number?><?label?>Happy Clients<?/label?></?use?>
+            <?use id="stat-item"?><?number?>100%<?/number?><?label?>On-Time Delivery<?/label?></?use?>
+            <?use id="stat-item"?><?number?>24/7<?/number?><?label?>Support Available<?/label?></?use?>
+        </?block?>
+    </?use?>
 
-    <section class="section cta-section">
-        <h2 class="section-title">Get a Quote</h2>
-        <p class="section-subtitle">Let's discuss your project</p>
-        <div class="cta-buttons">
-            <a href="/contact" class="btn btn-primary">Contact Us</a>
-        </div>
-    </section>
+    <?use id="cta-section"?>
+        <?title?>Get a Quote<?/title?>
+        <?subtitle?>Let's discuss your project<?/subtitle?>
+        <?primary?>Contact Us<?/primary?>
+        <?primary-href?>/contact<?/primary-href?>
+    </?use?>
 </?block?>
