@@ -59,6 +59,38 @@ fn component_use_applies_child_bindings_before_render() {
 }
 
 #[test]
+fn named_tag_props_bind_like_explicit_bind() {
+    // `<?title?>…<?/title?>` inside `<?use?>` is sugar for `<?bind var="title">`.
+    let env = TestEnv::new("unit_comp_named_props");
+    env.write(
+        "components/card.hrml",
+        r#"<?component id="card"?>
+<?bind var="href"/?>
+<?bind var="title"/?>
+<?if cond="$href"?>
+<a href="$href"><h3>$title</h3></a>
+<?else?>
+<div><h3>$title</h3></div>
+<?/if?>
+</?component?>"#,
+    );
+    env.write(
+        "pages/test.hrml",
+        r#"<?load file="components/card.hrml"?>
+<?use id="card"?>
+<?href?>/product<?/href?>
+<?title?>Hello<?/title?>
+</?use?>"#,
+    );
+    let out = env.render("pages/test.hrml").unwrap();
+    assert!(
+        out.contains("<a href=\"/product\"><h3>Hello</h3></a>"),
+        "named-tag props failed: {}",
+        out
+    );
+}
+
+#[test]
 fn usi_card_component_renders_bound_content() {
     let env = TestEnv::new("unit_usi_card_component");
     env.write(
