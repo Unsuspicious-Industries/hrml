@@ -184,6 +184,31 @@ const HTML_VOID_TAGS: &[&str] = &[
 fn is_html_void_tag(name: &str) -> bool {
     HTML_VOID_TAGS.iter().any(|v| v.eq_ignore_ascii_case(name))
 }
+
+/// Structural/binding directives that stay active when they appear as a direct
+/// child of `<?use?>`. Any *other* directive element there is interpreted as a
+/// named prop (e.g. `<?title?>…<?/title?>` binds `title`), so this set is the
+/// boundary between control flow and user-named component arguments.
+///
+/// Deliberately excludes head directives (`title`, `description`, …) and pure
+/// output directives (`mdx`, `markdown`, …): those carry no meaning as setup
+/// children, and their names are exactly the ones authors reach for as props.
+const USE_SETUP_DIRECTIVES: &[&str] = &[
+    "load", "else", "set", "data", "filter", "sort", "slice", "bind", "slot", "block", "use", "if",
+    "for", "map", "record", "list", "field", "items", "item", "component",
+];
+
+fn is_use_setup_directive(name: &str) -> bool {
+    USE_SETUP_DIRECTIVES.contains(&name)
+}
+
+/// A reference-position attribute names a variable to read. `$x` and `x` both
+/// denote the variable `x`; the optional sigil keeps reference sites visually
+/// consistent with `$x` interpolation. Declaration positions (`var`, `as`,
+/// `id` on `set`/`component`) keep bare names.
+fn deref<'a>(name: &'a str) -> &'a str {
+    name.strip_prefix('$').unwrap_or(name).trim()
+}
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
@@ -555,7 +580,7 @@ impl Engine {
                         if let Some(from) = attrs.get("from") {
                             let var = attrs.get("var").map(String::as_str).unwrap_or("value");
                             let bound = context
-                                .get_value(from)
+                                .get_value(deref(from))
                                 .unwrap_or(Value::String(String::new()));
                             context.set_value(var, bound);
                         }
@@ -568,7 +593,7 @@ impl Engine {
                     }
                     "get" => {
                         if let Some(id) = attrs.get("id") {
-                            Ok(ONode::raw(context.get(id)))
+                            Ok(ONode::raw(context.get(deref(id))))
                         } else {
                             Ok(ONode::empty())
                         }
@@ -751,7 +776,7 @@ impl Engine {
         let expr = attrs.get("in").cloned().unwrap_or_default();
         let (item_var, source) = parse_for_expr(&expr);
 
-        let Some(Value::Array(items)) = context.get_value(&source) else {
+        let Some(Value::Array(items)) = context.get_value(deref(&source)) else {
             return Ok(ONode::empty());
         };
 
@@ -790,7 +815,7 @@ impl Engine {
         context: &Context,
         template_path: &str,
     ) -> TemplateResult<ONode> {
-        let source = attrs.get("over").cloned().unwrap_or_default();
+        let source = deref(&attrs.get("over").cloned().unwrap_or_default()).to_string();
         let item_var = attrs
             .get("as")
             .cloned()
@@ -1043,7 +1068,7 @@ impl Engine {
         attrs: &BTreeMap<String, String>,
         context: &mut Context,
     ) -> ONode {
-        let over = attrs.get("over").cloned().unwrap_or_default();
+        let over = deref(&attrs.get("over").cloned().unwrap_or_default()).to_string();
         let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
 
         if let Some(Value::Array(items)) = context.get_value(&over) {
@@ -1064,7 +1089,7 @@ impl Engine {
         let var = attrs.get("var").map(String::as_str).unwrap_or("value");
         if let Some(from) = attrs.get("from") {
             let bound = context
-                .get_value(from)
+                .get_value(deref(from))
                 .unwrap_or(Value::String(String::new()));
             let mut scoped = context.clone();
             scoped.set_value(var, bound);
@@ -1094,15 +1119,39 @@ impl Engine {
 
         let mut scoped = context.clone();
         let blocks = resolve::extract_blocks(children);
-        let setup_nodes: Vec<Node> = children
-            .iter()
-            .filter(|node| match node {
-                Node::Element { name, .. } | Node::VoidElement { name, .. } => name != "block",
-                _ => true,
-            })
-            .cloned()
-            .collect();
-        let _ = self.render_nodes(&setup_nodes, &mut scoped, template_path)?;
+
+        // Children of `<?use?>` fall into three roles: `<?block?>` fills a named
+        // slot (handled above), a *reserved* directive runs as ordinary setup,
+        // and any other directive `<?name?>…<?/name?>` is a named prop — sugar
+        // for `<?bind var="name">…</?bind>`.
+        for node in children {
+            match node {
+                Node::Element { name, children, .. }
+                    if !is_html_node(name)
+                        && name != "block"
+                        && !is_use_setup_directive(name) =>
+                {
+                    let value = self
+                        .render_nodes(children, &mut scoped, template_path)?
+                        .render();
+                    scoped.set_str(name, value);
+                }
+                Node::VoidElement { name, attrs }
+                    if !is_html_node(name) && !is_use_setup_directive(name) =>
+                {
+                    let value = attrs
+                        .get("from")
+                        .and_then(|f| scoped.get_value(deref(f)))
+                        .map(|v| value_to_string(&v))
+                        .unwrap_or_default();
+                    scoped.set_str(name, value);
+                }
+                Node::Element { name, .. } if name == "block" => {}
+                _ => {
+                    let _ = self.render_node(node, &mut scoped, template_path)?;
+                }
+            }
+        }
 
         let resolved = resolve::inject_blocks(component_nodes, &blocks);
         self.render_nodes(&resolved, &mut scoped, template_path)
