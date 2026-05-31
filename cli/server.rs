@@ -102,7 +102,10 @@ pub async fn serve_static(project_path: &Path, log_ast: bool) -> Result<(), Stri
     let dist_path = project_path.join("dist");
 
     if !dist_path.exists() {
-        return Err("dist/ not found. Run 'hrml build' first.".to_string());
+        return Err(format!(
+            "dist/ not found. Run '{} build' first.",
+            env!("CARGO_BIN_NAME")
+        ));
     }
 
     println!(

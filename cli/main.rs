@@ -20,7 +20,8 @@ fn print_help() {
         env!("CARGO_PKG_VERSION")
     );
     println!();
-    println!("Usage: hrml <command> [options]");
+    let bin = env!("CARGO_BIN_NAME");
+    println!("Usage: {bin} <command> [options]");
     println!();
     println!("Commands:");
     println!("  new <name>          Create a new HRML project");
@@ -35,11 +36,11 @@ fn print_help() {
     println!("  help                Show this help message");
     println!();
     println!("Examples:");
-    println!("  hrml new myapp              Create new project 'myapp'");
-    println!("  hrml dev                    Start dev server in current directory");
-    println!("  hrml serve ./myapp          Serve project from ./myapp");
-    println!("  hrml build ./myapp          Build static site from ./myapp");
-    println!("  hrml check                  Validate current project");
+    println!("  {bin} new myapp              Create new project 'myapp'");
+    println!("  {bin} dev                    Start dev server in current directory");
+    println!("  {bin} serve ./myapp          Serve project from ./myapp");
+    println!("  {bin} build ./myapp          Build static site from ./myapp");
+    println!("  {bin} check                  Validate current project");
 }
 
 fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, String> {
@@ -85,7 +86,7 @@ async fn main() {
         "new" => {
             if args.len() < 3 {
                 eprintln!("Error: Project name required");
-                eprintln!("Usage: hrml new <name>");
+                eprintln!("Usage: {} new <name>", env!("CARGO_BIN_NAME"));
                 process::exit(1);
             }
 
@@ -100,7 +101,7 @@ async fn main() {
             println!();
             println!("To get started:");
             println!("  cd {}", name);
-            println!("  hrml dev");
+            println!("  {} dev", env!("CARGO_BIN_NAME"));
         }
         "dev" => {
             let options = match parse_path_command_options(&args[2..]) {

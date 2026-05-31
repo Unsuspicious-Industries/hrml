@@ -66,7 +66,10 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
     copy_dir_recursive(&static_src, &dist_path)?;
 
     println!("Done! {} pages rendered to dist/", rendered_count);
-    println!("Run 'hrml serve' to preview the built site.");
+    println!(
+        "Run '{} serve' to preview the built site.",
+        env!("CARGO_BIN_NAME")
+    );
 
     Ok(())
 }
