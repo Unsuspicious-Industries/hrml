@@ -4,7 +4,12 @@ Provides syntax highlighting for HRML template files (.hrml).
 
 ## Features
 
-- Syntax highlighting for HRML processing instructions
+- Syntax highlighting for every HRML processing instruction — built-in
+  directives are coloured as keywords; any other `<?name?>` (a named-tag
+  component prop, e.g. `<?title?>…<?/title?>`) is coloured as a tag
+- Both closing spellings: `</?name?>` and `<?/name?>`
+- `$variable` references (including dotted paths like `$post.title`),
+  highlighted in text content and inside directive attribute values
 - Support for embedded CSS and JavaScript
 - Auto-closing pairs for HRML tags
 - Bracket matching and folding

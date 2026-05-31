@@ -5,30 +5,39 @@
   "injectionSelector": "L:text.html.basic",
   "patterns": [
     {
+      "comment": "Closing directive, both spellings: </?name?> and <?/name?>.",
+      "name": "meta.tag.template.close.hrml",
+      "match": "(</\\?|<\\?/)([\\w][\\w.-]*)\\s*(\\?>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "entity.name.tag.hrml" },
+        "3": { "name": "punctuation.definition.tag.end.hrml" }
+      }
+    },
+    {
+      "comment": "Any opening directive or named-tag prop: <?word ...?>.",
       "name": "meta.tag.template.hrml",
-      "begin": "(<\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then|pure|mdx|markdown|markdownfm|latex|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|wasm)\\b",
+      "begin": "(<\\?)([\\w][\\w.-]*)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.hrml" },
         "2": { "name": "entity.name.tag.hrml" }
       },
-      "end": "(\\?>)",
+      "end": "(/?\\?>)",
       "endCaptures": {
         "1": { "name": "punctuation.definition.tag.end.hrml" }
       },
       "patterns": [
         {
           "name": "entity.other.attribute-name.hrml",
-          "match": "\\b(file|id|as|cond|in|item|index|endpoint|method|cache|target|swap|post|get|scoped|global|slot|var|value|from|op|mode|formula|content|href|src|name|export|start|module|props|class|defer)\\b"
+          "match": "\\b(file|id|as|cond|in|item|index|endpoint|method|cache|target|swap|post|get|scoped|global|slot|var|value|from|op|mode|formula|content|href|src|name|export|start|module|props|class|defer|over|by|count|order|where)\\b"
         },
         {
           "name": "string.quoted.double.hrml",
           "begin": "\"",
           "end": "\"",
           "patterns": [
-            {
-              "name": "constant.character.escape.hrml",
-              "match": "\\\\."
-            }
+            { "name": "constant.character.escape.hrml", "match": "\\\\." },
+            { "name": "variable.other.hrml", "match": "(\\$)([\\w][\\w.-]*)" }
           ]
         },
         {
@@ -36,25 +45,16 @@
           "begin": "'",
           "end": "'",
           "patterns": [
-            {
-              "name": "constant.character.escape.hrml",
-              "match": "\\\\."
-            }
+            { "name": "constant.character.escape.hrml", "match": "\\\\." },
+            { "name": "variable.other.hrml", "match": "(\\$)([\\w][\\w.-]*)" }
           ]
         }
       ]
     },
     {
-      "name": "meta.tag.template.close.hrml",
-      "begin": "(<\\/\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then)",
-      "beginCaptures": {
-        "1": { "name": "punctuation.definition.tag.begin.hrml" },
-        "2": { "name": "entity.name.tag.hrml" }
-      },
-      "end": "(\\?>)",
-      "endCaptures": {
-        "1": { "name": "punctuation.definition.tag.end.hrml" }
-      }
+      "comment": "$-prefixed references in HTML text content.",
+      "name": "variable.other.hrml",
+      "match": "(\\$)([\\w][\\w.-]*)"
     }
   ]
 }
