@@ -2,10 +2,10 @@
 
 <?block slot="content"?>
     <?use id="prose-page"?>
-        <?bind var="label"?>Research Note<?/bind?>
-        <?bind var="title" from="post.title"/?>
-        <?bind var="description" from="post.excerpt"/?>
-        <?bind var="meta"?><?get id="post.author"?> · <?get id="post.publishDate"?> · <?get id="post.status"?><?/bind?>
-        <?block slot="content"?><?get id="post.body"?></?block?>
+        <?label?>Research Note<?/label?>
+        <?title from="$post.title"/?>
+        <?description from="$post.excerpt"/?>
+        <?meta?>$post.author · $post.publishDate · $post.status<?/meta?>
+        <?block slot="content"?>$post.body</?block?>
     </?use?>
 </?block?>

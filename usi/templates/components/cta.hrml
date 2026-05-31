@@ -7,17 +7,17 @@
 <?bind var="secondary-href"/?>
 <section class="section cta-section">
     <?if cond="$title"?>
-    <h2 class="section-title"><?get id="title"?></h2>
+    <h2 class="section-title">$title</h2>
     <?/if?>
     <?if cond="$subtitle"?>
-    <p class="section-subtitle"><?get id="subtitle"?></p>
+    <p class="section-subtitle">$subtitle</p>
     <?/if?>
     <div class="cta-buttons">
         <?if cond="$primary"?>
-        <a href="$primary-href" class="btn btn-primary"><?get id="primary"?></a>
+        <a href="$primary-href" class="btn btn-primary">$primary</a>
         <?/if?>
         <?if cond="$secondary"?>
-        <a href="$secondary-href" class="btn btn-secondary"><?get id="secondary"?></a>
+        <a href="$secondary-href" class="btn btn-secondary">$secondary</a>
         <?/if?>
     </div>
 </section>

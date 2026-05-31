@@ -18,9 +18,9 @@
                 <?/if?>
             </svg>
         </div>
-        <h3 class="card-title"><?get id="title"?></h3>
-        <p class="card-text"><?get id="excerpt"?></p>
-        <p class="card-meta"><?get id="date"?></p>
+        <h3 class="card-title">$title</h3>
+        <p class="card-text">$excerpt</p>
+        <p class="card-meta">$date</p>
     </div>
 </a>
 <?/component?>

@@ -2,12 +2,12 @@
 
 <?block slot="content"?>
     <?use id="prose-page"?>
-        <?bind var="label"?>Open Role<?/bind?>
-        <?bind var="title" from="job.title"/?>
-        <?bind var="description" from="job.subtitle"/?>
-        <?bind var="meta"?><?get id="job.team"?> · <?get id="job.location"?> · <?get id="job.employmentType"?><?/bind?>
+        <?label?>Open Role<?/label?>
+        <?title from="$job.title"/?>
+        <?description from="$job.subtitle"/?>
+        <?meta?>$job.team · $job.location · $job.employmentType<?/meta?>
         <?block slot="content"?>
-            <p><?get id="job.excerpt"?></p>
+            <p>$job.excerpt</p>
             <p><a class="btn btn-primary" href="$job.applyUrl">Apply for this role</a></p>
         </?block?>
     </?use?>

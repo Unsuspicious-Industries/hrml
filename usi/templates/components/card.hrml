@@ -8,13 +8,13 @@
     <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
     <?/if?>
     <?if cond="$glyph"?>
-    <div class="card-icon"><?get id="glyph"?></div>
+    <div class="card-icon">$glyph</div>
     <?/if?>
     <?if cond="$title"?>
-    <h3 class="card-title"><?get id="title"?></h3>
+    <h3 class="card-title">$title</h3>
     <?/if?>
     <?if cond="$text"?>
-    <p class="card-text"><?get id="text"?></p>
+    <p class="card-text">$text</p>
     <?/if?>
 </div>
 <?/component?>

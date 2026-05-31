@@ -5,13 +5,13 @@
 <section class="hero">
     <div class="hero-content">
         <?if cond="$label"?>
-        <p class="hero-label"><?get id="label"?></p>
+        <p class="hero-label">$label</p>
         <?/if?>
         <?if cond="$title"?>
-        <h1 class="hero-title"><?get id="title"?></h1>
+        <h1 class="hero-title">$title</h1>
         <?/if?>
         <?if cond="$description"?>
-        <p class="hero-description"><?get id="description"?></p>
+        <p class="hero-description">$description</p>
         <?/if?>
     </div>
 </section>

@@ -1,29 +1,29 @@
 <?block slot="content"?>
     <?use id="hero-cmp"?>
-        <?bind var="title"?>Contact Us<?/bind?>
-        <?bind var="description"?>Interested in research collaboration? Get in touch with us.<?/bind?>
+        <?title?>Contact Us<?/title?>
+        <?description?>Interested in research collaboration? Get in touch with us.<?/description?>
     </?use?>
 
     <?use id="section-cmp"?>
         <?block slot="content"?>
             <?use id="section-header"?>
-                <?bind var="title"?>Research Opportunities<?/bind?>
-                <?bind var="subtitle"?>We are always looking for collaborators<?/bind?>
+                <?title?>Research Opportunities<?/title?>
+                <?subtitle?>We are always looking for collaborators<?/subtitle?>
             </?use?>
             <?use id="card-grid"?>
-                <?bind var="cols"?>3<?/bind?>
+                <?cols?>3<?/cols?>
                 <?block slot="content"?>
                     <?use id="card-cmp"?>
-                        <?bind var="title"?>Email<?/bind?>
-                        <?bind var="text"?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/bind?>
+                        <?title?>Email<?/title?>
+                        <?text?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/text?>
                     </?use?>
                     <?use id="card-cmp"?>
-                        <?bind var="title"?>GitHub<?/bind?>
-                        <?bind var="text"?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/bind?>
+                        <?title?>GitHub<?/title?>
+                        <?text?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/text?>
                     </?use?>
                     <?use id="card-cmp"?>
-                        <?bind var="title"?>Social<?/bind?>
-                        <?bind var="text"?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/bind?>
+                        <?title?>Social<?/title?>
+                        <?text?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/text?>
                     </?use?>
                 </?block?>
             </?use?>

@@ -7,10 +7,10 @@
     <div class="stat-icon"><svg class="icon-md"><use href="#icon-$icon"/></svg></div>
     <?/if?>
     <?if cond="$number"?>
-    <div class="stat-number"><?get id="number"?></div>
+    <div class="stat-number">$number</div>
     <?/if?>
     <?if cond="$label"?>
-    <div class="stat-label"><?get id="label"?></div>
+    <div class="stat-label">$label</div>
     <?/if?>
 </div>
 <?/component?>
