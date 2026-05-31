@@ -37,6 +37,11 @@
       "name": "string.quoted.double.trml"
     },
     {
+      "comment": "$-prefixed variable references, including dotted paths ($post.title)",
+      "match": "(\\$)([\\w][\\w.-]*)",
+      "name": "variable.other.trml"
+    },
+    {
       "comment": "Comments",
       "match": "^\\s*#.*$",
       "name": "comment.line.number-sign.trml"

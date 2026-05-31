@@ -2,7 +2,7 @@
   "name": "xrml-syntax",
   "displayName": "XRML Syntax Highlighting",
   "description": "Syntax highlighting for XRML template files (.hrml and .trml) — XRML = eXtensible Rust Markup Language",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": [
     "language-configuration.json",
     "README.md",

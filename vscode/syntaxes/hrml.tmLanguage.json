@@ -4,92 +4,112 @@
   "scopeName": "text.html.hrml",
   "patterns": [
     { "include": "#hrml-processing-instructions" },
+    { "include": "#variable" },
     { "include": "text.html.basic" }
   ],
   "repository": {
     "hrml-processing-instructions": {
       "patterns": [
-        {
-          "name": "meta.tag.template.hrml",
-          "begin": "(<\\?)(data|field|filter|item|items|list|load|map|record|slice|sort|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then|pure|mdx|markdown|markdownfm|latex|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|wasm)\\b",
-          "beginCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.hrml" },
-            "2": { "name": "entity.name.tag.hrml" }
-          },
-          "end": "(\\?>)",
-          "endCaptures": {
-            "1": { "name": "punctuation.definition.tag.end.hrml" }
-          },
-          "patterns": [
-            {
-              "name": "entity.other.attribute-name.hrml",
-              "match": "\\b(by|count|data|file|from|id|as|cond|in|item|index|endpoint|method|order|over|cache|start|target|swap|post|get|scoped|global|slot|var|value|op|mode|formula|content|href|src|name|export|start|module|props|class|defer|where)\\b"
-            },
-            {
-              "name": "string.quoted.double.hrml",
-              "begin": "\"",
-              "end": "\"",
-              "patterns": [
-                {
-                  "name": "constant.character.escape.hrml",
-                  "match": "\\\\."
-                }
-              ]
-            },
-            {
-              "name": "string.quoted.single.hrml",
-              "begin": "'",
-              "end": "'",
-              "patterns": [
-                {
-                  "name": "constant.character.escape.hrml",
-                  "match": "\\\\."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "meta.tag.template.close.hrml",
-          "begin": "(<\\/\\?)(load|set|get|slot|block|if|else|for|btn|link|form|call|style|script|component|use|bind|compose|then)",
-          "beginCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.hrml" },
-            "2": { "name": "entity.name.tag.hrml" }
-          },
-          "end": "(\\?>)",
-          "endCaptures": {
-            "1": { "name": "punctuation.definition.tag.end.hrml" }
-          }
-        },
-        {
-          "name": "meta.embedded.block.css",
-          "begin": "(<\\?style(?:\\s+scoped|\\s+global)?\\s*\\?>)",
-          "beginCaptures": {
-            "1": { "name": "meta.tag.template.hrml" }
-          },
-          "end": "(<\\/\\?style\\?>)",
-          "endCaptures": {
-            "1": { "name": "meta.tag.template.hrml" }
-          },
-          "patterns": [
-            { "include": "source.css" }
-          ]
-        },
-        {
-          "name": "meta.embedded.block.javascript",
-          "begin": "(<\\?script\\s*\\?>)",
-          "beginCaptures": {
-            "1": { "name": "meta.tag.template.hrml" }
-          },
-          "end": "(<\\/\\?script\\?>)",
-          "endCaptures": {
-            "1": { "name": "meta.tag.template.hrml" }
-          },
-          "patterns": [
-            { "include": "source.js" }
-          ]
-        }
+        { "include": "#directive-close" },
+        { "include": "#style-block" },
+        { "include": "#script-block" },
+        { "include": "#directive-keyword-open" },
+        { "include": "#directive-open" }
       ]
+    },
+
+    "directive-close": {
+      "comment": "Closing tags accept both spellings the parser allows: </?name?> and <?/name?>, for any directive or named-tag prop.",
+      "name": "meta.tag.template.close.hrml",
+      "match": "(</\\?|<\\?/)([\\w][\\w.-]*)\\s*(\\?>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "entity.name.tag.hrml" },
+        "3": { "name": "punctuation.definition.tag.end.hrml" }
+      }
+    },
+
+    "style-block": {
+      "name": "meta.embedded.block.css",
+      "begin": "(<\\?style(?:\\s+scoped|\\s+global)?\\s*\\?>)",
+      "beginCaptures": { "1": { "name": "meta.tag.template.hrml" } },
+      "end": "(<\\?/style\\?>|</\\?style\\?>)",
+      "endCaptures": { "1": { "name": "meta.tag.template.hrml" } },
+      "patterns": [{ "include": "source.css" }]
+    },
+    "script-block": {
+      "name": "meta.embedded.block.javascript",
+      "begin": "(<\\?script\\s*\\?>)",
+      "beginCaptures": { "1": { "name": "meta.tag.template.hrml" } },
+      "end": "(<\\?/script\\?>|</\\?script\\?>)",
+      "endCaptures": { "1": { "name": "meta.tag.template.hrml" } },
+      "patterns": [{ "include": "source.js" }]
+    },
+
+    "directive-keyword-open": {
+      "comment": "Built-in directives get keyword colouring; everything else (named-tag props like <?title?>) still highlights as a tag via #directive-open.",
+      "name": "meta.tag.template.hrml",
+      "begin": "(<\\?)(if|else|for|map|use|block|slot|component|bind|set|get|data|record|list|field|items|item|filter|sort|slice|load|mdx|markdown|markdownfm|latex|pure|wasm|btn|link|form|meta|linktag|title|og|twitter|charset|viewport|canonical|description|robots|stylesheet|script|style)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "keyword.control.directive.hrml" }
+      },
+      "end": "(/?\\?>)",
+      "endCaptures": { "1": { "name": "punctuation.definition.tag.end.hrml" } },
+      "patterns": [{ "include": "#tag-internals" }]
+    },
+
+    "directive-open": {
+      "comment": "Generic directive / named-tag component prop: any <?word ...?>.",
+      "name": "meta.tag.template.prop.hrml",
+      "begin": "(<\\?)([\\w][\\w.-]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.hrml" },
+        "2": { "name": "entity.name.tag.hrml" }
+      },
+      "end": "(/?\\?>)",
+      "endCaptures": { "1": { "name": "punctuation.definition.tag.end.hrml" } },
+      "patterns": [{ "include": "#tag-internals" }]
+    },
+
+    "tag-internals": {
+      "patterns": [
+        {
+          "name": "entity.other.attribute-name.hrml",
+          "match": "\\b(by|count|data|file|from|id|as|cond|in|item|index|endpoint|method|order|over|cache|start|target|swap|post|get|scoped|global|slot|var|value|op|mode|formula|content|href|src|name|export|module|props|class|defer|where)\\b"
+        },
+        { "include": "#string-double" },
+        { "include": "#string-single" }
+      ]
+    },
+
+    "string-double": {
+      "name": "string.quoted.double.hrml",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.hrml", "match": "\\\\." },
+        { "include": "#variable" }
+      ]
+    },
+    "string-single": {
+      "name": "string.quoted.single.hrml",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        { "name": "constant.character.escape.hrml", "match": "\\\\." },
+        { "include": "#variable" }
+      ]
+    },
+
+    "variable": {
+      "comment": "$-prefixed references, including dotted paths ($post.title) — highlighted in text, attributes, and embedded content.",
+      "name": "variable.other.hrml",
+      "match": "(\\$)([\\w][\\w.-]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.variable.hrml" },
+        "2": { "name": "variable.other.hrml" }
+      }
     }
   }
 }
