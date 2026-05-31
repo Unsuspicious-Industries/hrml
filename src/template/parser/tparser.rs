@@ -185,8 +185,9 @@ fn tokenize(source: &str) -> TemplateResult<Vec<Line>> {
 
 fn parse_value(raw: &str) -> String {
     let trimmed = raw.trim();
-    if (trimmed.starts_with('"') && trimmed.ends_with('"'))
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+    if trimmed.len() >= 2
+        && ((trimmed.starts_with('"') && trimmed.ends_with('"'))
+            || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
     {
         let inner = &trimmed[1..trimmed.len() - 1];
         inner.to_string()
