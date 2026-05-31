@@ -1,103 +1,74 @@
-
 <?block slot="content"?>
-    <section class="hero">
-        <div class="hero-content">
-            <p class="hero-label">DFS Laboratory</p>
-            <h1 class="hero-title">Distributed Systems & Formal Methods</h1>
-            <p class="hero-description">
-                The DFS Laboratory explores the intersection of distributed computing and formal verification, 
-                building provably correct systems at scale.
-            </p>
-        </div>
-    </section>
+    <?use id="hero-cmp"?>
+        <?label?>DFS Laboratory<?/label?>
+        <?title?>Distributed Systems & Formal Methods<?/title?>
+        <?description?>The DFS Laboratory explores the intersection of distributed computing and formal verification, building provably correct systems at scale.<?/description?>
+    </?use?>
 
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">Research Focus</h2>
-            <p class="section-subtitle">Building trustworthy distributed systems</p>
-        </div>
-        
-        <div class="grid-3">
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⬡</div>
-                    <h3 class="card-title">Consensus Protocols</h3>
-                    <p class="card-text">Formally verified consensus algorithms for fault-tolerant distributed systems.</p>
-                </div>
-            </a>
-            
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⧉</div>
-                    <h3 class="card-title">Distributed Computing</h3>
-                    <p class="card-text">Theoretical foundations of computation across distributed networks.</p>
-                </div>
-            </a>
-            
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⊘</div>
-                    <h3 class="card-title">Byzantine Fault Tolerance</h3>
-                    <p class="card-text">Building systems that remain correct even when some nodes behave arbitrarily.</p>
-                </div>
-            </a>
-            
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">◈</div>
-                    <h3 class="card-title">Model Checking</h3>
-                    <p class="card-text">Automated verification of distributed system properties.</p>
-                </div>
-            </a>
-            
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⟨/⟩</div>
-                    <h3 class="card-title">Verification Tools</h3>
-                    <p class="card-text">Developing tools for specifying and verifying distributed protocols.</p>
-                </div>
-            </a>
-            
-            <a href="/dfs" class="card-link">
-                <div class="card">
-                    <div class="card-icon">⚡</div>
-                    <h3 class="card-title">Performance Analysis</h3>
-                    <p class="card-text">Formal methods for analyzing distributed system performance.</p>
-                </div>
-            </a>
-        </div>
-    </section>
+    <?use id="section-cmp"?>
+        <?block slot="content"?>
+            <?use id="section-header"?>
+                <?title?>Research Focus<?/title?>
+                <?subtitle?>Building trustworthy distributed systems<?/subtitle?>
+            </?use?>
+            <?use id="card-grid"?>
+                <?cols?>3<?/cols?>
+                <?block slot="content"?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>⬡<?/glyph?>
+                        <?title?>Consensus Protocols<?/title?>
+                        <?text?>Formally verified consensus algorithms for fault-tolerant distributed systems.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>⧉<?/glyph?>
+                        <?title?>Distributed Computing<?/title?>
+                        <?text?>Theoretical foundations of computation across distributed networks.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>⊘<?/glyph?>
+                        <?title?>Byzantine Fault Tolerance<?/title?>
+                        <?text?>Building systems that remain correct even when some nodes behave arbitrarily.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>◈<?/glyph?>
+                        <?title?>Model Checking<?/title?>
+                        <?text?>Automated verification of distributed system properties.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>⟨/⟩<?/glyph?>
+                        <?title?>Verification Tools<?/title?>
+                        <?text?>Developing tools for specifying and verifying distributed protocols.<?/text?>
+                    </?use?>
+                    <?use id="card-cmp"?>
+                        <?href?>/dfs<?/href?>
+                        <?glyph?>⚡<?/glyph?>
+                        <?title?>Performance Analysis<?/title?>
+                        <?text?>Formal methods for analyzing distributed system performance.<?/text?>
+                    </?use?>
+                </?block?>
+            </?use?>
+        </?block?>
+    </?use?>
 
-    <section class="section stats-section">
-        <div class="section-header">
-            <h2 class="section-title">Lab Impact</h2>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-number">15+</div>
-                <div class="stat-label">Verified Protocols</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">8</div>
-                <div class="stat-label">Published Papers</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">3</div>
-                <div class="stat-label">Open Source Tools</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">Correctness Proofs</div>
-            </div>
-        </div>
-    </section>
+    <?use id="stats-section"?>
+        <?title?>Lab Impact<?/title?>
+        <?block slot="content"?>
+            <?use id="stat-item"?><?number?>15+<?/number?><?label?>Verified Protocols<?/label?></?use?>
+            <?use id="stat-item"?><?number?>8<?/number?><?label?>Published Papers<?/label?></?use?>
+            <?use id="stat-item"?><?number?>3<?/number?><?label?>Open Source Tools<?/label?></?use?>
+            <?use id="stat-item"?><?number?>100%<?/number?><?label?>Correctness Proofs<?/label?></?use?>
+        </?block?>
+    </?use?>
 
-    <section class="section cta-section">
-        <h2 class="section-title">Join the Lab</h2>
-        <p class="section-subtitle">We welcome researchers and collaborators</p>
-        <div class="cta-buttons">
-            <a href="/contact" class="btn btn-primary">Contact Us</a>
-        </div>
-    </section>
+    <?use id="cta-section"?>
+        <?title?>Join the Lab<?/title?>
+        <?subtitle?>We welcome researchers and collaborators<?/subtitle?>
+        <?primary?>Contact Us<?/primary?>
+        <?primary-href?>/contact<?/primary-href?>
+    </?use?>
 </?block?>

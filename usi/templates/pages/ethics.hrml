@@ -1,10 +1,10 @@
 
 <?block slot="content"?>
     <?use id="prose-page"?>
-        <?bind var="label"?>Institutional Constraint<?/bind?>
-        <?bind var="title"?>Ethics Policy<?/bind?>
-        <?bind var="description"?>How Unsuspicious Industries tries to keep weird research answerable to something larger than itself.<?/bind?>
-        <?bind var="meta"?>Last updated · 2025-04-08<?/bind?>
+        <?label?>Institutional Constraint<?/label?>
+        <?title?>Ethics Policy<?/title?>
+        <?description?>How Unsuspicious Industries tries to keep weird research answerable to something larger than itself.<?/description?>
+        <?meta?>Last updated · 2025-04-08<?/meta?>
         <?block slot="content"?>
             <h2>Our ethics research division</h2>
             <p>Unsuspicious Industries is committed to upholding the latest discoveries in ethics and ensuring that our practices remain aligned with the best available methods in philosophical inquiry, systems design, and institutional accountability.</p>
@@ -22,10 +22,10 @@
     </?use?>
 
     <?use id="cta-section"?>
-        <?bind var="title"?>Want to work on the hard part?<?/bind?>
-        <?bind var="primary"?>See open roles<?/bind?>
-        <?bind var="primary-href"?>/jobs<?/bind?>
-        <?bind var="secondary"?>Talk to us<?/bind?>
-        <?bind var="secondary-href"?>/contact<?/bind?>
+        <?title?>Want to work on the hard part?<?/title?>
+        <?primary?>See open roles<?/primary?>
+        <?primary-href?>/jobs<?/primary-href?>
+        <?secondary?>Talk to us<?/secondary?>
+        <?secondary-href?>/contact<?/secondary-href?>
     </?use?>
 </?block?>
