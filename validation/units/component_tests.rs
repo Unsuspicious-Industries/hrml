@@ -244,25 +244,82 @@ fn imported_component_available_inside_loaded_layout_slot() {
 }
 
 #[test]
+fn named_tag_props_through_layout_slot() {
+    let env = TestEnv::new("unit_named_props_layout");
+    env.write(
+        "layouts/base.hrml",
+        r#"<body><?slot id="content"?></?slot?></body>"#,
+    );
+    env.write(
+        "components/card.hrml",
+        r##"<?component id="card-cmp"?>
+<?bind var="title"/?>
+<?if cond="$title"?><h3 class="card-title">$title</h3><?/if?>
+<?/component?>"##,
+    );
+    env.write("_imports.hrml", r#"<?load file="components/card.hrml"?>"#);
+    env.write(
+        "pages/test.hrml",
+        r#"<?load file="layouts/base.hrml"?>
+<?load file="_imports.hrml"?>
+<?block slot="content"?>
+<?use id="card-cmp"?>
+    <?title?>Dynamic Formal Systems<?/title?>
+</?use?>
+</?block?>"#,
+    );
+    let out = env.render("pages/test.hrml").unwrap();
+    assert!(
+        out.contains("class=\"card-title\">Dynamic Formal Systems</h3>"),
+        "named-tag prop lost through layout slot: {}",
+        out
+    );
+}
+
+#[test]
+fn named_tag_props_through_auto_layout() {
+    let env = TestEnv::new("unit_named_props_auto_layout");
+    env.write(
+        "layouts/base.hrml",
+        r#"<main><?slot id="content"?></?slot?></main>"#,
+    );
+    env.write(
+        "components/card.hrml",
+        r##"<?component id="card-cmp"?>
+<?bind var="title"/?>
+<?if cond="$title"?><h3 class="card-title">$title</h3><?/if?>
+<?/component?>"##,
+    );
+    env.write("_imports.hrml", r#"<?load file="components/card.hrml"?>"#);
+    // No <?load?> — auto-layout wraps it.
+    env.write(
+        "pages/test.hrml",
+        r#"<?block slot="content"?><?use id="card-cmp"?><?title?>Dynamic Formal Systems<?/title?></?use?></?block?>"#,
+    );
+    let out = env
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .with_auto_imports(vec!["_imports.hrml".to_string()])
+        .render("pages/test.hrml", &serde_json::json!({}))
+        .unwrap();
+    assert!(
+        out.contains("class=\"card-title\">Dynamic Formal Systems</h3>"),
+        "named-tag prop lost through auto-layout: {}",
+        out
+    );
+}
+
+#[test]
 fn real_usi_index_renders_imported_cards() {
     let env = TestEnv::new("unit_real_usi_index");
 
-    for path in [
-        "_imports.hrml",
-        "layouts/base.hrml",
-        "components/card.hrml",
-        "components/stat.hrml",
-        "components/nav.hrml",
-        "components/footer.hrml",
-        "components/post-card.hrml",
-        "components/job-card.hrml",
-        "components/prose-page.hrml",
-        "components/hero.hrml",
-        "components/cta.hrml",
-        "pages/index.hrml",
-    ] {
-        let source = fs::read_to_string(format!("usi/templates/{}", path)).unwrap();
-        env.write(path, &source);
+    // Copy the whole template tree so the test tracks the live component set
+    // rather than a brittle hand-maintained subset.
+    for entry in walkdir(std::path::Path::new("usi/templates")) {
+        if entry.ends_with(".hrml") {
+            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            env.write(rel, &fs::read_to_string(&entry).unwrap());
+        }
     }
 
     let out = env
@@ -320,22 +377,12 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
     let mut project = Project::new(config);
     let templates_root = Path::new("usi/templates");
 
-    for path in [
-        "_imports.hrml",
-        "layouts/base.hrml",
-        "components/card.hrml",
-        "components/stat.hrml",
-        "components/nav.hrml",
-        "components/footer.hrml",
-        "components/post-card.hrml",
-        "components/job-card.hrml",
-        "components/prose-page.hrml",
-        "components/hero.hrml",
-        "components/cta.hrml",
-        "pages/index.hrml",
-    ] {
-        let source = std::fs::read_to_string(templates_root.join(path)).unwrap();
-        project.add_file(path.to_string(), source);
+    for entry in walkdir(templates_root) {
+        if entry.ends_with(".hrml") {
+            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            let source = std::fs::read_to_string(&entry).unwrap();
+            project.add_file(rel.to_string(), source);
+        }
     }
 
     project.parse_all().unwrap();

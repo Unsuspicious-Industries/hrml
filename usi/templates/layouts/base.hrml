@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?get id="site_name"?></title>
+    <title>$site_name</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/hrml.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
@@ -11,19 +11,19 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderMathInElement(document.body)"></script>
     <style>
 :root {
-    --primary: <?get id="globals.primary"?>;
-    --secondary: <?get id="globals.secondary"?>;
-    --accent: <?get id="globals.accent"?>;
-    --text-heading: <?get id="globals.text_heading"?>;
-    --text-default: <?get id="globals.text_default"?>;
-    --text-muted: <?get id="globals.text_muted"?>;
-    --border: <?get id="globals.border"?>;
-    --bg-page: <?get id="globals.bg_page"?>;
-    --bg-section: <?get id="globals.bg_section"?>;
-    --brand-accent-1: <?get id="globals.brand_accent_1"?>;
-    --brand-accent-2: <?get id="globals.brand_accent_2"?>;
-    --font-mono: <?get id="globals.font_mono"?>;
-    --font-serif: <?get id="globals.font_serif"?>;
+    --primary: $globals.primary;
+    --secondary: $globals.secondary;
+    --accent: $globals.accent;
+    --text-heading: $globals.text_heading;
+    --text-default: $globals.text_default;
+    --text-muted: $globals.text_muted;
+    --border: $globals.border;
+    --bg-page: $globals.bg_page;
+    --bg-section: $globals.bg_section;
+    --brand-accent-1: $globals.brand_accent_1;
+    --brand-accent-2: $globals.brand_accent_2;
+    --font-mono: $globals.font_mono;
+    --font-serif: $globals.font_serif;
 }
 </style>
 </head>

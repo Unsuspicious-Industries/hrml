@@ -3,9 +3,9 @@
 
 <?block slot="content"?>
     <?use id="hero-cmp"?>
-        <?bind var="label"?>Now Hiring<?/bind?>
-        <?bind var="title"?>Build improbable systems with us<?/bind?>
-        <?bind var="description"?>Open briefs from the Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/bind?>
+        <?label?>Now Hiring<?/label?>
+        <?title?>Build improbable systems with us<?/title?>
+        <?description?>Open briefs from the Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/description?>
     </?use?>
 
     <section class="section jobs-section">
@@ -18,24 +18,24 @@
         <div class="job-grid">
             <?map over="jobs" as="job"?>
             <?use id="job-card"?>
-                <?bind var="title" from="job.title"/?>
-                <?bind var="subtitle" from="job.subtitle"/?>
-                <?bind var="excerpt" from="job.excerpt"/?>
-                <?bind var="location" from="job.location"/?>
-                <?bind var="team" from="job.team"/?>
-                <?bind var="employmentType" from="job.employmentType"/?>
-                <?bind var="href"?>/jobs/$job.slug<?/bind?>
-                <?bind var="applyUrl" from="job.applyUrl"/?>
+                <?title from="$job.title"/?>
+                <?subtitle from="$job.subtitle"/?>
+                <?excerpt from="$job.excerpt"/?>
+                <?location from="$job.location"/?>
+                <?team from="$job.team"/?>
+                <?employmentType from="$job.employmentType"/?>
+                <?href?>/jobs/$job.slug<?/href?>
+                <?applyUrl from="$job.applyUrl"/?>
             </?use?>
             <?/map?>
         </div>
     </section>
 
     <?use id="cta-section"?>
-        <?bind var="title"?>Don't fit the brief but fit the vibe?<?/bind?>
-        <?bind var="primary"?>Write to us<?/bind?>
-        <?bind var="primary-href"?>mailto:jobs@unsuspicious.org<?/bind?>
-        <?bind var="secondary"?>Read our ethics note<?/bind?>
-        <?bind var="secondary-href"?>/ethics<?/bind?>
+        <?title?>Don't fit the brief but fit the vibe?<?/title?>
+        <?primary?>Write to us<?/primary?>
+        <?primary-href?>mailto:jobs@unsuspicious.org<?/primary-href?>
+        <?secondary?>Read our ethics note<?/secondary?>
+        <?secondary-href?>/ethics<?/secondary-href?>
     </?use?>
 </?block?>

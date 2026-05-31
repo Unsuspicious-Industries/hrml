@@ -3,9 +3,9 @@
 
 <?block slot="content"?>
     <?use id="hero-cmp"?>
-        <?bind var="label"?>Thoughts<?/bind?>
-        <?bind var="title"?>Research Notes & Reflections<?/bind?>
-        <?bind var="description"?>Research dispatches from formal systems, constrained generation, and the philosophy of computation.<?/bind?>
+        <?label?>Thoughts<?/label?>
+        <?title?>Research Notes & Reflections<?/title?>
+        <?description?>Research dispatches from formal systems, constrained generation, and the philosophy of computation.<?/description?>
     </?use?>
 
     <section class="section">
@@ -17,21 +17,21 @@
         <div class="grid-2 blog-grid">
             <?map over="posts" as="post"?>
             <?use id="post-card"?>
-                <?bind var="title" from="post.title"/?>
-                <?bind var="excerpt" from="post.excerpt"/?>
-                <?bind var="date" from="post.publishDate"/?>
-                <?bind var="slug" from="post.slug"/?>
-                <?bind var="icon_name"?>book<?/bind?>
+                <?title from="$post.title"/?>
+                <?excerpt from="$post.excerpt"/?>
+                <?date from="$post.publishDate"/?>
+                <?slug from="$post.slug"/?>
+                <?icon_name?>book<?/icon_name?>
             </?use?>
             <?/map?>
         </div>
     </section>
 
     <?use id="cta-section"?>
-        <?bind var="title"?>Want the full archive?<?/bind?>
-        <?bind var="primary"?>Talk to the lab<?/bind?>
-        <?bind var="primary-href"?>/contact<?/bind?>
-        <?bind var="secondary"?>Read about our methods<?/bind?>
-        <?bind var="secondary-href"?>/product<?/bind?>
+        <?title?>Want the full archive?<?/title?>
+        <?primary?>Talk to the lab<?/primary?>
+        <?primary-href?>/contact<?/primary-href?>
+        <?secondary?>Read about our methods<?/secondary?>
+        <?secondary-href?>/product<?/secondary-href?>
     </?use?>
 </?block?>
