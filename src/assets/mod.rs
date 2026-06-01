@@ -23,6 +23,7 @@ pub fn default_config(name: &str) -> String {
         globals: serde_json::Value::Object(serde_json::Map::new()),
         default_layout: None,
         auto_imports: Vec::new(),
+        component_paths: vec!["components".to_string()],
     };
     toml::to_string_pretty(&config).unwrap()
 }

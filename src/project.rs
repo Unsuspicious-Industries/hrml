@@ -196,7 +196,37 @@ impl Project {
             &self.config.auto_imports,
         );
         let mut visited = vec![path.to_string()];
-        resolve::resolve_loads(&nodes, &fetch, &mut visited, true)
+        let resolved = resolve::resolve_loads(&nodes, &fetch, &mut visited, true)?;
+
+        // Prepend the shared component library: every `<?component?>` defined
+        // under a configured component path is registered for this page, so it
+        // can be used with no `<?load?>`. Definitions emit nothing, so order is
+        // irrelevant to output. Explicit loads still work (and simply re-define).
+        let mut out = self.component_library();
+        out.extend(resolved);
+        Ok(out)
+    }
+
+    /// True when `path` lives under one of the configured component directories.
+    fn is_component_file(&self, path: &str) -> bool {
+        self.config
+            .component_paths
+            .iter()
+            .any(|dir| path == dir || path.starts_with(&format!("{}/", dir.trim_end_matches('/'))))
+    }
+
+    /// Collect every `<?component?>` definition from every component-library
+    /// file — the implicit prelude prepended to each rendered page.
+    fn component_library(&self) -> Vec<Node> {
+        let mut defs = Vec::new();
+        for (path, file) in &self.files {
+            if self.is_component_file(path) {
+                if let Some(tree) = file.tree.as_ref() {
+                    resolve::collect_components(&tree.nodes, &mut defs);
+                }
+            }
+        }
+        defs
     }
 
     pub fn render(&self, path: &str, data: &Value) -> TemplateResult<String> {

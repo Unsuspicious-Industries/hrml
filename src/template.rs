@@ -185,6 +185,28 @@ fn is_html_void_tag(name: &str) -> bool {
     HTML_VOID_TAGS.iter().any(|v| v.eq_ignore_ascii_case(name))
 }
 
+/// Recursively list `.hrml`/`.trml` files under `dir`, sorted by path so the
+/// resulting component-registration order is deterministic.
+fn template_files_under(dir: &std::path::Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                out.extend(template_files_under(&path));
+            } else if path
+                .extension()
+                .map(|e| e == "hrml" || e == "trml")
+                .unwrap_or(false)
+            {
+                out.push(path);
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
 /// Structural/binding directives that stay active when they appear as a direct
 /// child of `<?use?>`. Any *other* directive element there is interpreted as a
 /// named prop (e.g. `<?title?>…<?/title?>` binds `title`), so this set is the
@@ -244,6 +266,7 @@ pub struct Engine {
     globals: serde_json::Value,
     default_layout: Option<String>,
     auto_imports: Vec<String>,
+    component_paths: Vec<String>,
     tag_registry: crate::features::TagRegistry,
 }
 
@@ -258,6 +281,7 @@ impl Engine {
             globals: serde_json::Value::Object(serde_json::Map::new()),
             default_layout: None,
             auto_imports: Vec::new(),
+            component_paths: vec!["components".to_string()],
             tag_registry: crate::features::TagRegistry::new(),
         }
     }
@@ -276,6 +300,7 @@ impl Engine {
             globals: config.globals.clone(),
             default_layout: config.default_layout.clone(),
             auto_imports: config.auto_imports.clone(),
+            component_paths: config.component_paths.clone(),
             tag_registry: crate::features::TagRegistry::new(),
         }
     }
@@ -314,6 +339,13 @@ impl Engine {
     /// Files auto-loaded ahead of the default layout for every wrapped page.
     pub fn with_auto_imports(mut self, imports: Vec<String>) -> Self {
         self.auto_imports = imports;
+        self
+    }
+
+    /// Directories under the base path whose `<?component?>` definitions are
+    /// auto-registered for every page (the shared component library).
+    pub fn with_component_paths(mut self, paths: Vec<String>) -> Self {
+        self.component_paths = paths;
         self
     }
 
@@ -401,7 +433,33 @@ impl Engine {
         );
         let fetch = |file: &str| parse_with_extension(&self.read_template(file)?, file);
         let mut visited = vec![path.to_string()];
-        resolve::resolve_loads(&nodes, &fetch, &mut visited, true)
+        let resolved = resolve::resolve_loads(&nodes, &fetch, &mut visited, true)?;
+
+        // Prepend the shared component library (every `<?component?>` under a
+        // configured component directory), so a page can use any component with
+        // no `<?load?>`. Mirrors the in-memory `Project` path.
+        let mut out = self.component_library();
+        out.extend(resolved);
+        Ok(out)
+    }
+
+    /// Parse and collect every `<?component?>` definition under the configured
+    /// component directories (relative to the base path). Unreadable or
+    /// unparseable files are skipped — the library is best-effort discovery,
+    /// not a hard dependency of any single page.
+    fn component_library(&self) -> Vec<Node> {
+        let mut defs = Vec::new();
+        for dir in &self.component_paths {
+            for file in template_files_under(&self.base_path.join(dir)) {
+                if let Ok(text) = fs::read_to_string(&file) {
+                    let rel = file.to_string_lossy();
+                    if let Ok(nodes) = parse_with_extension(&text, &rel) {
+                        resolve::collect_components(&nodes, &mut defs);
+                    }
+                }
+            }
+        }
+        defs
     }
 
     /// Resolve, render, and (when `wrap`) wrap a bare fragment in an HTML shell.
