@@ -68,6 +68,17 @@ pub struct Config {
     /// so pages never repeat their imports. Configured as `[templates] imports = […]`.
     #[serde(default)]
     pub auto_imports: Vec<String>,
+
+    /// Directories whose `<?component?>` definitions are auto-registered for every
+    /// page — the shared component library. A page uses any of them with no
+    /// `<?load?>`. Configured as `[templates] components = […]`; defaults to
+    /// `["components"]`. Paths are relative to `templates_path`.
+    #[serde(default = "default_component_paths")]
+    pub component_paths: Vec<String>,
+}
+
+fn default_component_paths() -> Vec<String> {
+    vec!["components".to_string()]
 }
 
 fn default_globals() -> Value {
@@ -119,6 +130,7 @@ struct RawTemplates {
     layout: Option<String>,
     #[serde(default)]
     imports: Vec<String>,
+    components: Option<Vec<String>>,
 }
 
 impl Default for Config {
@@ -136,6 +148,7 @@ impl Default for Config {
             globals: default_globals(),
             default_layout: None,
             auto_imports: Vec::new(),
+            component_paths: default_component_paths(),
         }
     }
 }
@@ -188,6 +201,9 @@ impl Config {
             }
             if !templates.imports.is_empty() {
                 config.auto_imports = templates.imports;
+            }
+            if let Some(components) = templates.components {
+                config.component_paths = components;
             }
         }
 

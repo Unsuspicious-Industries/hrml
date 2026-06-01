@@ -325,7 +325,6 @@ fn real_usi_index_renders_imported_cards() {
     let out = env
         .engine()
         .with_default_layout(Some("layouts/base.hrml".to_string()))
-        .with_auto_imports(vec!["_imports.hrml".to_string()])
         .render(
             "pages/index.hrml",
             &serde_json::json!({
@@ -371,7 +370,6 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 
     let config = Config {
         default_layout: Some("layouts/base.hrml".to_string()),
-        auto_imports: vec!["_imports.hrml".to_string()],
         ..Config::default()
     };
     let mut project = Project::new(config);
@@ -430,7 +428,6 @@ fn direct_usi_templates_path_renders_cards() {
     let engine = xrml::template::Engine::new("usi/templates")
         .with_site_name("Unsuspicious Industries".to_string())
         .with_default_layout(Some("layouts/base.hrml".to_string()))
-        .with_auto_imports(vec!["_imports.hrml".to_string()])
         .with_globals(serde_json::json!({
             "primary": "#1f2937",
             "secondary": "#1f2937",
@@ -537,7 +534,6 @@ fn blog_and_jobs_pages_render() {
             "font_mono":"mono","font_serif":"serif","font_typewriter":"tw"
         }),
         default_layout: Some("layouts/base.hrml".to_string()),
-        auto_imports: vec!["_imports.hrml".to_string()],
         ..Config::default()
     };
 

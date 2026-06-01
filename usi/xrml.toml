@@ -6,11 +6,11 @@ site_name = "Unsuspicious Industries"
 site_description = "An open multidisciplinary research collective"
 favicon = "/static/favicon.ico"
 
-# Pages with no <?load?> of their own are wrapped in this layout, with these
-# imports loaded ahead of it — so a page is just its <?block?> fills.
+# Pages with no <?load?> of their own are wrapped in this layout. Every
+# <?component?> under components/ is auto-registered, so a page is just its
+# <?block?> fills — no import list to maintain.
 [templates]
 layout = "layouts/base.hrml"
-imports = ["_imports.hrml"]
 
 [globals]
 primary = "#1f2937"

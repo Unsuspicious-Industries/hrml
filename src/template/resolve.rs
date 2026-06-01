@@ -120,6 +120,23 @@ pub fn inject_blocks(nodes: Vec<Node>, blocks: &BTreeMap<String, Vec<Node>>) -> 
     result
 }
 
+/// Collect every `<?component?>` definition reachable in `nodes`. This is the
+/// shared basis of component auto-discovery: a component library is just the
+/// union of these definitions across the configured component files, prepended
+/// to a page as an implicit prelude (definitions emit nothing, so they never
+/// affect output ordering).
+pub fn collect_components(nodes: &[Node], out: &mut Vec<Node>) {
+    for node in nodes {
+        if let Node::Element { name, children, .. } = node {
+            if name == "component" {
+                out.push(node.clone());
+            } else {
+                collect_components(children, out);
+            }
+        }
+    }
+}
+
 /// Collect the top-level `<?block slot=k?>` children of `nodes`, keyed by slot.
 pub fn extract_blocks(nodes: &[Node]) -> BTreeMap<String, Vec<Node>> {
     let mut blocks = BTreeMap::new();
