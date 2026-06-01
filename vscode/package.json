@@ -3,12 +3,12 @@
   "displayName": "XRML Syntax Highlighting",
   "description": "Syntax highlighting for XRML template files (.hrml and .trml) — XRML = eXtensible Rust Markup Language",
   "version": "0.2.0",
-  "files": [
-    "language-configuration.json",
-    "README.md",
-    "LICENSE",
-    "syntaxes/*.json"
-  ],
+  "publisher": "unsuspicious",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Unsuspicious-Industries/hrml"
+  },
   "engines": {
     "vscode": "^1.60.0"
   },
