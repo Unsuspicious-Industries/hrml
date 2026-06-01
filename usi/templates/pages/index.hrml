@@ -12,7 +12,6 @@
             <?subtitle?>Six core research areas that define our institutional mission<?/subtitle?>
         </?use?>
         <?use id="card-grid"?>
-            <?cols?>3<?/cols?>
             <?block slot="content"?>
                 <?use id="card-cmp"?>
                     <?href?>/product<?/href?>

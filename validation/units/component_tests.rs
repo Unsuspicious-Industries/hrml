@@ -59,6 +59,27 @@ fn component_use_applies_child_bindings_before_render() {
 }
 
 #[test]
+fn prop_default_fills_only_when_unset() {
+    let env = TestEnv::new("unit_prop_default");
+    env.write(
+        "components/grid.hrml",
+        r#"<?component id="grid"?>
+<?bind var="cols" default="3"/?>
+<div class="grid-$cols"><?slot id="content"?></div>
+<?/component?>"#,
+    );
+    env.write(
+        "pages/test.hrml",
+        r#"<?load file="components/grid.hrml"?>
+<?use id="grid"?><?block slot="content"?>A<?/block?></?use?>
+<?use id="grid"?><?cols?>2<?/cols?><?block slot="content"?>B<?/block?></?use?>"#,
+    );
+    let out = env.render("pages/test.hrml").unwrap();
+    assert!(out.contains(r#"<div class="grid-3">A</div>"#), "default not used: {}", out);
+    assert!(out.contains(r#"<div class="grid-2">B</div>"#), "explicit prop ignored: {}", out);
+}
+
+#[test]
 fn named_tag_props_bind_like_explicit_bind() {
     // `<?title?>…<?/title?>` inside `<?use?>` is sugar for `<?bind var="title">`.
     let env = TestEnv::new("unit_comp_named_props");

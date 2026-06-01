@@ -10,7 +10,6 @@
             <?subtitle?>We are always looking for collaborators<?/subtitle?>
         </?use?>
         <?use id="card-grid"?>
-            <?cols?>3<?/cols?>
             <?block slot="content"?>
                 <?use id="card-cmp"?>
                     <?title?>Email<?/title?>
