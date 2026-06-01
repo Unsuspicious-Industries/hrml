@@ -57,8 +57,40 @@ pub fn with_default_layout(nodes: &[Node], layout: Option<&str>, imports: &[Stri
 
     let mut wrapped: Vec<Node> = imports.iter().map(|f| load_node(f)).collect();
     wrapped.push(load_node(layout));
-    wrapped.extend(nodes.iter().cloned());
+
+    // A page that already names its slots keeps them. Otherwise its whole body
+    // *is* the content — wrap it in an implicit `<?block slot="content"?>` so
+    // authors never write that boilerplate. Preamble directives (`<?data?>`, …)
+    // stay at the top level so they keep hoisting ahead of the layout.
+    let names_a_block = nodes
+        .iter()
+        .any(|n| matches!(n, Node::Element { name, .. } if name == "block"));
+    if names_a_block {
+        wrapped.extend(nodes.iter().cloned());
+    } else {
+        let mut body = Vec::new();
+        for node in nodes {
+            match node {
+                Node::VoidElement { name, .. } if PREAMBLE_DIRECTIVES.contains(&name.as_str()) => {
+                    wrapped.push(node.clone())
+                }
+                _ => body.push(node.clone()),
+            }
+        }
+        wrapped.push(content_block(body));
+    }
     wrapped
+}
+
+/// Synthesise a `<?block slot="content"?>…</?block?>` around a page body.
+fn content_block(children: Vec<Node>) -> Node {
+    let mut attrs = BTreeMap::new();
+    attrs.insert("slot".to_string(), "content".to_string());
+    Node::Element {
+        name: "block".to_string(),
+        attrs,
+        children,
+    }
 }
 
 /// Synthesise a `<?load file="…"?>` node.

@@ -1,97 +1,95 @@
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?label?>Advancing Human knowledge through stochastic epistemology<?/label?>
-        <?title?>Forging formal methods with <span class="text-accent">informal vibes</span><?/title?>
-        <?description?><span>Unsuspicious Industries</span> operates at the convergence of theoretical computer science, machine learning, and complex systems.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?label?>Advancing Human knowledge through stochastic epistemology<?/label?>
+    <?title?>Forging formal methods with <span class="text-accent">informal vibes</span><?/title?>
+    <?description?><span>Unsuspicious Industries</span> operates at the convergence of theoretical computer science, machine learning, and complex systems.<?/description?>
+</?use?>
 
-    <?use id="section-cmp"?>
-        <?block slot="content"?>
-            <?use id="section-header"?>
-                <?label?>Research Divisions<?/label?>
-                <?title?>Multidisciplinary Curiosity<?/title?>
-                <?subtitle?>Six core research areas that define our institutional mission<?/subtitle?>
-            </?use?>
-            <?use id="card-grid"?>
-                <?cols?>3<?/cols?>
-                <?block slot="content"?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?icon?>code<?/icon?>
-                        <?title?>Dynamic Formal Systems<?/title?>
-                        <?text?>Investigating interaction combinators, optimal reduction strategies, and System F type theory.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/dfs<?/href?>
-                        <?icon?>cpu<?/icon?>
-                        <?title?>Axiomatic Elaboration Laboratory<?/title?>
-                        <?text?>Finding good and beautiful bases for rational thinking.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?icon?>brain<?/icon?>
-                        <?title?>Artificial Intelligence Research<?/title?>
-                        <?text?>Training transformer architectures with formal constraints.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?icon?>chart-line<?/icon?>
-                        <?title?>Macroeconomics Formalisation<?/title?>
-                        <?text?>Rewriting advanced economics research using HPC and formal systems.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?icon?>leaf<?/icon?>
-                        <?title?>Computational Biology Division<?/title?>
-                        <?text?>Understanding consciousness through pluridisciplinary approaches.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?icon?>palette<?/icon?>
-                        <?title?>LSH Research Division<?/title?>
-                        <?text?>Exploring beauty, art and philosophy towards deeper understanding.<?/text?>
-                    </?use?>
-                </?block?>
-            </?use?>
-        </?block?>
-    </?use?>
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Research Divisions<?/label?>
+            <?title?>Multidisciplinary Curiosity<?/title?>
+            <?subtitle?>Six core research areas that define our institutional mission<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?icon?>code<?/icon?>
+                    <?title?>Dynamic Formal Systems<?/title?>
+                    <?text?>Investigating interaction combinators, optimal reduction strategies, and System F type theory.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/dfs<?/href?>
+                    <?icon?>cpu<?/icon?>
+                    <?title?>Axiomatic Elaboration Laboratory<?/title?>
+                    <?text?>Finding good and beautiful bases for rational thinking.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?icon?>brain<?/icon?>
+                    <?title?>Artificial Intelligence Research<?/title?>
+                    <?text?>Training transformer architectures with formal constraints.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?icon?>chart-line<?/icon?>
+                    <?title?>Macroeconomics Formalisation<?/title?>
+                    <?text?>Rewriting advanced economics research using HPC and formal systems.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?icon?>leaf<?/icon?>
+                    <?title?>Computational Biology Division<?/title?>
+                    <?text?>Understanding consciousness through pluridisciplinary approaches.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?icon?>palette<?/icon?>
+                    <?title?>LSH Research Division<?/title?>
+                    <?text?>Exploring beauty, art and philosophy towards deeper understanding.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
 
-    <?use id="stats-section"?>
-        <?label?>Research Stats<?/label?>
-        <?title?>Academic Impact<?/title?>
-        <?block slot="content"?>
-            <?use id="stat-item"?>
-                <?icon?>flask<?/icon?>
-                <?size?>md<?/size?>
-                <?number?>25+<?/number?>
-                <?label?>Active Research Projects<?/label?>
-            </?use?>
-            <?use id="stat-item"?>
-                <?icon?>users<?/icon?>
-                <?size?>md<?/size?>
-                <?number?>2+<?/number?>
-                <?label?>Research Centers<?/label?>
-            </?use?>
-            <?use id="stat-item"?>
-                <?icon?>check<?/icon?>
-                <?size?>md<?/size?>
-                <?number?>99%<?/number?>
-                <?label?>Peer Review Acceptance<?/label?>
-            </?use?>
-            <?use id="stat-item"?>
-                <?icon?>coffee<?/icon?>
-                <?size?>md<?/size?>
-                <?number?>5000+<?/number?>
-                <?label?>Cups of Coffee<?/label?>
-            </?use?>
-        </?block?>
-    </?use?>
+<?use id="stats-section"?>
+    <?label?>Research Stats<?/label?>
+    <?title?>Academic Impact<?/title?>
+    <?block slot="content"?>
+        <?use id="stat-item"?>
+            <?icon?>flask<?/icon?>
+            <?size?>md<?/size?>
+            <?number?>25+<?/number?>
+            <?label?>Active Research Projects<?/label?>
+        </?use?>
+        <?use id="stat-item"?>
+            <?icon?>users<?/icon?>
+            <?size?>md<?/size?>
+            <?number?>2+<?/number?>
+            <?label?>Research Centers<?/label?>
+        </?use?>
+        <?use id="stat-item"?>
+            <?icon?>check<?/icon?>
+            <?size?>md<?/size?>
+            <?number?>99%<?/number?>
+            <?label?>Peer Review Acceptance<?/label?>
+        </?use?>
+        <?use id="stat-item"?>
+            <?icon?>coffee<?/icon?>
+            <?size?>md<?/size?>
+            <?number?>5000+<?/number?>
+            <?label?>Cups of Coffee<?/label?>
+        </?use?>
+    </?block?>
+</?use?>
 
-    <?use id="cta-section"?>
-        <?title?>Join Our Academic Community<?/title?>
-        <?primary?>Research Collaboration<?/primary?>
-        <?primary-href?>/contact<?/primary-href?>
-        <?secondary?>About the Team<?/secondary?>
-        <?secondary-href?>/about<?/secondary-href?>
-    </?use?>
-</?block?>
+<?use id="cta-section"?>
+    <?title?>Join Our Academic Community<?/title?>
+    <?primary?>Research Collaboration<?/primary?>
+    <?primary-href?>/contact<?/primary-href?>
+    <?secondary?>About the Team<?/secondary?>
+    <?secondary-href?>/about<?/secondary-href?>
+</?use?>

@@ -1,32 +1,30 @@
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?title?>Contact Us<?/title?>
-        <?description?>Interested in research collaboration? Get in touch with us.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?title?>Contact Us<?/title?>
+    <?description?>Interested in research collaboration? Get in touch with us.<?/description?>
+</?use?>
 
-    <?use id="section-cmp"?>
-        <?block slot="content"?>
-            <?use id="section-header"?>
-                <?title?>Research Opportunities<?/title?>
-                <?subtitle?>We are always looking for collaborators<?/subtitle?>
-            </?use?>
-            <?use id="card-grid"?>
-                <?cols?>3<?/cols?>
-                <?block slot="content"?>
-                    <?use id="card-cmp"?>
-                        <?title?>Email<?/title?>
-                        <?text?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?title?>GitHub<?/title?>
-                        <?text?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?title?>Social<?/title?>
-                        <?text?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/text?>
-                    </?use?>
-                </?block?>
-            </?use?>
-        </?block?>
-    </?use?>
-</?block?>
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?title?>Research Opportunities<?/title?>
+            <?subtitle?>We are always looking for collaborators<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?title?>Email<?/title?>
+                    <?text?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>GitHub<?/title?>
+                    <?text?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>Social<?/title?>
+                    <?text?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>

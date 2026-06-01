@@ -1,32 +1,30 @@
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?title?>About Us<?/title?>
-        <?description?>We are an open multidisciplinary research collective focusing on computer science, mathematics, arts and everything else.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?title?>About Us<?/title?>
+    <?description?>We are an open multidisciplinary research collective focusing on computer science, mathematics, arts and everything else.<?/description?>
+</?use?>
 
-    <?use id="section-cmp"?>
-        <?block slot="content"?>
-            <?use id="section-header"?>
-                <?title?>Our Mission<?/title?>
-                <?subtitle?>Advancing human knowledge through stochastic epistemology<?/subtitle?>
-            </?use?>
-            <?use id="card-grid"?>
-                <?cols?>3<?/cols?>
-                <?block slot="content"?>
-                    <?use id="card-cmp"?>
-                        <?title?>Open Research<?/title?>
-                        <?text?>All our research is open and freely accessible. We believe in the power of open science.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?title?>Multidisciplinary<?/title?>
-                        <?text?>We bring together researchers from diverse backgrounds to tackle complex problems.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?title?>Formal Methods<?/title?>
-                        <?text?>We pursue fundamental questions in type systems, proof synthesis, and computational limits of knowability.<?/text?>
-                    </?use?>
-                </?block?>
-            </?use?>
-        </?block?>
-    </?use?>
-</?block?>
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?title?>Our Mission<?/title?>
+            <?subtitle?>Advancing human knowledge through stochastic epistemology<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?title?>Open Research<?/title?>
+                    <?text?>All our research is open and freely accessible. We believe in the power of open science.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>Multidisciplinary<?/title?>
+                    <?text?>We bring together researchers from diverse backgrounds to tackle complex problems.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>Formal Methods<?/title?>
+                    <?text?>We pursue fundamental questions in type systems, proof synthesis, and computational limits of knowability.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>

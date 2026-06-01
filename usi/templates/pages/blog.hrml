@@ -1,37 +1,35 @@
 <?data from="data/posts" as="posts"?>
 <?sort over="posts" by="publishDate" order="desc" as="posts"?>
 
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?label?>Thoughts<?/label?>
-        <?title?>Research Notes & Reflections<?/title?>
-        <?description?>Research dispatches from formal systems, constrained generation, and the philosophy of computation.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?label?>Thoughts<?/label?>
+    <?title?>Research Notes & Reflections<?/title?>
+    <?description?>Research dispatches from formal systems, constrained generation, and the philosophy of computation.<?/description?>
+</?use?>
 
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">Latest Posts</h2>
-            <p class="section-subtitle">Notes from the Unsuspicious Industries research archive</p>
-        </div>
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Latest Posts</h2>
+        <p class="section-subtitle">Notes from the Unsuspicious Industries research archive</p>
+    </div>
 
-        <div class="grid-2 blog-grid">
-            <?map over="posts" as="post"?>
-            <?use id="post-card"?>
-                <?title from="$post.title"/?>
-                <?excerpt from="$post.excerpt"/?>
-                <?date from="$post.publishDate"/?>
-                <?slug from="$post.slug"/?>
-                <?icon_name?>book<?/icon_name?>
-            </?use?>
-            <?/map?>
-        </div>
-    </section>
+    <div class="grid-2 blog-grid">
+        <?map over="posts" as="post"?>
+        <?use id="post-card"?>
+            <?title from="$post.title"/?>
+            <?excerpt from="$post.excerpt"/?>
+            <?date from="$post.publishDate"/?>
+            <?slug from="$post.slug"/?>
+            <?icon_name?>book<?/icon_name?>
+        </?use?>
+        <?/map?>
+    </div>
+</section>
 
-    <?use id="cta-section"?>
-        <?title?>Want the full archive?<?/title?>
-        <?primary?>Talk to the lab<?/primary?>
-        <?primary-href?>/contact<?/primary-href?>
-        <?secondary?>Read about our methods<?/secondary?>
-        <?secondary-href?>/product<?/secondary-href?>
-    </?use?>
-</?block?>
+<?use id="cta-section"?>
+    <?title?>Want the full archive?<?/title?>
+    <?primary?>Talk to the lab<?/primary?>
+    <?primary-href?>/contact<?/primary-href?>
+    <?secondary?>Read about our methods<?/secondary?>
+    <?secondary-href?>/product<?/secondary-href?>
+</?use?>
