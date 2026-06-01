@@ -185,6 +185,77 @@ fn is_html_void_tag(name: &str) -> bool {
     HTML_VOID_TAGS.iter().any(|v| v.eq_ignore_ascii_case(name))
 }
 
+/// One pass over a resolved tree that partitions `<?style?>` blocks and `<?use?>`
+/// references by owner — each `<?component?>` versus the page body — so CSS can
+/// be tree-shaken to the components a page actually reaches.
+#[derive(Default)]
+struct StyleIndex {
+    /// component id → its own `<?style?>` blocks (verbatim CSS).
+    comp_css: BTreeMap<String, Vec<String>>,
+    /// component id → component ids it `<?use?>`s in its body.
+    comp_uses: BTreeMap<String, Vec<String>>,
+    /// components in first-seen (definition) order, for a stable cascade.
+    comp_order: Vec<String>,
+    /// `<?style?>` blocks written directly in the page body.
+    page_css: Vec<String>,
+    /// component ids the page body `<?use?>`s — the tree-shake roots.
+    page_uses: Vec<String>,
+}
+
+impl StyleIndex {
+    fn walk(&mut self, nodes: &[Node], owner: Option<&str>) {
+        for node in nodes {
+            match node {
+                Node::Element {
+                    name,
+                    attrs,
+                    children,
+                } => match name.as_str() {
+                    "component" => match attrs.get("id") {
+                        Some(id) => {
+                            if !self.comp_order.contains(id) {
+                                self.comp_order.push(id.clone());
+                            }
+                            self.walk(children, Some(id));
+                        }
+                        None => self.walk(children, owner),
+                    },
+                    "style" => {
+                        let mut css = String::new();
+                        for child in children {
+                            if let Node::Text(t) = child {
+                                css.push_str(t);
+                            }
+                        }
+                        match owner {
+                            Some(id) => self.comp_css.entry(id.to_string()).or_default().push(css),
+                            None => self.page_css.push(css),
+                        }
+                    }
+                    "use" => {
+                        self.record_use(attrs, owner);
+                        self.walk(children, owner);
+                    }
+                    _ => self.walk(children, owner),
+                },
+                Node::VoidElement { name, attrs } if name == "use" => {
+                    self.record_use(attrs, owner);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn record_use(&mut self, attrs: &BTreeMap<String, String>, owner: Option<&str>) {
+        if let Some(id) = attrs.get("id") {
+            match owner {
+                Some(c) => self.comp_uses.entry(c.to_string()).or_default().push(id.clone()),
+                None => self.page_uses.push(id.clone()),
+            }
+        }
+    }
+}
+
 /// Recursively list `.hrml`/`.trml` files under `dir`, sorted by path so the
 /// resulting component-registration order is deterministic.
 fn template_files_under(dir: &std::path::Path) -> Vec<PathBuf> {
@@ -408,6 +479,7 @@ impl Engine {
     pub fn render_nodes_from_tree(&self, nodes: &[Node], data: &Value) -> TemplateResult<ONode> {
         let mut context = self.build_context(data);
         self.register_components_from_tree(nodes, &mut context)?;
+        self.collect_styles(nodes, &mut context);
         self.render_nodes(nodes, &mut context, "")
     }
 
@@ -473,6 +545,7 @@ impl Engine {
         let nodes = self.resolve_source(content, path)?;
         let mut context = self.build_context(data);
         self.register_components_from_tree(&nodes, &mut context)?;
+        self.collect_styles(&nodes, &mut context);
         let body_node = self.render_nodes(&nodes, &mut context, path)?;
         let body = body_node.render();
         if !wrap || is_html_doc(&body) {
@@ -480,6 +553,50 @@ impl Engine {
         } else {
             Ok(self.wrap_html(body_node))
         }
+    }
+
+    /// Hoist and **tree-shake** CSS for this page. A component owns its
+    /// `<?style?>` blocks; a page ships only the styles of the components it
+    /// actually instantiates (transitively), plus any page-level `<?style?>`.
+    /// `$refs` (e.g. design tokens `$globals.*`) are resolved against the
+    /// context, identical blocks de-duplicated, and the result stashed for the
+    /// `<?styles?>` head sink to emit once.
+    fn collect_styles(&self, nodes: &[Node], context: &mut Context) {
+        let mut index = StyleIndex::default();
+        index.walk(nodes, None);
+
+        // Components reachable from the page body, following nested uses.
+        let mut reachable = std::collections::BTreeSet::new();
+        let mut queue = index.page_uses.clone();
+        while let Some(id) = queue.pop() {
+            if reachable.insert(id.clone()) {
+                if let Some(children) = index.comp_uses.get(&id) {
+                    queue.extend(children.iter().cloned());
+                }
+            }
+        }
+
+        // Page-level styles first, then each reachable component in the order it
+        // was defined (sorted file order, so the cascade is stable).
+        let mut raw = index.page_css;
+        for id in &index.comp_order {
+            if reachable.contains(id) {
+                if let Some(blocks) = index.comp_css.get(id) {
+                    raw.extend(blocks.iter().cloned());
+                }
+            }
+        }
+
+        let mut seen = std::collections::BTreeSet::new();
+        let mut blocks = Vec::new();
+        for css in raw {
+            let resolved = self.resolve(&css, context);
+            let trimmed = resolved.trim().to_string();
+            if !trimmed.is_empty() && seen.insert(trimmed.clone()) {
+                blocks.push(trimmed);
+            }
+        }
+        context.styles = blocks.join("\n\n");
     }
 
     fn build_context(&self, data: &Value) -> Context {
@@ -581,6 +698,13 @@ impl Engine {
                 match name.as_str() {
                     "load" => Ok(ONode::empty()),
                     "else" => Ok(ONode::empty()),
+                    // Head sink: emit the CSS hoisted from every used component's
+                    // `<?style?>` (assembled by collect_styles), once, or nothing.
+                    "styles" => Ok(if context.styles.is_empty() {
+                        ONode::empty()
+                    } else {
+                        ONode::raw(format!("<style>\n{}\n</style>", context.styles))
+                    }),
                     "wasm" => {
                         use crate::features::oxml_tags;
                         let module = attrs.get("module").cloned().unwrap_or_default();
@@ -713,6 +837,9 @@ impl Engine {
                         Ok(ONode::empty())
                     }
                     "use" => self.render_component_use(attrs, children, context, template_path),
+                    // A `<?style?>` block is hoisted to the `<?styles?>` head sink
+                    // by collect_styles; it emits nothing where it is written.
+                    "style" => Ok(ONode::empty()),
                     "bind" => self.render_bind(attrs, children, context, template_path),
                     "btn" => {
                         use crate::features::oxml_tags;
@@ -1526,6 +1653,9 @@ struct Context {
     data: Value,
     vars: HashMap<String, Value>,
     components: BTreeMap<String, Vec<Node>>,
+    /// CSS hoisted from `<?style?>` blocks, resolved and de-duplicated, ready to
+    /// be emitted once at the `<?styles?>` head sink.
+    styles: String,
 }
 
 impl Context {
@@ -1534,6 +1664,7 @@ impl Context {
             data,
             vars: HashMap::new(),
             components: BTreeMap::new(),
+            styles: String::new(),
         }
     }
 

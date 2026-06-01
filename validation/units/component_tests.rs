@@ -94,6 +94,47 @@ fn undefined_component_use_is_detected() {
 }
 
 #[test]
+fn component_styles_are_hoisted_and_tree_shaken() {
+    let env = TestEnv::new("unit_component_styles");
+    env.write(
+        "layouts/base.hrml",
+        r#"<head><?styles?></head><body><?slot id="content"?></?slot?></body>"#,
+    );
+    env.write(
+        "components/card.hrml",
+        r#"<?component id="card"?>
+<?style?>.card { color: $globals.ink; }<?/style?>
+<div class="card"><?slot id="content"?></div>
+<?/component?>"#,
+    );
+    // Defined but never used — its CSS must NOT ship.
+    env.write(
+        "components/banner.hrml",
+        r#"<?component id="banner"?>
+<?style?>.banner { color: hotpink; }<?/style?>
+<div class="banner"></div>
+<?/component?>"#,
+    );
+    env.write(
+        "pages/test.hrml",
+        r#"<?use id="card"?><?block slot="content"?>hi<?/block?></?use?>"#,
+    );
+
+    let out = env
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .with_globals(serde_json::json!({ "ink": "#111" }))
+        .render("pages/test.hrml", &serde_json::json!({}))
+        .unwrap();
+
+    assert!(out.contains("<style>"), "no hoisted style block: {}", out);
+    assert!(out.contains(".card { color: #111; }"), "card css / token unresolved: {}", out);
+    assert!(!out.contains("hotpink"), "unused component css leaked (no tree-shaking): {}", out);
+    // The <?style?> must not render where it was written (only in the head sink).
+    assert_eq!(out.matches("<style>").count(), 1, "style not hoisted to single sink: {}", out);
+}
+
+#[test]
 fn prop_default_fills_only_when_unset() {
     let env = TestEnv::new("unit_prop_default");
     env.write(
