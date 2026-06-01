@@ -1,41 +1,39 @@
 <?data from="data/jobs" as="jobs"?>
 <?sort over="jobs" by="priority" order="desc" as="jobs"?>
 
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?label?>Now Hiring<?/label?>
-        <?title?>Build improbable systems with us<?/title?>
-        <?description?>Open briefs from the Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?label?>Now Hiring<?/label?>
+    <?title?>Build improbable systems with us<?/title?>
+    <?description?>Open briefs from the Unsuspicious Industries archive, spanning ethics, fieldwork, and general intellectual misbehavior.<?/description?>
+</?use?>
 
-    <section class="section jobs-section">
-        <div class="section-header">
-            <p class="section-label">Open Roles</p>
-            <h2 class="section-title">Current briefs</h2>
-            <p class="section-subtitle">Small team, weird constraints, unusually high leverage.</p>
-        </div>
+<section class="section jobs-section">
+    <div class="section-header">
+        <p class="section-label">Open Roles</p>
+        <h2 class="section-title">Current briefs</h2>
+        <p class="section-subtitle">Small team, weird constraints, unusually high leverage.</p>
+    </div>
 
-        <div class="job-grid">
-            <?map over="jobs" as="job"?>
-            <?use id="job-card"?>
-                <?title from="$job.title"/?>
-                <?subtitle from="$job.subtitle"/?>
-                <?excerpt from="$job.excerpt"/?>
-                <?location from="$job.location"/?>
-                <?team from="$job.team"/?>
-                <?employmentType from="$job.employmentType"/?>
-                <?href?>/jobs/$job.slug<?/href?>
-                <?applyUrl from="$job.applyUrl"/?>
-            </?use?>
-            <?/map?>
-        </div>
-    </section>
+    <div class="job-grid">
+        <?map over="jobs" as="job"?>
+        <?use id="job-card"?>
+            <?title from="$job.title"/?>
+            <?subtitle from="$job.subtitle"/?>
+            <?excerpt from="$job.excerpt"/?>
+            <?location from="$job.location"/?>
+            <?team from="$job.team"/?>
+            <?employmentType from="$job.employmentType"/?>
+            <?href?>/jobs/$job.slug<?/href?>
+            <?applyUrl from="$job.applyUrl"/?>
+        </?use?>
+        <?/map?>
+    </div>
+</section>
 
-    <?use id="cta-section"?>
-        <?title?>Don't fit the brief but fit the vibe?<?/title?>
-        <?primary?>Write to us<?/primary?>
-        <?primary-href?>mailto:jobs@unsuspicious.org<?/primary-href?>
-        <?secondary?>Read our ethics note<?/secondary?>
-        <?secondary-href?>/ethics<?/secondary-href?>
-    </?use?>
-</?block?>
+<?use id="cta-section"?>
+    <?title?>Don't fit the brief but fit the vibe?<?/title?>
+    <?primary?>Write to us<?/primary?>
+    <?primary-href?>mailto:jobs@unsuspicious.org<?/primary-href?>
+    <?secondary?>Read our ethics note<?/secondary?>
+    <?secondary-href?>/ethics<?/secondary-href?>
+</?use?>

@@ -1,74 +1,72 @@
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?label?>Services<?/label?>
-        <?title?>Expert Consultation & Development<?/title?>
-        <?description?>We provide specialized consulting services in formal methods, type theory, and advanced software engineering.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?label?>Services<?/label?>
+    <?title?>Expert Consultation & Development<?/title?>
+    <?description?>We provide specialized consulting services in formal methods, type theory, and advanced software engineering.<?/description?>
+</?use?>
 
-    <?use id="section-cmp"?>
-        <?block slot="content"?>
-            <?use id="section-header"?>
-                <?title?>What We Offer<?/title?>
-                <?subtitle?>Specialized expertise for complex problems<?/subtitle?>
-            </?use?>
-            <?use id="card-grid"?>
-                <?cols?>3<?/cols?>
-                <?block slot="content"?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>⟨/⟩<?/glyph?>
-                        <?title?>Formal Verification<?/title?>
-                        <?text?>Rigorous verification of software correctness using theorem provers and model checkers.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>⧉<?/glyph?>
-                        <?title?>Type System Design<?/title?>
-                        <?text?>Custom type systems for domain-specific languages and verification tools.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>⚙<?/glyph?>
-                        <?title?>Compiler Development<?/title?>
-                        <?text?>Building high-performance compilers with formal correctness guarantees.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>◈<?/glyph?>
-                        <?title?>Proof Assistant Consulting<?/title?>
-                        <?text?>Expert guidance on using Coq, Lean, Agda, and other proof assistants.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>⬡<?/glyph?>
-                        <?title?>Distributed Systems<?/title?>
-                        <?text?>Architecture and verification of fault-tolerant distributed systems.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/contact<?/href?>
-                        <?glyph?>∫<?/glyph?>
-                        <?title?>Research Partnerships<?/title?>
-                        <?text?>Collaborative research projects with academic and industry partners.<?/text?>
-                    </?use?>
-                </?block?>
-            </?use?>
-        </?block?>
-    </?use?>
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?title?>What We Offer<?/title?>
+            <?subtitle?>Specialized expertise for complex problems<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>⟨/⟩<?/glyph?>
+                    <?title?>Formal Verification<?/title?>
+                    <?text?>Rigorous verification of software correctness using theorem provers and model checkers.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>⧉<?/glyph?>
+                    <?title?>Type System Design<?/title?>
+                    <?text?>Custom type systems for domain-specific languages and verification tools.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>⚙<?/glyph?>
+                    <?title?>Compiler Development<?/title?>
+                    <?text?>Building high-performance compilers with formal correctness guarantees.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>◈<?/glyph?>
+                    <?title?>Proof Assistant Consulting<?/title?>
+                    <?text?>Expert guidance on using Coq, Lean, Agda, and other proof assistants.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>⬡<?/glyph?>
+                    <?title?>Distributed Systems<?/title?>
+                    <?text?>Architecture and verification of fault-tolerant distributed systems.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?glyph?>∫<?/glyph?>
+                    <?title?>Research Partnerships<?/title?>
+                    <?text?>Collaborative research projects with academic and industry partners.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
 
-    <?use id="stats-section"?>
-        <?title?>Our Track Record<?/title?>
-        <?block slot="content"?>
-            <?use id="stat-item"?><?number?>50+<?/number?><?label?>Projects Delivered<?/label?></?use?>
-            <?use id="stat-item"?><?number?>20+<?/number?><?label?>Happy Clients<?/label?></?use?>
-            <?use id="stat-item"?><?number?>100%<?/number?><?label?>On-Time Delivery<?/label?></?use?>
-            <?use id="stat-item"?><?number?>24/7<?/number?><?label?>Support Available<?/label?></?use?>
-        </?block?>
-    </?use?>
+<?use id="stats-section"?>
+    <?title?>Our Track Record<?/title?>
+    <?block slot="content"?>
+        <?use id="stat-item"?><?number?>50+<?/number?><?label?>Projects Delivered<?/label?></?use?>
+        <?use id="stat-item"?><?number?>20+<?/number?><?label?>Happy Clients<?/label?></?use?>
+        <?use id="stat-item"?><?number?>100%<?/number?><?label?>On-Time Delivery<?/label?></?use?>
+        <?use id="stat-item"?><?number?>24/7<?/number?><?label?>Support Available<?/label?></?use?>
+    </?block?>
+</?use?>
 
-    <?use id="cta-section"?>
-        <?title?>Get a Quote<?/title?>
-        <?subtitle?>Let's discuss your project<?/subtitle?>
-        <?primary?>Contact Us<?/primary?>
-        <?primary-href?>/contact<?/primary-href?>
-    </?use?>
-</?block?>
+<?use id="cta-section"?>
+    <?title?>Get a Quote<?/title?>
+    <?subtitle?>Let's discuss your project<?/subtitle?>
+    <?primary?>Contact Us<?/primary?>
+    <?primary-href?>/contact<?/primary-href?>
+</?use?>

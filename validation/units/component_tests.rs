@@ -187,6 +187,42 @@ fn default_layout_wraps_a_page_with_no_loads() {
 }
 
 #[test]
+fn implicit_content_block_and_auto_discovery() {
+    // A page that names no block: its whole body IS the content. And the
+    // component is discovered from components/ with no import file at all.
+    let env = TestEnv::new("unit_implicit_block");
+    env.write(
+        "layouts/base.hrml",
+        r#"<main><?slot id="content"?></?slot?></main>"#,
+    );
+    env.write(
+        "components/hi.hrml",
+        r#"<?component id="hi"?><p class="hi">Hi $who</p></?component?>"#,
+    );
+    // No block wrapper, no <?load?>, no _imports — just data + body.
+    env.write(
+        "pages/test.hrml",
+        r#"<?set id="who" value="world"/?>
+<?use id="hi"?></?use?>
+<span>tail</span>"#,
+    );
+
+    let out = env
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .render("pages/test.hrml", &serde_json::json!({}))
+        .unwrap();
+
+    assert!(out.contains("<main>"), "layout not applied: {}", out);
+    assert!(
+        out.contains("class=\"hi\">Hi world"),
+        "auto-discovered component / implicit block failed: {}",
+        out
+    );
+    assert!(out.contains("<span>tail</span>"), "page body missing: {}", out);
+}
+
+#[test]
 fn imported_component_available_inside_loaded_layout_slot() {
     let env = TestEnv::new("unit_imported_component_layout_slot");
     env.write(

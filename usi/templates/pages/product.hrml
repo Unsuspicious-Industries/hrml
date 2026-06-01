@@ -1,65 +1,63 @@
-<?block slot="content"?>
-    <?use id="hero-cmp"?>
-        <?label?>Applied Research<?/label?>
-        <?title?>Bridging Theory and Practice<?/title?>
-        <?description?>We translate our theoretical research into practical applications, developing tools and systems that advance the state of the art in computing.<?/description?>
-    </?use?>
+<?use id="hero-cmp"?>
+    <?label?>Applied Research<?/label?>
+    <?title?>Bridging Theory and Practice<?/title?>
+    <?description?>We translate our theoretical research into practical applications, developing tools and systems that advance the state of the art in computing.<?/description?>
+</?use?>
 
-    <?use id="section-cmp"?>
-        <?block slot="content"?>
-            <?use id="section-header"?>
-                <?label?>Research Areas<?/label?>
-                <?title?>Where theory meets implementation<?/title?>
-                <?subtitle?>Practical applications of our research<?/subtitle?>
-            </?use?>
-            <?use id="card-grid"?>
-                <?cols?>3<?/cols?>
-                <?block slot="content"?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>⟨/⟩<?/glyph?>
-                        <?title?>Type Theory Tools<?/title?>
-                        <?text?>Developing next-generation proof assistants and type checkers based on dependent types and homotopy type theory.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>⬡<?/glyph?>
-                        <?title?>Interaction Nets<?/title?>
-                        <?text?>Implementing optimal reduction strategies for the λ-calculus using interaction net architectures.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>⧉<?/glyph?>
-                        <?title?>LLM Formal Constraints<?/title?>
-                        <?text?>Training transformer models with type-theoretic constraints for more reliable code generation.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>⚗<?/glyph?>
-                        <?title?>Proof Synthesis<?/title?>
-                        <?text?>Automated theorem proving using machine learning guided search strategies.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>◈<?/glyph?>
-                        <?title?>Formal Verification<?/title?>
-                        <?text?>Applying formal methods to verify correctness of software systems.<?/text?>
-                    </?use?>
-                    <?use id="card-cmp"?>
-                        <?href?>/product<?/href?>
-                        <?glyph?>∿<?/glyph?>
-                        <?title?>Computational Dynamics<?/title?>
-                        <?text?>Modelling complex systems using formal methods and high-performance computing.<?/text?>
-                    </?use?>
-                </?block?>
-            </?use?>
-        </?block?>
-    </?use?>
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Research Areas<?/label?>
+            <?title?>Where theory meets implementation<?/title?>
+            <?subtitle?>Practical applications of our research<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>⟨/⟩<?/glyph?>
+                    <?title?>Type Theory Tools<?/title?>
+                    <?text?>Developing next-generation proof assistants and type checkers based on dependent types and homotopy type theory.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>⬡<?/glyph?>
+                    <?title?>Interaction Nets<?/title?>
+                    <?text?>Implementing optimal reduction strategies for the λ-calculus using interaction net architectures.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>⧉<?/glyph?>
+                    <?title?>LLM Formal Constraints<?/title?>
+                    <?text?>Training transformer models with type-theoretic constraints for more reliable code generation.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>⚗<?/glyph?>
+                    <?title?>Proof Synthesis<?/title?>
+                    <?text?>Automated theorem proving using machine learning guided search strategies.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>◈<?/glyph?>
+                    <?title?>Formal Verification<?/title?>
+                    <?text?>Applying formal methods to verify correctness of software systems.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/product<?/href?>
+                    <?glyph?>∿<?/glyph?>
+                    <?title?>Computational Dynamics<?/title?>
+                    <?text?>Modelling complex systems using formal methods and high-performance computing.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
 
-    <?use id="cta-section"?>
-        <?title?>Collaborate With Us<?/title?>
-        <?subtitle?>We are always looking for research partners<?/subtitle?>
-        <?primary?>Get in Touch<?/primary?>
-        <?primary-href?>/contact<?/primary-href?>
-    </?use?>
-</?block?>
+<?use id="cta-section"?>
+    <?title?>Collaborate With Us<?/title?>
+    <?subtitle?>We are always looking for research partners<?/subtitle?>
+    <?primary?>Get in Touch<?/primary?>
+    <?primary-href?>/contact<?/primary-href?>
+</?use?>
