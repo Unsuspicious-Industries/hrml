@@ -33,6 +33,10 @@ impl TestEnv {
         Engine::new(self.dir.to_str().unwrap())
     }
 
+    pub(crate) fn dir(&self) -> &Path {
+        &self.dir
+    }
+
     pub(crate) fn render(&self, path: &str) -> Result<String, String> {
         self.engine()
             .render(path, &json!({}))

@@ -147,6 +147,11 @@ pub fn check_project(path: &Path) -> Result<(), String> {
     let mut errors = 0;
     let mut ok = 0;
 
+    for (page, id) in project.undefined_component_uses() {
+        eprintln!("[ERROR] {page}: <?use id=\"{id}\"?> — no such component");
+        errors += 1;
+    }
+
     for route in router.static_routes() {
         let template_path = if route.template.starts_with("pages/") {
             route.template.clone()

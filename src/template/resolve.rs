@@ -169,6 +169,47 @@ pub fn collect_components(nodes: &[Node], out: &mut Vec<Node>) {
     }
 }
 
+/// Component ids referenced by a `<?use?>` for which no `<?component?>` is
+/// defined anywhere in `nodes` — i.e. a typo or a component missing from the
+/// shared library. Returned sorted and de-duplicated. Run on a *resolved* tree
+/// (one that already carries the component prelude), this validates every page.
+pub fn unresolved_uses(nodes: &[Node]) -> Vec<String> {
+    fn walk(nodes: &[Node], defined: &mut std::collections::BTreeSet<String>, used: &mut Vec<String>) {
+        for node in nodes {
+            match node {
+                Node::Element { name, attrs, children } => {
+                    if name == "component" {
+                        if let Some(id) = attrs.get("id") {
+                            defined.insert(id.clone());
+                        }
+                    } else if name == "use" {
+                        if let Some(id) = attrs.get("id") {
+                            used.push(id.clone());
+                        }
+                    }
+                    walk(children, defined, used);
+                }
+                Node::VoidElement { name, attrs } if name == "use" => {
+                    if let Some(id) = attrs.get("id") {
+                        used.push(id.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut defined = std::collections::BTreeSet::new();
+    let mut used = Vec::new();
+    walk(nodes, &mut defined, &mut used);
+    let mut missing: Vec<String> = used
+        .into_iter()
+        .filter(|id| !defined.contains(id))
+        .collect();
+    missing.sort();
+    missing.dedup();
+    missing
+}
+
 /// Collect the top-level `<?block slot=k?>` children of `nodes`, keyed by slot.
 pub fn extract_blocks(nodes: &[Node]) -> BTreeMap<String, Vec<Node>> {
     let mut blocks = BTreeMap::new();

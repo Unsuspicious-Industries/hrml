@@ -253,6 +253,25 @@ impl Project {
         Ok(result.render())
     }
 
+    /// Every `<?use id?>` across all pages that names a component no file
+    /// defines — reported as `(page, missing_id)`. Resolving each page first
+    /// folds in the component library, so this catches typos and components
+    /// dropped from a shared library before they ship as silent empty output.
+    pub fn undefined_component_uses(&self) -> Vec<(String, String)> {
+        let mut out = Vec::new();
+        for page in self.pages() {
+            if !page.starts_with("pages/") {
+                continue;
+            }
+            if let Ok(nodes) = self.resolve(page) {
+                for missing in resolve::unresolved_uses(&nodes) {
+                    out.push((page.to_string(), missing));
+                }
+            }
+        }
+        out
+    }
+
     pub fn pages(&self) -> impl Iterator<Item = &str> {
         self.files
             .keys()
