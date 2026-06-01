@@ -22,6 +22,18 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
 
     project.parse_all().map_err(|e| e.to_string())?;
 
+    // Fail loud on a `<?use?>` that names no defined component — a typo or a
+    // component missing from the shared library — rather than shipping silent
+    // empty output.
+    let undefined = project.undefined_component_uses();
+    if !undefined.is_empty() {
+        let mut msg = String::from("Undefined component(s) referenced:\n");
+        for (page, id) in &undefined {
+            msg.push_str(&format!("  {page}: <?use id=\"{id}\"?> — no such component\n"));
+        }
+        return Err(msg);
+    }
+
     // Each page expands to one or more concrete routes: a static page is a single
     // route, while a dynamic `[param]` page fans out over the collection it binds
     // (see `xrml::paths`). Render every concrete route and write it under dist/.

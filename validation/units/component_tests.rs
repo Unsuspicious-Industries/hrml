@@ -59,6 +59,41 @@ fn component_use_applies_child_bindings_before_render() {
 }
 
 #[test]
+fn undefined_component_use_is_detected() {
+    use xrml::config::Config;
+    use xrml::project::Project;
+
+    let env = TestEnv::new("unit_undefined_use");
+    env.write(
+        "components/card.hrml",
+        r#"<?component id="card"?><div class="card"><?slot id="content"?></div><?/component?>"#,
+    );
+    env.write(
+        "pages/ok.hrml",
+        r#"<?use id="card"?><?block slot="content"?>x<?/block?></?use?>"#,
+    );
+    env.write(
+        "pages/bad.hrml",
+        r#"<?use id="crad"?></?use?>"#, // typo
+    );
+
+    let mut project = Project::new(Config::default()).with_base_path(&env.dir());
+    for f in ["components/card.hrml", "pages/ok.hrml", "pages/bad.hrml"] {
+        let src = std::fs::read_to_string(env.dir().join(f)).unwrap();
+        project.add_file(f.to_string(), src);
+    }
+    project.parse_all().unwrap();
+
+    let undefined = project.undefined_component_uses();
+    assert_eq!(
+        undefined,
+        vec![("pages/bad.hrml".to_string(), "crad".to_string())],
+        "expected only the typo'd use to be flagged, got {:?}",
+        undefined
+    );
+}
+
+#[test]
 fn prop_default_fills_only_when_unset() {
     let env = TestEnv::new("unit_prop_default");
     env.write(
