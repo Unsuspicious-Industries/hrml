@@ -390,13 +390,43 @@ impl InnerParser {
         if is_void {
             Ok(Node::VoidElement { name, attrs })
         } else {
-            let children = self.parse_until(&name)?;
+            // `<?style?>` / `<?script?>` are raw-text directives: their bodies are
+            // CSS/JS, which must not be parsed as markup (braces, `<`, `>` and the
+            // like are not HRML). Everything up to the matching close is one text
+            // node — mirroring how HTML treats <style>/<script>.
+            let children = if name == "style" || name == "script" {
+                self.parse_raw_until(&name)?
+            } else {
+                self.parse_until(&name)?
+            };
             Ok(Node::Element {
                 name,
                 attrs,
                 children,
             })
         }
+    }
+
+    /// Consume everything up to the matching close tag of `name` as a single
+    /// verbatim text node (no inner parsing).
+    fn parse_raw_until(&mut self, name: &str) -> TemplateResult<Vec<Node>> {
+        let mut text = String::new();
+        while self.pos < self.chars.len() {
+            if self.is_hrml_closing(name) {
+                self.consume_hrml_closing();
+                return Ok(if text.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![Node::Text(text)]
+                });
+            }
+            text.push(self.chars[self.pos]);
+            self.pos += 1;
+        }
+        Err(self.code_error(
+            self.pos,
+            format!("Unclosed HRML directive '{}': missing closing tag", name),
+        ))
     }
 
     fn parse_html_element(&mut self) -> TemplateResult<Node> {
