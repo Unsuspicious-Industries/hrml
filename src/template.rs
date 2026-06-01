@@ -635,12 +635,19 @@ impl Engine {
                     )),
                     "use" => self.render_component_use(attrs, &[], context, template_path),
                     "bind" => {
+                        let var = attrs.get("var").map(String::as_str).unwrap_or("value");
                         if let Some(from) = attrs.get("from") {
-                            let var = attrs.get("var").map(String::as_str).unwrap_or("value");
                             let bound = context
                                 .get_value(deref(from))
                                 .unwrap_or(Value::String(String::new()));
                             context.set_value(var, bound);
+                        } else if let Some(default) = attrs.get("default") {
+                            // A declared default fills the prop only when the caller
+                            // passed nothing — so components carry their own fallbacks
+                            // and call sites omit the common case.
+                            if context.get(var).is_empty() {
+                                context.set_str(var, self.resolve(default, context));
+                            }
                         }
                         Ok(ONode::empty())
                     }

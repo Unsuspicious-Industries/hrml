@@ -1,7 +1,6 @@
 <?component id="card-grid"?>
-<?bind var="cols"/?>
-<?bind var="grid_class"?><?if cond="$cols == 2"?>grid-2<?else?><?if cond="$cols == 4"?>grid-4<?else?>grid-3<?/if?><?/if?><?/bind?>
-<div class="$grid_class">
+<?bind var="cols" default="3"/?>
+<div class="grid-$cols">
     <?slot id="content"?>
 </div>
 <?/component?>
