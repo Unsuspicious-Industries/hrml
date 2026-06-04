@@ -211,7 +211,11 @@ fn split_key_value(line: &str) -> Option<(&str, &str)> {
         if ch == '=' {
             let key = trimmed[..byte_pos].trim_end();
             let value = trimmed[byte_pos + 1..].trim();
-            return if key.is_empty() { None } else { Some((key, value)) };
+            return if key.is_empty() {
+                None
+            } else {
+                Some((key, value))
+            };
         }
     }
     None

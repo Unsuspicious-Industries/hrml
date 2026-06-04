@@ -55,13 +55,27 @@ pub fn render(name: &str, attrs: &BTreeMap<String, String>, resolve: &Resolve) -
 
         "viewport" => meta_named(
             "viewport",
-            &or(attrs, "content", "width=device-width,initial-scale=1", resolve),
+            &or(
+                attrs,
+                "content",
+                "width=device-width,initial-scale=1",
+                resolve,
+            ),
         ),
-        "description" => meta_named("description", &opt(attrs, "content", resolve).unwrap_or_default()),
+        "description" => meta_named(
+            "description",
+            &opt(attrs, "content", resolve).unwrap_or_default(),
+        ),
         "robots" => meta_named("robots", &or(attrs, "content", "index,follow", resolve)),
 
-        "canonical" => link_rel("canonical", &opt(attrs, "href", resolve).unwrap_or_default()),
-        "stylesheet" => link_rel("stylesheet", &opt(attrs, "href", resolve).unwrap_or_default()),
+        "canonical" => link_rel(
+            "canonical",
+            &opt(attrs, "href", resolve).unwrap_or_default(),
+        ),
+        "stylesheet" => link_rel(
+            "stylesheet",
+            &opt(attrs, "href", resolve).unwrap_or_default(),
+        ),
 
         // Social cards prefix the attribute name with their namespace.
         "og" => prefixed_meta("property", "og:", attrs, resolve)?,

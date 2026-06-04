@@ -94,6 +94,55 @@ fn undefined_component_use_is_detected() {
 }
 
 #[test]
+fn use_attributes_are_props_and_enable_instance_style_override() {
+    let env = TestEnv::new("unit_use_attr_override");
+    env.write(
+        "layouts/base.hrml",
+        r#"<head><?styles?></head><body><?slot id="content"?></?slot?></body>"#,
+    );
+    // The component exposes a CSS-variable hook via a `style` prop. When
+    // set it renders an inline style; otherwise just the class.
+    env.write(
+        "components/badge.hrml",
+        r#"<?component id="badge"?>
+<?style?>.badge { color: var(--badge-accent, #111); }<?/style?>
+<?if cond="$style"?>
+<span class="badge" style="$style"><?slot id="content"?></span>
+<?else?>
+<span class="badge"><?slot id="content"?></span>
+<?/if?>
+<?/component?>"#,
+    );
+    env.write(
+        "pages/test.hrml",
+        r#"<?use id="badge" style="--badge-accent: #c00"?><?block slot="content"?>A<?/block?></?use?>
+<?use id="badge"?><?block slot="content"?>B<?/block?></?use?>"#,
+    );
+
+    let out = env
+        .engine()
+        .with_default_layout(Some("layouts/base.hrml".to_string()))
+        .render("pages/test.hrml", &serde_json::json!({}))
+        .unwrap();
+
+    assert!(
+        out.contains(r#"<span class="badge" style="--badge-accent: #c00">A</span>"#),
+        "instance override not applied: {}",
+        out
+    );
+    assert!(
+        out.contains(r#"<span class="badge">B</span>"#),
+        "un-overridden instance should have no style attr: {}",
+        out
+    );
+    assert!(
+        out.contains("var(--badge-accent, #111)"),
+        "base style missing: {}",
+        out
+    );
+}
+
+#[test]
 fn component_styles_are_hoisted_and_tree_shaken() {
     let env = TestEnv::new("unit_component_styles");
     env.write(
@@ -128,10 +177,23 @@ fn component_styles_are_hoisted_and_tree_shaken() {
         .unwrap();
 
     assert!(out.contains("<style>"), "no hoisted style block: {}", out);
-    assert!(out.contains(".card { color: #111; }"), "card css / token unresolved: {}", out);
-    assert!(!out.contains("hotpink"), "unused component css leaked (no tree-shaking): {}", out);
+    assert!(
+        out.contains(".card { color: #111; }"),
+        "card css / token unresolved: {}",
+        out
+    );
+    assert!(
+        !out.contains("hotpink"),
+        "unused component css leaked (no tree-shaking): {}",
+        out
+    );
     // The <?style?> must not render where it was written (only in the head sink).
-    assert_eq!(out.matches("<style>").count(), 1, "style not hoisted to single sink: {}", out);
+    assert_eq!(
+        out.matches("<style>").count(),
+        1,
+        "style not hoisted to single sink: {}",
+        out
+    );
 }
 
 #[test]
@@ -151,8 +213,16 @@ fn prop_default_fills_only_when_unset() {
 <?use id="grid"?><?cols?>2<?/cols?><?block slot="content"?>B<?/block?></?use?>"#,
     );
     let out = env.render("pages/test.hrml").unwrap();
-    assert!(out.contains(r#"<div class="grid-3">A</div>"#), "default not used: {}", out);
-    assert!(out.contains(r#"<div class="grid-2">B</div>"#), "explicit prop ignored: {}", out);
+    assert!(
+        out.contains(r#"<div class="grid-3">A</div>"#),
+        "default not used: {}",
+        out
+    );
+    assert!(
+        out.contains(r#"<div class="grid-2">B</div>"#),
+        "explicit prop ignored: {}",
+        out
+    );
 }
 
 #[test]
@@ -279,8 +349,16 @@ fn default_layout_wraps_a_page_with_no_loads() {
         .unwrap();
 
     assert!(out.contains("<main>"), "layout not applied: {}", out);
-    assert!(out.contains("class=\"hi\">Hello"), "auto-import missing: {}", out);
-    assert!(out.contains("<span>body</span>"), "page body missing: {}", out);
+    assert!(
+        out.contains("class=\"hi\">Hello"),
+        "auto-import missing: {}",
+        out
+    );
+    assert!(
+        out.contains("<span>body</span>"),
+        "page body missing: {}",
+        out
+    );
 }
 
 #[test]
@@ -316,7 +394,11 @@ fn implicit_content_block_and_auto_discovery() {
         "auto-discovered component / implicit block failed: {}",
         out
     );
-    assert!(out.contains("<span>tail</span>"), "page body missing: {}", out);
+    assert!(
+        out.contains("<span>tail</span>"),
+        "page body missing: {}",
+        out
+    );
 }
 
 #[test]
@@ -497,9 +579,9 @@ fn real_usi_index_renders_imported_cards() {
 
 #[test]
 fn real_usi_index_renders_imported_cards_via_project_api() {
+    use std::path::Path;
     use xrml::config::Config;
     use xrml::project::Project;
-    use std::path::Path;
 
     let config = Config {
         default_layout: Some("layouts/base.hrml".to_string()),
@@ -648,10 +730,10 @@ fn prose_page_receives_meta_and_body_from_bound_markdown() {
 
 #[test]
 fn blog_and_jobs_pages_render() {
+    use std::fs;
+    use std::path::Path;
     use xrml::config::Config;
     use xrml::project::Project;
-    use std::path::Path;
-    use std::fs;
 
     let templates_root = Path::new("usi/templates");
     let project_root = Path::new("usi");
@@ -682,13 +764,27 @@ fn blog_and_jobs_pages_render() {
     project.parse_all().unwrap();
 
     // The listing pages render with no params.
-    let blog_out = project.render("pages/blog.hrml", &serde_json::json!({})).unwrap();
-    assert!(blog_out.contains("completing-regex") || blog_out.contains("proposition-7") || blog_out.contains("post-card"),
-        "blog page missing post content: {}", &blog_out[..blog_out.len().min(500)]);
+    let blog_out = project
+        .render("pages/blog.hrml", &serde_json::json!({}))
+        .unwrap();
+    assert!(
+        blog_out.contains("completing-regex")
+            || blog_out.contains("proposition-7")
+            || blog_out.contains("post-card"),
+        "blog page missing post content: {}",
+        &blog_out[..blog_out.len().min(500)]
+    );
 
-    let jobs_out = project.render("pages/jobs.hrml", &serde_json::json!({})).unwrap();
-    assert!(jobs_out.contains("ethics") || jobs_out.contains("polymath") || jobs_out.contains("job-card"),
-        "jobs page missing job content: {}", &jobs_out[..jobs_out.len().min(500)]);
+    let jobs_out = project
+        .render("pages/jobs.hrml", &serde_json::json!({}))
+        .unwrap();
+    assert!(
+        jobs_out.contains("ethics")
+            || jobs_out.contains("polymath")
+            || jobs_out.contains("job-card"),
+        "jobs page missing job content: {}",
+        &jobs_out[..jobs_out.len().min(500)]
+    );
 
     // Dynamic [slug] pages: the generic path system expands the route over its
     // collection, then each concrete page is rendered with its slug bound.
@@ -696,14 +792,37 @@ fn blog_and_jobs_pages_render() {
         ("pages/blog/[slug].hrml", "data/posts"),
         ("pages/jobs/[slug].hrml", "data/jobs"),
     ] {
-        let nodes = project.get_file(page).unwrap().tree.as_ref().unwrap().nodes.clone();
+        let nodes = project
+            .get_file(page)
+            .unwrap()
+            .tree
+            .as_ref()
+            .unwrap()
+            .nodes
+            .clone();
         let bindings = xrml::paths::expand(&xrml::paths::route_params(page), &nodes, project_root);
-        assert!(!bindings.is_empty(), "{} expanded to no pages (collection {} empty?)", page, base);
+        assert!(
+            !bindings.is_empty(),
+            "{} expanded to no pages (collection {} empty?)",
+            page,
+            base
+        );
         for binding in bindings {
             let data = serde_json::to_value(&binding).unwrap();
             let result = project.render(page, &data);
-            assert!(result.is_ok(), "page {} {:?} failed: {}", page, binding, result.err().unwrap());
-            assert!(result.unwrap().contains("hero-title"), "{} {:?} missing title", page, binding);
+            assert!(
+                result.is_ok(),
+                "page {} {:?} failed: {}",
+                page,
+                binding,
+                result.err().unwrap()
+            );
+            assert!(
+                result.unwrap().contains("hero-title"),
+                "{} {:?} missing title",
+                page,
+                binding
+            );
         }
     }
 }
@@ -713,8 +832,11 @@ fn walkdir(dir: &std::path::Path) -> Vec<String> {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for e in entries.flatten() {
             let p = e.path();
-            if p.is_dir() { out.extend(walkdir(&p)); }
-            else { out.push(p.to_string_lossy().to_string()); }
+            if p.is_dir() {
+                out.extend(walkdir(&p));
+            } else {
+                out.push(p.to_string_lossy().to_string());
+            }
         }
     }
     out

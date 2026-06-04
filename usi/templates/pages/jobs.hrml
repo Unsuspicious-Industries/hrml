@@ -1,6 +1,33 @@
 <?data from="data/jobs" as="jobs"?>
 <?sort over="jobs" by="priority" order="desc" as="jobs"?>
 
+<?style?>
+.section-header {
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto 3rem;
+}
+.section-label {
+    font-weight: 700;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+}
+.section-subtitle {
+    color: var(--text-muted);
+    font-size: 1.25rem;
+}
+<?/style?>
+
 <?use id="hero-cmp"?>
     <?label?>Now Hiring<?/label?>
     <?title?>Build improbable systems with us<?/title?>

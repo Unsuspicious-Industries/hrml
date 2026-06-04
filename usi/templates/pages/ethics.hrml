@@ -1,4 +1,11 @@
 
+<?style?>
+.ethics-body .prose-shell,
+.ethics-body .prose-shell p {
+    font-family: var(--font-typewriter);
+}
+<?/style?>
+
 <?use id="prose-page"?>
     <?label?>Institutional Constraint<?/label?>
     <?title?>Ethics Policy<?/title?>
@@ -18,6 +25,25 @@
         <h2>Continuous improvement</h2>
         <p>We treat ethics as an evolving research program rather than a static compliance checklist. That means continuously revisiting inherited frameworks, incorporating diverse perspectives, and updating our constraints when reality demands it.</p>
     <?/block?>
+</?use?>
+
+<?use id="quote-cmp"?>
+    <?text?>
+        Vous êtes à Paris, capitale d'un pays prospère au millieu d'un monde qui guérit lentement de ses maladies héréditaires qu'il prenait pour des bijoux de famille : 
+            la misère, la faim, la fatalité, la logique. 
+        Vous ouvrez peut-être le deuxième grand aiguillage de l'histoire humaine depuis la décourverte du feu. 
+        Alors, avez vous peur de fantômas ?
+        Est-ce que comme on le dit beauccoup que vous pensez trop à vous ? 
+        Ou n'est-ce pas plutôt qu'a votre insu vous pensez trop aux autres ? 
+        Peut-être sentez vous confusément que votre sort est lié à celui des autres,
+        que le bonheur et le malheur sont deux sociétés secrètes, si sécrètes que vous y êtes affilié sans le savoir, 
+        et que sans l'entendre vous abritez cette voix qui dit :
+            Tant que la misère existe, vous n'êtes pas riches.
+            Tant que la détresse existe, vous n'êtes pas heureux.
+            Tant que les prisons existent, vous n'êtes pas libres.
+        <?/text?>
+    <?author?>Chris Marker<?/author?>
+    <?work?>Le Joli Mai<?/work?>
 </?use?>
 
 <?use id="cta-section"?>

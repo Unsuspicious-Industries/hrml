@@ -165,8 +165,8 @@ use crate::config::Config;
 use crate::oxml::*;
 
 pub mod parser;
-use self::parser::ParseTree;
 use self::parser::hparser::HTML_TAG_PREFIX;
+use self::parser::ParseTree;
 
 fn is_html_node(name: &str) -> bool {
     name.starts_with(HTML_TAG_PREFIX)
@@ -249,7 +249,11 @@ impl StyleIndex {
     fn record_use(&mut self, attrs: &BTreeMap<String, String>, owner: Option<&str>) {
         if let Some(id) = attrs.get("id") {
             match owner {
-                Some(c) => self.comp_uses.entry(c.to_string()).or_default().push(id.clone()),
+                Some(c) => self
+                    .comp_uses
+                    .entry(c.to_string())
+                    .or_default()
+                    .push(id.clone()),
                 None => self.page_uses.push(id.clone()),
             }
         }
@@ -287,8 +291,26 @@ fn template_files_under(dir: &std::path::Path) -> Vec<PathBuf> {
 /// output directives (`mdx`, `markdown`, …): those carry no meaning as setup
 /// children, and their names are exactly the ones authors reach for as props.
 const USE_SETUP_DIRECTIVES: &[&str] = &[
-    "load", "else", "set", "data", "filter", "sort", "slice", "bind", "slot", "block", "use", "if",
-    "for", "map", "record", "list", "field", "items", "item", "component",
+    "load",
+    "else",
+    "set",
+    "data",
+    "filter",
+    "sort",
+    "slice",
+    "bind",
+    "slot",
+    "block",
+    "use",
+    "if",
+    "for",
+    "map",
+    "record",
+    "list",
+    "field",
+    "items",
+    "item",
+    "component",
 ];
 
 fn is_use_setup_directive(name: &str) -> bool {
@@ -1312,6 +1334,19 @@ impl Engine {
         let mut scoped = context.clone();
         let blocks = resolve::extract_blocks(children);
 
+        // Attribute props: every `<?use?>` attribute other than `id` is a scalar
+        // prop, resolved and bound. This is how a call site passes overrides —
+        // `<?use id="card" class="featured" style="--card-accent:#c00">` — that a
+        // component spreads onto its root (inline custom properties scope the
+        // override to that one instance). Named-tag children (below) override
+        // attributes for the same name, since richer content wins.
+        for (key, raw) in attrs {
+            if key != "id" {
+                let value = self.resolve(raw, &scoped);
+                scoped.set_str(key, value);
+            }
+        }
+
         // Children of `<?use?>` fall into three roles: `<?block?>` fills a named
         // slot (handled above), a *reserved* directive runs as ordinary setup,
         // and any other directive `<?name?>…<?/name?>` is a named prop — sugar
@@ -1319,9 +1354,7 @@ impl Engine {
         for node in children {
             match node {
                 Node::Element { name, children, .. }
-                    if !is_html_node(name)
-                        && name != "block"
-                        && !is_use_setup_directive(name) =>
+                    if !is_html_node(name) && name != "block" && !is_use_setup_directive(name) =>
                 {
                     let value = self
                         .render_nodes(children, &mut scoped, template_path)?
@@ -1643,7 +1676,6 @@ impl Engine {
         };
         Ok(html)
     }
-
 }
 
 // --- Context ---

@@ -1,6 +1,20 @@
 <?component id="cta-section"?>
 <?bind var="title"/?>
 <?bind var="subtitle"/?>
+<?style?>
+.cta-section {
+    text-align: center;
+    background: var(--bg-section);
+    padding: 6rem 1.5rem;
+}
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+<?/style?>
 <?bind var="primary"/?>
 <?bind var="primary-href"/?>
 <?bind var="secondary"/?>

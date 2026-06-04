@@ -26,6 +26,7 @@
     --font-serif: $globals.font_serif;
 }
 </style>
+    <?styles?>
 </head>
 <body>
     <?use id="nav-cmp"?>
