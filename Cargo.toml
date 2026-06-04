@@ -5,9 +5,10 @@ edition = "2021"
 description = "eXtensible Rust Markup Language — recursive acronym: HRML (HRML Markup Language) and TRML (TOML-like Markup Language)"
 license = "MIT"
 readme = "README.md"
-documentation = "https://docs.rs/hrml"
+documentation = "https://docs.rs/xrml"
 keywords = ["web", "framework", "html", "server", "axum"]
 categories = ["web-programming", "command-line-utilities"]
+exclude = ["usi/", "dist/", "*.log"]
 
 [[bin]]
 name = "xrml"
