@@ -1,0 +1,3 @@
+[submodule "usi"]
+	path = usi
+	url = git@github.com:Unsuspicious-Industries/usi.git

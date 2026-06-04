@@ -1,7 +1,0 @@
-# HRML
-dist/
-
-# Environment
-.env
-.env.local
-

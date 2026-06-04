@@ -1,9 +1,0 @@
-<?data from="data/posts/$slug.mdx" as="post"?>
-
-<?use id="prose-page"?>
-    <?label?>Research Note<?/label?>
-    <?title from="$post.title"/?>
-    <?description from="$post.excerpt"/?>
-    <?meta?>$post.author · $post.publishDate · $post.status<?/meta?>
-    <?block slot="content"?>$post.body</?block?>
-</?use?>
