@@ -1,29 +1,76 @@
 <?use id="hero-cmp"?>
-    <?title?>Contact Us<?/title?>
-    <?description?>Interested in research collaboration? Get in touch with us.<?/description?>
+    <?label?>Contact<?/label?>
+    <?title?>Let's talk.<?/title?>
+    <?description?>Email us for anything async, or grab a quick slot if you'd rather chat live. We'll route your message to the right person.<?/description?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <div class="contact-actions">
+            <a href="https://cal.com/unsuspicious/15min" target="_blank" rel="noopener" class="btn btn-primary btn-icon">
+                <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4m-5 4h18"/></svg>
+                Book a 15‑min meeting
+            </a>
+            <a href="mailto:contact@unsuspicious.org" class="btn btn-secondary btn-icon">
+                <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                Email contact@unsuspicious.org
+            </a>
+        </div>
+    </?block?>
 </?use?>
 
 <?use id="section-cmp"?>
     <?block slot="content"?>
         <?use id="section-header"?>
-            <?title?>Research Opportunities<?/title?>
-            <?subtitle?>We are always looking for collaborators<?/subtitle?>
+            <?title?>Quick ways to reach us<?/title?>
+            <?subtitle?>Pick the fastest channel for your kind of inquiry.<?/subtitle?>
         </?use?>
         <?use id="card-grid"?>
             <?block slot="content"?>
                 <?use id="card-cmp"?>
-                    <?title?>Email<?/title?>
-                    <?text?>Contact us at research@unsuspicious.org for collaboration inquiries.<?/text?>
+                    <?href?>tel:+33757486730<?/href?>
+                    <?icon?>mail<?/icon?>
+                    <?title?>Phone<?/title?>
+                    <?text?>+33 7 57 48 67 30<?/text?>
                 </?use?>
                 <?use id="card-cmp"?>
-                    <?title?>GitHub<?/title?>
-                    <?text?>Check out our <a href="https://github.com/Unsuspicious-Industries">GitHub organization</a> for open source projects.<?/text?>
+                    <?href?>https://www.google.com/maps/search/?api=1&query=Paris%2C%20France<?/href?>
+                    <?icon?>leaf<?/icon?>
+                    <?title?>Where we are<?/title?>
+                    <?text?>Paris, France<?/text?>
                 </?use?>
                 <?use id="card-cmp"?>
-                    <?title?>Social<?/title?>
-                    <?text?>Follow us on <a href="https://x.com/unsuspiciousind">X (Twitter)</a> for updates.<?/text?>
+                    <?href?>/about<?/href?>
+                    <?icon?>book<?/icon?>
+                    <?title?>About the institute<?/title?>
+                    <?text?>Leadership, divisions, and research culture.<?/text?>
                 </?use?>
             </?block?>
         </?use?>
     </?block?>
 </?use?>
+
+<?use id="cta-section"?>
+    <?title?>Interested in joining our teams?<?/title?>
+    <?subtitle?>Check the latest openings or drop us a line if your specialty does not yet have a listing.<?/subtitle?>
+    <?primary?>View Open Positions<?/primary?>
+    <?primary-href?>/jobs<?/primary-href?>
+</?use?>
+
+<?style?>
+.contact-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.btn-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-svg {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+<?/style?>

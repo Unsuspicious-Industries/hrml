@@ -174,10 +174,18 @@ pub fn collect_components(nodes: &[Node], out: &mut Vec<Node>) {
 /// shared library. Returned sorted and de-duplicated. Run on a *resolved* tree
 /// (one that already carries the component prelude), this validates every page.
 pub fn unresolved_uses(nodes: &[Node]) -> Vec<String> {
-    fn walk(nodes: &[Node], defined: &mut std::collections::BTreeSet<String>, used: &mut Vec<String>) {
+    fn walk(
+        nodes: &[Node],
+        defined: &mut std::collections::BTreeSet<String>,
+        used: &mut Vec<String>,
+    ) {
         for node in nodes {
             match node {
-                Node::Element { name, attrs, children } => {
+                Node::Element {
+                    name,
+                    attrs,
+                    children,
+                } => {
                     if name == "component" {
                         if let Some(id) = attrs.get("id") {
                             defined.insert(id.clone());

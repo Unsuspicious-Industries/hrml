@@ -276,10 +276,7 @@ impl InnerParser {
             match stop {
                 StopAt::HtmlClose => return Ok(None),
                 _ => {
-                    let snippet: String = self.chars[self.pos..]
-                        .iter()
-                        .take(40)
-                        .collect();
+                    let snippet: String = self.chars[self.pos..].iter().take(40).collect();
                     return Err(self.code_error(
                         self.pos,
                         format!(
@@ -449,10 +446,9 @@ impl InnerParser {
             self.pos += 1;
             false
         } else {
-            return Err(self.code_error(
-                start,
-                format!("Unclosed HTML tag '<{}': missing '>'", name),
-            ));
+            return Err(
+                self.code_error(start, format!("Unclosed HTML tag '<{}': missing '>'", name))
+            );
         };
 
         if explicit_self_closing || is_html_void(&name) {
@@ -634,9 +630,7 @@ impl InnerParser {
                         let val_start = self.pos;
                         self.pos += 1;
                         while self.pos < self.chars.len() && self.chars[self.pos] != quote {
-                            if self.chars[self.pos] == '<'
-                                && self.lookahead(1) == Some('?')
-                            {
+                            if self.chars[self.pos] == '<' && self.lookahead(1) == Some('?') {
                                 return Err(self.code_error(
                                     val_start,
                                     format!(
@@ -705,9 +699,7 @@ impl InnerParser {
                         let val_start = self.pos;
                         self.pos += 1;
                         while self.pos < self.chars.len() && self.chars[self.pos] != quote {
-                            if self.chars[self.pos] == '<'
-                                && self.lookahead(1) == Some('?')
-                            {
+                            if self.chars[self.pos] == '<' && self.lookahead(1) == Some('?') {
                                 return Err(self.code_error(
                                     val_start,
                                     format!(
@@ -742,7 +734,8 @@ impl InnerParser {
         let mut id = String::new();
         while self.pos < self.chars.len() {
             let c = self.chars[self.pos];
-            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':' || c == '.' || c == '@' {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':' || c == '.' || c == '@'
+            {
                 id.push(c);
                 self.pos += 1;
             } else {

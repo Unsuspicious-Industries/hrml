@@ -11,7 +11,11 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 /// Apply the named list transform, or `None` if `name` is not a pipeline op.
-pub fn transform(name: &str, items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Option<Vec<Value>> {
+pub fn transform(
+    name: &str,
+    items: Vec<Value>,
+    attrs: &BTreeMap<String, String>,
+) -> Option<Vec<Value>> {
     match name {
         "filter" => Some(filter(items, attrs)),
         "sort" => Some(sort(items, attrs)),
@@ -35,7 +39,11 @@ fn sort(mut items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Vec<Value> {
     let desc = attrs.get("order").is_some_and(|o| o == "desc");
     items.sort_by(|a, b| {
         let (ka, kb) = (sort_key(a.get(&by)), sort_key(b.get(&by)));
-        if desc { kb.cmp(&ka) } else { ka.cmp(&kb) }
+        if desc {
+            kb.cmp(&ka)
+        } else {
+            ka.cmp(&kb)
+        }
     });
     items
 }
@@ -45,8 +53,16 @@ fn sort(mut items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Vec<Value> {
 fn slice(items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Vec<Value> {
     let start = num(attrs, &["start", "from"]);
     let count = num(attrs, &["count", "to"]);
-    let end = if count > 0 { (start + count).min(items.len()) } else { items.len() };
-    items.into_iter().skip(start).take(end.saturating_sub(start)).collect()
+    let end = if count > 0 {
+        (start + count).min(items.len())
+    } else {
+        items.len()
+    };
+    items
+        .into_iter()
+        .skip(start)
+        .take(end.saturating_sub(start))
+        .collect()
 }
 
 /// Non-emptiness as the canonical notion of truth for a JSON value.

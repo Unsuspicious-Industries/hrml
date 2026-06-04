@@ -14,39 +14,21 @@
             <?block slot="content"?>
                 <?use id="card-cmp"?>
                     <?href?>/contact<?/href?>
-                    <?glyph?>⟨/⟩<?/glyph?>
-                    <?title?>Formal Verification<?/title?>
-                    <?text?>Rigorous verification of software correctness using theorem provers and model checkers.<?/text?>
+                    <?icon?>brain<?/icon?>
+                    <?title?>Consulting<?/title?>
+                    <?text?>Pretty much anything involving logic, systems, and code. We bring deep expertise in formal methods, type theory, compiler design, distributed architectures, and whatever else your stack throws at us.<?/text?>
                 </?use?>
                 <?use id="card-cmp"?>
                     <?href?>/contact<?/href?>
-                    <?glyph?>⧉<?/glyph?>
-                    <?title?>Type System Design<?/title?>
-                    <?text?>Custom type systems for domain-specific languages and verification tools.<?/text?>
+                    <?icon?>flask<?/icon?>
+                    <?title?>Research Collaboration<?/title?>
+                    <?text?>Collaborative research with academic and industry partners. We co-design experiments, co-author papers, and bring formal rigour to open problems in computer science and beyond.<?/text?>
                 </?use?>
                 <?use id="card-cmp"?>
                     <?href?>/contact<?/href?>
-                    <?glyph?>⚙<?/glyph?>
-                    <?title?>Compiler Development<?/title?>
-                    <?text?>Building high-performance compilers with formal correctness guarantees.<?/text?>
-                </?use?>
-                <?use id="card-cmp"?>
-                    <?href?>/contact<?/href?>
-                    <?glyph?>◈<?/glyph?>
-                    <?title?>Proof Assistant Consulting<?/title?>
-                    <?text?>Expert guidance on using Coq, Lean, Agda, and other proof assistants.<?/text?>
-                </?use?>
-                <?use id="card-cmp"?>
-                    <?href?>/contact<?/href?>
-                    <?glyph?>⬡<?/glyph?>
-                    <?title?>Distributed Systems<?/title?>
-                    <?text?>Architecture and verification of fault-tolerant distributed systems.<?/text?>
-                </?use?>
-                <?use id="card-cmp"?>
-                    <?href?>/contact<?/href?>
-                    <?glyph?>∫<?/glyph?>
-                    <?title?>Research Partnerships<?/title?>
-                    <?text?>Collaborative research projects with academic and industry partners.<?/text?>
+                    <?icon?>check<?/icon?>
+                    <?title?>Verification<?/title?>
+                    <?text?>Rigorous verification of software and hardware correctness using theorem provers, model checkers, and custom formal tools built for your specific domain.<?/text?>
                 </?use?>
             </?block?>
         </?use?>

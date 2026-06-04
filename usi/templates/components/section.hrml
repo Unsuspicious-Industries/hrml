@@ -1,5 +1,12 @@
 <?component id="section-cmp"?>
 <?bind var="modifier"/?>
+<?style?>
+.section {
+    padding: 4rem 1.5rem;
+    max-width: 80rem;
+    margin: 0 auto;
+}
+<?/style?>
 <?if cond="$modifier"?>
 <section class="section $modifier">
     <?slot id="content"?>

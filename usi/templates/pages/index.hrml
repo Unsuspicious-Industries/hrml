@@ -1,53 +1,116 @@
 <?use id="hero-cmp"?>
-    <?label?>Advancing Human knowledge through stochastic epistemology<?/label?>
-    <?title?>Forging formal methods with <span class="text-accent">informal vibes</span><?/title?>
-    <?description?><span>Unsuspicious Industries</span> operates at the convergence of theoretical computer science, machine learning, and complex systems.<?/description?>
+    <?label?>Wandering in the close unknowns<?/label?>
+    <?title?>Composing formal methods and <span class="text-accent">mystical vibes</span><?/title?>
+    <?description?><span>Unsuspicious Industries</span> operates at the convergence of computer science, critical theory, and natural sciences.<?/description?>
 </?use?>
 
 <?use id="section-cmp"?>
     <?block slot="content"?>
         <?use id="section-header"?>
             <?label?>Research Divisions<?/label?>
-            <?title?>Multidisciplinary Curiosity<?/title?>
-            <?subtitle?>Six core research areas that define our institutional mission<?/subtitle?>
+            <?title?>Currently investigating<?/title?>
+            <?subtitle?>Six areas where we focus our efforts<?/subtitle?>
         </?use?>
         <?use id="card-grid"?>
             <?block slot="content"?>
                 <?use id="card-cmp"?>
-                    <?href?>/product<?/href?>
-                    <?icon?>code<?/icon?>
-                    <?title?>Dynamic Formal Systems<?/title?>
-                    <?text?>Investigating interaction combinators, optimal reduction strategies, and System F type theory.<?/text?>
-                </?use?>
-                <?use id="card-cmp"?>
                     <?href?>/dfs<?/href?>
-                    <?icon?>cpu<?/icon?>
-                    <?title?>Axiomatic Elaboration Laboratory<?/title?>
-                    <?text?>Finding good and beautiful bases for rational thinking.<?/text?>
+                    <?icon?>code<?/icon?>
+                    <?title?>Dynamic Formal Systems lab<?/title?>
+                    <?text?>Investigating proof systems, strong normalization, and applied type theory.<?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">philosophy courses should teach how to use proof assistants</p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">Alcuin</span>
+                            <span class="card-quote-work">𝕏, @scheminglunatic</span>
+                        </div>
+                    <?/block?>
                 </?use?>
                 <?use id="card-cmp"?>
-                    <?href?>/product<?/href?>
+                    <?href?>/ethics<?/href?>
+                    <?icon?>cpu<?/icon?>
+                    <?title?>Axiomatic Elaboration team<?/title?>
+                    <?text?>
+                        Finding <span class="text-accent">good</span> and <span class="text-accent">beautiful</span> bases for rational thinking. 
+                        Gathering vibes for researchers.
+                    <?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">Ethics and æsthetics are one</p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">Wittgenstein</span>
+                            <span class="card-quote-work">6.421</span>
+                        </div>
+                    <?/block?>
+                </?use?>
+                <?use id="card-cmp"?>
                     <?icon?>brain<?/icon?>
-                    <?title?>Artificial Intelligence Research<?/title?>
-                    <?text?>Training transformer architectures with formal constraints.<?/text?>
+                    <?title?>Diffused Consciousness research<?/title?>
+                    <?text?>Exploring non-atomic models of consciousness and learning<?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">    
+                            I think I might have been stupid in some respects, if it weren't for my psychedelic experiences.
+                        </p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">Kary Mullis</span>
+                            <span class="card-quote-work">MAPS</span>
+                        </div>
+                    <?/block?>
                 </?use?>
                 <?use id="card-cmp"?>
                     <?href?>/product<?/href?>
                     <?icon?>chart-line<?/icon?>
-                    <?title?>Macroeconomics Formalisation<?/title?>
-                    <?text?>Rewriting advanced economics research using HPC and formal systems.<?/text?>
+                    <?title?>Macroeconomics formalization department<?/title?>
+                    <?text?>
+                    Rewriting advanced economics research using High Performance Computing and formal systems. 
+                    Modelling emergent market behavior from first principles. 
+                    Formalising structural social shifts in topological spaces.
+                    <?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">In the long run we are all dead</p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">J.M Keynes</span>
+                            <span class="card-quote-work">A Tract on Monetary Reform (1923)</span>
+                        </div>
+                    <?/block?>
                 </?use?>
                 <?use id="card-cmp"?>
                     <?href?>/product<?/href?>
                     <?icon?>leaf<?/icon?>
-                    <?title?>Computational Biology Division<?/title?>
-                    <?text?>Understanding consciousness through pluridisciplinary approaches.<?/text?>
+                    <?title?>Automated Reasoning division<?/title?>
+                    <?text?>Working on automated AI tools to help humans with reasoning and discovery<?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">
+                            La connaissance est devenue force productive immédiate, 
+                            et, par suite, [...] les conditions du processus vital de la société sont elles-mêmes passées sous le contrôle de l'
+                            <span  class="text-normal">intellect général</span>, 
+                            et sont réorganisées conformément à lui. 
+                        </p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">Karl Marx</span>
+                            <span class="card-quote-work">Grundrisse</span>
+                        </div>
+                    <?/block?>
                 </?use?>
                 <?use id="card-cmp"?>
-                    <?href?>/product<?/href?>
                     <?icon?>palette<?/icon?>
-                    <?title?>LSH Research Division<?/title?>
-                    <?text?>Exploring beauty, art and philosophy towards deeper understanding.<?/text?>
+                    <?title?>LSH Department<?/title?>
+                    <?text?>Studying history, arts and litterature. Grounding our lab in human values.<?/text?>
+                    <?quote?>1<?/quote?>
+                    <?block slot="quote"?>
+                        <p class="card-quote-text">
+                            Les Hommes ont inventé la Naphthaline de la Beauté, cela s'appelle l'Art. 
+                            C'est quelque fois un peu erratique dans ses formes, mais c'est quelque fois très beau.
+                        </p>
+                        <div class="card-quote-attribution">
+                            <span class="card-quote-author">Chris Marker</span>
+                            <span class="card-quote-work">Le joli Mai</span>
+                        </div>
+                    <?/block?>
                 </?use?>
             </?block?>
         </?use?>
@@ -62,19 +125,19 @@
             <?icon?>flask<?/icon?>
             <?size?>md<?/size?>
             <?number?>25+<?/number?>
-            <?label?>Active Research Projects<?/label?>
+            <?label?>Active Research projects<?/label?>
         </?use?>
         <?use id="stat-item"?>
             <?icon?>users<?/icon?>
             <?size?>md<?/size?>
-            <?number?>2+<?/number?>
-            <?label?>Research Centers<?/label?>
+            <?number?>2<?/number?>
+            <?label?>Research centers<?/label?>
         </?use?>
         <?use id="stat-item"?>
             <?icon?>check<?/icon?>
             <?size?>md<?/size?>
-            <?number?>99%<?/number?>
-            <?label?>Peer Review Acceptance<?/label?>
+            <?number?>+90%<?/number?>
+            <?label?>Mechanized proofs<?/label?>
         </?use?>
         <?use id="stat-item"?>
             <?icon?>coffee<?/icon?>

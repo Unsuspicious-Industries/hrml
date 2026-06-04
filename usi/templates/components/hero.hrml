@@ -2,6 +2,67 @@
 <?bind var="label"/?>
 <?bind var="title"/?>
 <?bind var="description"/?>
+<?style?>
+.hero {
+    padding: 6rem 1.5rem 4rem;
+    text-align: center;
+    background: var(--bg-page);
+    position: relative;
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, var(--bg-section) 0%, var(--bg-page) 100%);
+    z-index: -1;
+}
+.hero-content {
+    max-width: 56rem;
+    margin: 0 auto;
+}
+.hero-label {
+    font-weight: 700;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+}
+.hero-title .highlight {
+    color: var(--accent);
+}
+.hero-description {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 48rem;
+    margin: 0 auto;
+}
+.hero-compact {
+    padding-bottom: 2.5rem;
+}
+.page-meta {
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+}
+<?/style?>
 <section class="hero">
     <div class="hero-content">
         <?if cond="$label"?>

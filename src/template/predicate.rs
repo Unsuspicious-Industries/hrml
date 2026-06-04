@@ -30,7 +30,11 @@ enum Pred {
     /// Value is non-empty.
     Truthy(String),
     /// `left == right` (`equal = true`) or `left != right` (`equal = false`).
-    Cmp { left: String, equal: bool, right: Operand },
+    Cmp {
+        left: String,
+        equal: bool,
+        right: Operand,
+    },
     Not(Box<Pred>),
 }
 
@@ -111,8 +115,10 @@ mod tests {
     use std::collections::BTreeMap;
 
     fn ctx(pairs: &[(&str, &str)]) -> impl Fn(&str) -> String {
-        let map: BTreeMap<String, String> =
-            pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        let map: BTreeMap<String, String> = pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
         move |path: &str| map.get(path).cloned().unwrap_or_default()
     }
 

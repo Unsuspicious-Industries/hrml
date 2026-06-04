@@ -1,5 +1,61 @@
 <?component id="post-card"?>
-<?bind var="title"/?><?bind var="excerpt"/?><?bind var="date"/?><?bind var="slug"/?><?bind var="icon_name"/?>
+<?bind var="title"/><?bind var="excerpt"/><?bind var="date"/><?bind var="slug"/><?bind var="icon_name"/>
+<?style?>
+.card {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.card-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+.card-text {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+.card-text .highlight {
+    color: var(--accent);
+}
+.card-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-link .card {
+    height: 100%;
+}
+.card-link:hover {
+    transform: translateY(-2px);
+}
+.card-link:hover .card {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+.card-icon .icon-sm {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.post-card {
+    min-height: 100%;
+}
+<?/style?>
 <a href="/blog/$slug" class="card-link">
     <div class="card post-card">
         <div class="card-icon">

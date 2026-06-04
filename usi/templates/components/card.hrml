@@ -3,18 +3,119 @@
 <?bind var="glyph"/?>
 <?bind var="title"/?>
 <?bind var="text"/?>
+<?bind var="quote"/?>
+<?style?>
+.card {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.card-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+.card-text {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+.card-text .highlight {
+    color: var(--accent);
+}
+.card-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.card-quote {
+    margin-top: 1rem;
+    padding: 1rem 1rem 1rem 1.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--bg-section);
+    position: relative;
+}
+.card-quote::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.25rem;
+    left: 0.2rem;
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    line-height: 1;
+    color: var(--accent);
+    opacity: 0.25;
+}
+.card-quote-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.9375rem;
+    color: var(--text-heading);
+    line-height: 1.65;
+    margin-bottom: 0.6rem;
+}
+.card-quote-attribution {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.card-quote-author {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--primary);
+}
+.card-quote-work {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+}
+.card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-link .card {
+    height: 100%;
+}
+.card-link:hover {
+    transform: translateY(-2px);
+}
+.card-link:hover .card {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+.card-icon .icon-sm {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+<?/style?>
 <div class="card">
     <?if cond="$icon"?>
-    <div class="card-icon"><svg class="icon-sm"><use href="#icon-$icon"/></svg></div>
+        <div class="card-icon">
+            <svg class="icon-sm"><use href="#icon-$icon"/></svg>
+        </div>
     <?/if?>
     <?if cond="$glyph"?>
-    <div class="card-icon">$glyph</div>
+        <div class="card-icon">$glyph</div>
     <?/if?>
     <?if cond="$title"?>
-    <h3 class="card-title">$title</h3>
+        <h3 class="card-title">$title</h3>
     <?/if?>
     <?if cond="$text"?>
-    <p class="card-text">$text</p>
+        <p class="card-text">$text</p>
+    <?/if?>
+    <?if cond="$quote"?>
+        <blockquote class="card-quote">
+            <?slot id="quote"?></?slot?>
+        </blockquote>
     <?/if?>
 </div>
 <?/component?>
@@ -25,9 +126,14 @@
 <?bind var="glyph"/?>
 <?bind var="title"/?>
 <?bind var="text"/?>
+<?bind var="quote"/?>
 <?if cond="$href"?>
-<a href="$href" class="card-link"><?use id="card-body"?></?use?></a>
+    <a href="$href" class="card-link"><?use id="card-body"?>
+        <?block slot="quote"?><?slot id="quote"?></?slot?><?/block?>
+    </?use?></a>
 <?else?>
-<?use id="card-body"?></?use?>
+    <?use id="card-body"?>
+        <?block slot="quote"?><?slot id="quote"?></?slot?><?/block?>
+    </?use?>
 <?/if?>
 <?/component?>
