@@ -29,7 +29,9 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
     if !undefined.is_empty() {
         let mut msg = String::from("Undefined component(s) referenced:\n");
         for (page, id) in &undefined {
-            msg.push_str(&format!("  {page}: <?use id=\"{id}\"?> — no such component\n"));
+            msg.push_str(&format!(
+                "  {page}: <?use id=\"{id}\"?> — no such component\n"
+            ));
         }
         return Err(msg);
     }
@@ -75,7 +77,8 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
     }
 
     let static_src = project_path.join(&project.config.static_path);
-    copy_dir_recursive(&static_src, &dist_path)?;
+    let static_dst = dist_path.join(&project.config.static_path);
+    copy_dir_recursive(&static_src, &static_dst)?;
 
     println!("Done! {} pages rendered to dist/", rendered_count);
     println!(
