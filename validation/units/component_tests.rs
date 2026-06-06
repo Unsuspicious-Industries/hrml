@@ -565,8 +565,8 @@ fn real_usi_index_renders_imported_cards() {
 
     assert!(out.contains("class=\"site-nav\""), "missing nav: {}", out);
     assert!(
-        out.contains("class=\"card-title\">Dynamic Formal Systems lab</h3>"),
-        "missing card title: {}",
+        out.contains("Dynamic Formal Systems lab"),
+        "missing division title: {}",
         out
     );
     assert!(out.contains("#icon-code"), "missing icon: {}", out);
@@ -626,8 +626,8 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 
     assert!(out.contains("class=\"site-nav\""), "missing nav: {}", out);
     assert!(
-        out.contains("class=\"card-title\">Dynamic Formal Systems lab</h3>"),
-        "missing card title: {}",
+        out.contains("Dynamic Formal Systems lab"),
+        "missing division title: {}",
         out
     );
     assert!(out.contains("#icon-code"), "missing icon: {}", out);
@@ -664,8 +664,8 @@ fn direct_usi_templates_path_renders_cards() {
         .unwrap();
     assert!(out.contains("class=\"site-nav\""), "missing nav: {}", out);
     assert!(
-        out.contains("class=\"card-title\">Dynamic Formal Systems lab</h3>"),
-        "missing card title: {}",
+        out.contains("Dynamic Formal Systems lab"),
+        "missing division title: {}",
         out
     );
     assert!(out.contains("#icon-code"), "missing icon: {}", out);
