@@ -1,19 +1,19 @@
-//! The predicate language of `<?if cond=…?>` — a small total decision procedure.
+//! The predicate language of `<?if cond=…?>` - a small total decision procedure.
 //!
 //! A condition denotes a semantic predicate `eval : Cond → Context → Bool`
 //! (Moggi-style: the context is the only effect). The surface syntax is tiny:
 //!
 //! ```text
-//! Pred    ::= '!' Pred                 — negation
-//!           | VRef '==' Operand         — equality
-//!           | VRef '!=' Operand         — disequality
-//!           | VRef                       — truthiness (non-empty)
-//! VRef    ::= '$' Path | Path           — a context lookup
-//! Operand ::= '$' Path | "'" … "'" | '"' … '"' | bare   — ref or literal
+//! Pred    ::= '!' Pred                 - negation
+//!           | VRef '==' Operand         - equality
+//!           | VRef '!=' Operand         - disequality
+//!           | VRef                       - truthiness (non-empty)
+//! VRef    ::= '$' Path | Path           - a context lookup
+//! Operand ::= '$' Path | "'" … "'" | '"' … '"' | bare   - ref or literal
 //! ```
 //!
 //! Parsing is a single left-to-right scan (a two-state automaton: outside vs.
-//! inside an operator), and evaluation is structural recursion — so `eval`
+//! inside an operator), and evaluation is structural recursion - so `eval`
 //! is total and deterministic for every input string.
 
 /// Resolves a context path (already stripped of a leading `$`) to its string
@@ -21,7 +21,7 @@
 pub type Lookup<'a> = dyn Fn(&str) -> String + 'a;
 
 /// Decide a condition against the context. Unparseable or empty conditions are
-/// false — the predicate is total, never an error.
+/// false - the predicate is total, never an error.
 pub fn eval(cond: &str, lookup: &Lookup) -> bool {
     Pred::parse(cond).eval(lookup)
 }

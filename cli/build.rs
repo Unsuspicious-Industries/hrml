@@ -22,15 +22,15 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
 
     project.parse_all().map_err(|e| e.to_string())?;
 
-    // Fail loud on a `<?use?>` that names no defined component — a typo or a
-    // component missing from the shared library — rather than shipping silent
+    // Fail loud on a `<?use?>` that names no defined component - a typo or a
+    // component missing from the shared library - rather than shipping silent
     // empty output.
     let undefined = project.undefined_component_uses();
     if !undefined.is_empty() {
         let mut msg = String::from("Undefined component(s) referenced:\n");
         for (page, id) in &undefined {
             msg.push_str(&format!(
-                "  {page}: <?use id=\"{id}\"?> — no such component\n"
+                "  {page}: <?use id=\"{id}\"?> - no such component\n"
             ));
         }
         return Err(msg);
@@ -68,7 +68,7 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
             }
             // A finished page carries no meaningful surrounding whitespace; emit it
             // tidily (trimmed, single trailing newline) so output is stable however
-            // the page was authored — explicit loads or auto-layout.
+            // the page was authored - explicit loads or auto-layout.
             let document = format!("{}\n", html.trim());
             fs::write(&out_path, &document)
                 .map_err(|e| format!("Failed to write {}: {}", out_name, e))?;

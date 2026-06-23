@@ -4,7 +4,7 @@
 //! A file-based route is a path in the page tree; a `[param]` segment is a
 //! non-terminal. To expand it the build reads the page's own data bindings:
 //! a node `<?data from="dir/$param.ext"?>` says "`$param` ranges over the files
-//! of `dir`". So the output tree is the page tree crossed with the data tree —
+//! of `dir`". So the output tree is the page tree crossed with the data tree
 //! no extra routing config, and the rule is generic over the parameter name,
 //! directory, and file type.
 //!
@@ -30,7 +30,7 @@ pub type Binding = BTreeMap<String, String>;
 ///
 /// Static routes (`params` empty) yield one empty binding. A parameter with no
 /// discoverable collection contributes no values, so its route expands to
-/// nothing — an unbound dynamic page generates no output rather than a broken one.
+/// nothing - an unbound dynamic page generates no output rather than a broken one.
 pub fn expand(params: &[String], page: &[Node], base: &Path) -> Vec<Binding> {
     let mut bindings = vec![Binding::new()];
     for param in params {

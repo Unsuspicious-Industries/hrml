@@ -156,7 +156,7 @@ fn component_styles_are_hoisted_and_tree_shaken() {
 <div class="card"><?slot id="content"?></div>
 <?/component?>"#,
     );
-    // Defined but never used — its CSS must NOT ship.
+    // Defined but never used - its CSS must NOT ship.
     env.write(
         "components/banner.hrml",
         r#"<?component id="banner"?>
@@ -324,7 +324,7 @@ fn usi_card_component_renders_bound_content() {
 #[test]
 fn default_layout_wraps_a_page_with_no_loads() {
     // A page that declares no <?load?> is wrapped in the configured layout,
-    // with the auto-imports loaded ahead of it — so the author writes only blocks.
+    // with the auto-imports loaded ahead of it - so the author writes only blocks.
     let env = TestEnv::new("unit_default_layout");
     env.write(
         "layouts/base.hrml",
@@ -335,7 +335,7 @@ fn default_layout_wraps_a_page_with_no_loads() {
         r#"<?component id="hi"?><p class="hi">Hello</p></?component?>"#,
     );
     env.write("_imports.hrml", r#"<?load file="components/hi.hrml"?>"#);
-    // No <?load?> here — just the content block and a component use.
+    // No <?load?> here - just the content block and a component use.
     env.write(
         "pages/test.hrml",
         r#"<?block slot="content"?><?use id="hi"?></?use?><span>body</span></?block?>"#,
@@ -374,7 +374,7 @@ fn implicit_content_block_and_auto_discovery() {
         "components/hi.hrml",
         r#"<?component id="hi"?><p class="hi">Hi $who</p></?component?>"#,
     );
-    // No block wrapper, no <?load?>, no _imports — just data + body.
+    // No block wrapper, no <?load?>, no _imports - just data + body.
     env.write(
         "pages/test.hrml",
         r#"<?set id="who" value="world"/?>
@@ -506,7 +506,7 @@ fn named_tag_props_through_auto_layout() {
 <?/component?>"##,
     );
     env.write("_imports.hrml", r#"<?load file="components/card.hrml"?>"#);
-    // No <?load?> — auto-layout wraps it.
+    // No <?load?> - auto-layout wraps it.
     env.write(
         "pages/test.hrml",
         r#"<?block slot="content"?><?use id="card-cmp"?><?title?>Dynamic Formal Systems<?/title?></?use?></?block?>"#,

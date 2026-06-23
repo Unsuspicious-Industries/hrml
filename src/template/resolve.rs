@@ -1,4 +1,4 @@
-//! Load expansion and slot/block substitution — the one resolution pass.
+//! Load expansion and slot/block substitution - the one resolution pass.
 //!
 //! Resolution is pure tree-rewriting on [`Node`], independent of where files
 //! come from. The only thing that varies between the disk-backed [`Engine`] and
@@ -7,13 +7,13 @@
 //!
 //! Two rewrites make up the pass:
 //!
-//! * **block injection** — `inject_blocks` substitutes each `<?slot id=k?>` with
+//! * **block injection** - `inject_blocks` substitutes each `<?slot id=k?>` with
 //!   `blocks[k]`. Component definitions are *substitution boundaries*: they own
 //!   their own slots (filled later by `<?use?>`), so the rewrite never descends
 //!   into a `<?component?>` subtree. This is exactly capture-avoiding
-//!   substitution — a component is a binder for its slot names.
+//!   substitution - a component is a binder for its slot names.
 //!
-//! * **load expansion** — `resolve_loads` replaces each `<?load file=f?>` with
+//! * **load expansion** - `resolve_loads` replaces each `<?load file=f?>` with
 //!   the resolved nodes of `f`, injecting the enclosing scope's blocks into the
 //!   loaded subtree's slots (`inject_blocks(resolve(f), blocks)`).
 //!
@@ -42,7 +42,7 @@ pub type Fetch<'a> = dyn Fn(&str) -> TemplateResult<Vec<Node>> + 'a;
 /// of its own. A page then needs only its `<?block?>` fills (and any preamble
 /// directives); the engine prepends the auto-imports and the layout load, after
 /// which ordinary load resolution injects the page's blocks into the layout's
-/// slots. A page that loads anything explicitly is left untouched — it is
+/// slots. A page that loads anything explicitly is left untouched - it is
 /// taken to be managing its own document.
 pub fn with_default_layout(nodes: &[Node], layout: Option<&str>, imports: &[String]) -> Vec<Node> {
     let Some(layout) = layout else {
@@ -59,7 +59,7 @@ pub fn with_default_layout(nodes: &[Node], layout: Option<&str>, imports: &[Stri
     wrapped.push(load_node(layout));
 
     // A page that already names its slots keeps them. Otherwise its whole body
-    // *is* the content — wrap it in an implicit `<?block slot="content"?>` so
+    // *is* the content - wrap it in an implicit `<?block slot="content"?>` so
     // authors never write that boilerplate. Preamble directives (`<?data?>`, …)
     // stay at the top level so they keep hoisting ahead of the layout.
     let names_a_block = nodes
@@ -105,7 +105,7 @@ fn load_node(file: &str) -> Node {
 
 /// Substitute `<?slot id=k?>` placeholders with `blocks[k]`.
 ///
-/// `<?component?>` subtrees are left untouched — they are substitution
+/// `<?component?>` subtrees are left untouched - they are substitution
 /// boundaries that own their slots until instantiated by `<?use?>`.
 pub fn inject_blocks(nodes: Vec<Node>, blocks: &BTreeMap<String, Vec<Node>>) -> Vec<Node> {
     let mut result = Vec::new();
@@ -170,7 +170,7 @@ pub fn collect_components(nodes: &[Node], out: &mut Vec<Node>) {
 }
 
 /// Component ids referenced by a `<?use?>` for which no `<?component?>` is
-/// defined anywhere in `nodes` — i.e. a typo or a component missing from the
+/// defined anywhere in `nodes` - i.e. a typo or a component missing from the
 /// shared library. Returned sorted and de-duplicated. Run on a *resolved* tree
 /// (one that already carries the component prelude), this validates every page.
 pub fn unresolved_uses(nodes: &[Node]) -> Vec<String> {
@@ -307,7 +307,7 @@ pub fn resolve_loads(
     Ok(preamble)
 }
 
-/// Expand `<?load?>`s inside a subtree while preserving its structure verbatim —
+/// Expand `<?load?>`s inside a subtree while preserving its structure verbatim
 /// in particular `<?block?>` markers, which inside an element are component-use
 /// arguments rather than layout fills. `scope_blocks` fills any nested load.
 fn expand_loads(

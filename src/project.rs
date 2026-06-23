@@ -216,7 +216,7 @@ impl Project {
     }
 
     /// Collect every `<?component?>` definition from every component-library
-    /// file — the implicit prelude prepended to each rendered page.
+    /// file - the implicit prelude prepended to each rendered page.
     fn component_library(&self) -> Vec<Node> {
         let mut defs = Vec::new();
         for (path, file) in &self.files {
@@ -254,7 +254,7 @@ impl Project {
     }
 
     /// Every `<?use id?>` across all pages that names a component no file
-    /// defines — reported as `(page, missing_id)`. Resolving each page first
+    /// defines - reported as `(page, missing_id)`. Resolving each page first
     /// folds in the component library, so this catches typos and components
     /// dropped from a shared library before they ship as silent empty output.
     pub fn undefined_component_uses(&self) -> Vec<(String, String)> {

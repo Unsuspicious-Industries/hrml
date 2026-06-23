@@ -390,7 +390,7 @@ impl InnerParser {
             // `<?style?>` / `<?script?>` are raw-text directives: their bodies are
             // CSS/JS, which must not be parsed as markup (braces, `<`, `>` and the
             // like are not HRML). Everything up to the matching close is one text
-            // node — mirroring how HTML treats <style>/<script>.
+            // node - mirroring how HTML treats <style>/<script>.
             let children = if name == "style" || name == "script" {
                 self.parse_raw_until(&name)?
             } else {
@@ -634,7 +634,7 @@ impl InnerParser {
                                 return Err(self.code_error(
                                     val_start,
                                     format!(
-                                        "Nested HRML directive inside attribute value of '<?{} {}=…?>' is not allowed — lift to $var form",
+                                        "Nested HRML directive inside attribute value of '<?{} {}=…?>' is not allowed - lift to $var form",
                                         tag, key
                                     ),
                                 ));
@@ -703,7 +703,7 @@ impl InnerParser {
                                 return Err(self.code_error(
                                     val_start,
                                     format!(
-                                        "Nested HRML directive inside attribute value of '<{} {}=…>' is not allowed — lift to $var form",
+                                        "Nested HRML directive inside attribute value of '<{} {}=…>' is not allowed - lift to $var form",
                                         tag, key
                                     ),
                                 ));

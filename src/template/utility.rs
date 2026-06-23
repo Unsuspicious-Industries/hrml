@@ -1,27 +1,27 @@
-//! The utility algebra — Tailwind-flavoured single-purpose classes, derived
+//! The utility algebra - Tailwind-flavoured single-purpose classes, derived
 //! from the design tokens and tree-shaken to the classes a page actually
 //! writes.
 //!
 //! A utility is a *partial function* `class → rule`: the grammar below either
 //! recognises a class name and yields exactly one CSS rule, or yields nothing
-//! (the name belongs to some component's own stylesheet — the two vocabularies
+//! (the name belongs to some component's own stylesheet - the two vocabularies
 //! coexist by construction). Three families:
 //!
-//! - **Atoms** — a closed set of layout/typography one-liners (`flex`,
+//! - **Atoms** - a closed set of layout/typography one-liners (`flex`,
 //!   `hidden`, `uppercase`, …).
-//! - **Token images** — the `[globals]` token set mapped through the functors
+//! - **Token images** - the `[globals]` token set mapped through the functors
 //!   `text-` (color), `bg-` (background), `border-` (border-color) and
 //!   `font-` (family). `text-muted` resolves the token `text_muted`,
 //!   `text-accent` the token `accent`: the prefixed spelling is tried first,
 //!   then the bare one. The utility vocabulary therefore grows with the
-//!   project's tokens and with nothing else — there is no built-in palette.
-//! - **The spacing lattice** — `ℕ → length`, `n ↦ n × 0.25rem`, addressed by
+//!   project's tokens and with nothing else - there is no built-in palette.
+//! - **The spacing lattice** - `ℕ → length`, `n ↦ n × 0.25rem`, addressed by
 //!   `m`/`p` with optional axis or side suffix, and `gap` (`p-4` = `1rem`,
 //!   `mx-2` = horizontal `0.5rem`, Tailwind's scale).
 //!
 //! Generation happens at build time inside the same tree-shake pass as
 //! component `<?style?>` blocks, so the emitted sheet is exactly the set of
-//! utilities reachable from the page — no scanner config, no purge step.
+//! utilities reachable from the page - no scanner config, no purge step.
 
 use serde_json::Value;
 use std::collections::BTreeSet;
@@ -168,7 +168,10 @@ mod tests {
 
     #[test]
     fn atoms_and_spacing() {
-        let out = rules(&classes(&["flex", "items-center", "gap-2", "px-4", "p-0"]), &json!({}));
+        let out = rules(
+            &classes(&["flex", "items-center", "gap-2", "px-4", "p-0"]),
+            &json!({}),
+        );
         assert_eq!(
             out,
             vec![

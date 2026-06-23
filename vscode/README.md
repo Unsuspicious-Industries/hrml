@@ -4,7 +4,7 @@ Provides syntax highlighting for HRML template files (.hrml).
 
 ## Features
 
-- Syntax highlighting for every HRML processing instruction — built-in
+- Syntax highlighting for every HRML processing instruction - built-in
   directives are coloured as keywords; any other `<?name?>` (a named-tag
   component prop, e.g. `<?title?>…<?/title?>`) is coloured as a tag
 - Both closing spellings: `</?name?>` and `<?/name?>`

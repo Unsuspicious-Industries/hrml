@@ -546,7 +546,7 @@ fn count_tags(html: &str) -> std::collections::HashMap<String, (usize, usize)> {
             continue;
         }
         if i + 1 < bytes.len() && bytes[i + 1] == b'!' {
-            // comment / doctype — skip past `>`
+            // comment / doctype - skip past `>`
             while i < bytes.len() && bytes[i] != b'>' {
                 i += 1;
             }
@@ -625,7 +625,7 @@ fn walk_assert_no_html_in_text(nodes: &[xrml::template::Node]) {
     for node in nodes {
         match node {
             Node::Text(t) => {
-                // No `<a` (alpha) sequence — that would mean an HTML tag-open
+                // No `<a` (alpha) sequence - that would mean an HTML tag-open
                 // leaked into a text leaf, violating Stage 1's invariant.
                 let bytes = t.as_bytes();
                 for i in 0..bytes.len().saturating_sub(1) {
