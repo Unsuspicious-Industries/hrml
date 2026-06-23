@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 /// The single template tree type.
 ///
-/// `Node` is an inductive sum-of-products (Pierce, *TAPL* §11) — the W-type
+/// `Node` is an inductive sum-of-products (Pierce, *TAPL* §11) - the W-type
 /// `W(s : Shape). Branch(s)` whose shape index is `{ Text, Element, VoidElement }`.
 /// Attribute maps are ordered (`BTreeMap`) so that rendering is a deterministic
 /// function of the tree: equal trees always render to byte-identical output,

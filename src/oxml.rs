@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::ops::{Add, AddAssign};
 
 // ============================================================================
-// OXML — Oxidized Markup Language
+// OXML - Oxidized Markup Language
 //
 // A closed algebraic system for constructing valid HTML in Rust.
 //

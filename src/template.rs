@@ -1,4 +1,4 @@
-//! The HRML template engine — an algebraically closed evaluator for the
+//! The HRML template engine - an algebraically closed evaluator for the
 //! directive language.
 //!
 //! # Design references
@@ -11,7 +11,7 @@
 //!
 //! - **Pierce, Benjamin C.** (2002). *Types and Programming Languages*. MIT
 //!   Press.  §11 (algebraic datatypes) and §21 (metatheory of recursive
-//!   types).  The `Node` type is an *inductive sum-of-products* — each
+//!   types).  The `Node` type is an *inductive sum-of-products* - each
 //!   directive constructor (`Text`, `VoidElement`, `Element`, `Load`) is a
 //!   tagged variant whose eliminator is `render_node`.
 //!
@@ -62,7 +62,7 @@
 //! - **Hughes, John** (1990). "Why Functional Programming Matters". *Computer
 //!   Journal* 32(2):98–107.  §3 (gluing programs together).  The
 //!   `data → sort → filter → map` pipeline is Hughes' *lazy list
-//!   composition* pattern applied to template rendering — each stage produces
+//!   composition* pattern applied to template rendering - each stage produces
 //!   a lazy sequence consumed by the next without materializing intermediate
 //!   buffers.
 //!
@@ -101,16 +101,16 @@
 //!
 //! ```text
 //! Value      ≜  Null | Bool | Number | String
-//!             |  Object(Map String Value)          — product type
-//!             |  Array(Vec Value)                  — list type
+//!             |  Object(Map String Value)          - product type
+//!             |  Array(Vec Value)                  - list type
 //!
 //! Node       ≜  Text(String)
 //!             |  VoidElement { name: String, attrs: Map String String }
 //!             |  Element   { name: String, attrs: ..., children: [Node] }
 //!             |  Load      { file: String, blocks: Map String [Node] }
-//!             — inductive sum-of-products (Pierce §11)
+//!             - inductive sum-of-products (Pierce §11)
 //!
-//! Attr       ≜  Map String String                   — association list
+//! Attr       ≜  Map String String                   - association list
 //!
 //! Dir ::=  data  (from: Path,  as: Name)
 //!        | map   (over: Name, as: Name)  { block }
@@ -119,16 +119,16 @@
 //!        | slice (over: Name, start: Nat, count: Nat, as: Name)
 //!        | record(as: Name) { field | items }
 //!        | list  (as: Name) { item* }
-//!             — signature functors (Swierstra 2008)
+//!             - signature functors (Swierstra 2008)
 //!
 //! Context    ≜  { data: Value, vars: Map String Value,
 //!                 components: Map String [Node], load_stack: [String] }
-//!             — reader monad: TemplateResult ≜ Context → Result Html Error
+//!             - reader monad: TemplateResult ≜ Context → Result Html Error
 //!
 //! render     :  Path → Value → Context → Html
-//! render_node:  Node → Context → Html                 — structural recursion
-//! render_map :  [A] → (A → Html) → [Html]              — list functor fmap
-//! eval_pred  :  Cond → Value → Bool                    — semantic predicate
+//! render_node:  Node → Context → Html                 - structural recursion
+//! render_map :  [A] → (A → Html) → [Html]              - list functor fmap
+//! eval_pred  :  Cond → Value → Bool                    - semantic predicate
 //! ```
 //!
 //! ## Structural induction scheme
@@ -136,16 +136,16 @@
 //! Correctness of the evaluator is established by induction on `Node`:
 //! ```text
 //! Base cases:
-//!   • render_node(Text(t)) ⇝ t                     — identity on literals
-//!   • render_node(VoidElement(d, attrs)) ⇝ H_d(attrs) — directive handler
+//!   • render_node(Text(t)) ⇝ t                     - identity on literals
+//!   • render_node(VoidElement(d, attrs)) ⇝ H_d(attrs) - directive handler
 //!
 //! Inductive step:
 //!   • render_node(Element(name, attrs, children))
-//!     ≜  render_nodes(children) ∘ handler(name, attrs)   — compositional
+//!     ≜  render_nodes(children) ∘ handler(name, attrs)   - compositional
 //!
 //! Load induction:
 //!   • render_node(Load(file, blocks))
-//!     ≜  inject_blocks(resolve(file), blocks)             — substitution
+//!     ≜  inject_blocks(resolve(file), blocks)             - substitution
 //! ```
 //!
 //! ## Pipeline composition (Kleisli category)
@@ -186,7 +186,7 @@ fn is_html_void_tag(name: &str) -> bool {
 }
 
 /// One pass over a resolved tree that partitions `<?style?>` blocks and `<?use?>`
-/// references by owner — each `<?component?>` versus the page body — so CSS can
+/// references by owner - each `<?component?>` versus the page body - so CSS can
 /// be tree-shaken to the components a page actually reaches.
 #[derive(Default)]
 struct StyleIndex {
@@ -198,7 +198,7 @@ struct StyleIndex {
     comp_order: Vec<String>,
     /// `<?style?>` blocks written directly in the page body.
     page_css: Vec<String>,
-    /// component ids the page body `<?use?>`s — the tree-shake roots.
+    /// component ids the page body `<?use?>`s - the tree-shake roots.
     page_uses: Vec<String>,
     /// component id → literal class tokens in its markup (utility candidates).
     comp_classes: BTreeMap<String, std::collections::BTreeSet<String>>,
@@ -571,7 +571,7 @@ impl Engine {
 
     /// Parse and collect every `<?component?>` definition under the configured
     /// component directories (relative to the base path). Unreadable or
-    /// unparseable files are skipped — the library is best-effort discovery,
+    /// unparseable files are skipped - the library is best-effort discovery,
     /// not a hard dependency of any single page.
     fn component_library(&self) -> Vec<Node> {
         let mut defs = Vec::new();
@@ -843,7 +843,7 @@ impl Engine {
                             context.set_value(var, bound);
                         } else if let Some(default) = attrs.get("default") {
                             // A declared default fills the prop only when the caller
-                            // passed nothing — so components carry their own fallbacks
+                            // passed nothing - so components carry their own fallbacks
                             // and call sites omit the common case.
                             if context.get(var).is_empty() {
                                 context.set_str(var, self.resolve(default, context));
@@ -1110,7 +1110,7 @@ impl Engine {
     /// record({k₁↦v₁, …, kₙ↦vₙ}) ≜ Object { k₁: v₁, …, kₙ: vₙ }
     /// ```
     /// With `<?items?>` children, the record becomes a list of product
-    /// values — each `<?item?>` contributes a scalar `v` stored as `{value: v}`
+    /// values - each `<?item?>` contributes a scalar `v` stored as `{value: v}`
     /// merged with the enclosing record fields.
     fn render_record(
         &self,
@@ -1263,7 +1263,7 @@ impl Engine {
 
     /// `<?data from="path" as="name"?>`
     ///
-    /// The **filesystem functor** — lifts a filesystem path into the
+    /// The **filesystem functor** - lifts a filesystem path into the
     /// template context.  This is a Kleisli extension (Moggi 1991) of the
     /// `load_data_*` operations:
     /// ```text
@@ -1430,7 +1430,7 @@ impl Engine {
 
         // Attribute props: every `<?use?>` attribute other than `id` is a scalar
         // prop, resolved and bound. This is how a call site passes overrides —
-        // `<?use id="card" class="featured" style="--card-accent:#c00">` — that a
+        // `<?use id="card" class="featured" style="--card-accent:#c00">` - that a
         // component spreads onto its root (inline custom properties scope the
         // override to that one instance). Named-tag children (below) override
         // attributes for the same name, since richer content wins.
@@ -1443,7 +1443,7 @@ impl Engine {
 
         // Children of `<?use?>` fall into three roles: `<?block?>` fills a named
         // slot (handled above), a *reserved* directive runs as ordinary setup,
-        // and any other directive `<?name?>…<?/name?>` is a named prop — sugar
+        // and any other directive `<?name?>…<?/name?>` is a named prop - sugar
         // for `<?bind var="name">…</?bind>`.
         for node in children {
             match node {
@@ -1478,7 +1478,10 @@ impl Engine {
 
     fn eval(&self, condition: &str, context: &Context) -> bool {
         predicate::eval(condition, &|path| {
-            context.get_value(path).map(|v| truthy_str(&v)).unwrap_or_default()
+            context
+                .get_value(path)
+                .map(|v| truthy_str(&v))
+                .unwrap_or_default()
         })
     }
 
@@ -1855,7 +1858,7 @@ fn parse_for_expr(expr: &str) -> (String, String) {
 }
 
 /// Walk a dotted path into a value: object fields by name, array elements by
-/// numeric index — the single data-access rule behind `$a.b.0` references,
+/// numeric index - the single data-access rule behind `$a.b.0` references,
 /// `sort by="a.b"` projections, and `filter where` lookups.
 fn project<'a>(mut current: &'a Value, path: &str) -> Option<&'a Value> {
     for part in path.split('.') {

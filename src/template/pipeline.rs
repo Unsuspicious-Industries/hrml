@@ -87,7 +87,10 @@ fn slice(items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Vec<Value> {
 /// counts at most once per name, however many of its values map to it.
 fn tally(items: Vec<Value>, attrs: &BTreeMap<String, String>) -> Vec<Value> {
     let by = attrs.get("by").map(String::as_str).unwrap_or("");
-    let sep = attrs.get("sep").map(String::as_str).filter(|s| !s.is_empty());
+    let sep = attrs
+        .get("sep")
+        .map(String::as_str)
+        .filter(|s| !s.is_empty());
 
     let mut counts: BTreeMap<String, u64> = BTreeMap::new();
     for item in &items {

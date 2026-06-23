@@ -70,7 +70,7 @@ pub struct Config {
     pub auto_imports: Vec<String>,
 
     /// Directories whose `<?component?>` definitions are auto-registered for every
-    /// page — the shared component library. A page uses any of them with no
+    /// page - the shared component library. A page uses any of them with no
     /// `<?load?>`. Configured as `[templates] components = […]`; defaults to
     /// `["components"]`. Paths are relative to `templates_path`.
     #[serde(default = "default_component_paths")]

@@ -1,9 +1,9 @@
-# OXML — Oxidized Markup Language
+# OXML - Oxidized Markup Language
 
 ## Formal Specification
 
 OXML is a **closed algebraic system** for constructing valid HTML in Rust.
-The type system guarantees HTML validity by construction — invalid states are unrepresentable.
+The type system guarantees HTML validity by construction - invalid states are unrepresentable.
 
 ## Algebraic Structure
 
@@ -26,7 +26,7 @@ ONode = Empty
 
 2. **Closed under composition**: For all `a, b : ONode`, `a.cat2(b) : ONode`
 
-3. **Void isolation by construction**: `OVoid` has no `child()`/`text()` methods — void elements cannot have children at the type level.
+3. **Void isolation by construction**: `OVoid` has no `child()`/`text()` methods - void elements cannot have children at the type level.
 
 4. **Content safety**: `OContent` always renders with matching open/close tags.
 
@@ -177,8 +177,8 @@ Template directives render through OXML, ensuring all generated HTML is type-saf
 
 ## Design Principles
 
-1. **Void elements cannot have children by construction** — no error needed
-2. **Composition of valid nodes is always valid** — closure property
-3. **Deterministic output** — BTreeMap for attributes
-4. **Algebraic operations** — monoidal cat, identity Empty
-5. **Type-level classification** — `ElemTag` carries `ElemKind` at compile time
+1. **Void elements cannot have children by construction** - no error needed
+2. **Composition of valid nodes is always valid** - closure property
+3. **Deterministic output** - BTreeMap for attributes
+4. **Algebraic operations** - monoidal cat, identity Empty
+5. **Type-level classification** - `ElemTag` carries `ElemKind` at compile time
