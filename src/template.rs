@@ -200,6 +200,10 @@ struct StyleIndex {
     page_css: Vec<String>,
     /// component ids the page body `<?use?>`s — the tree-shake roots.
     page_uses: Vec<String>,
+    /// component id → literal class tokens in its markup (utility candidates).
+    comp_classes: BTreeMap<String, std::collections::BTreeSet<String>>,
+    /// literal class tokens in the page body's markup.
+    page_classes: std::collections::BTreeSet<String>,
 }
 
 impl StyleIndex {
@@ -236,13 +240,40 @@ impl StyleIndex {
                         self.record_use(attrs, owner);
                         self.walk(children, owner);
                     }
-                    _ => self.walk(children, owner),
+                    _ => {
+                        self.record_classes(attrs, owner);
+                        self.walk(children, owner);
+                    }
                 },
-                Node::VoidElement { name, attrs } if name == "use" => {
-                    self.record_use(attrs, owner);
+                Node::VoidElement { name, attrs } => {
+                    if name == "use" {
+                        self.record_use(attrs, owner);
+                    } else {
+                        self.record_classes(attrs, owner);
+                    }
                 }
                 _ => {}
             }
+        }
+    }
+
+    /// Collect literal class tokens (dynamic `$…` segments can never name a
+    /// utility, so they are skipped).
+    fn record_classes(&mut self, attrs: &BTreeMap<String, String>, owner: Option<&str>) {
+        let Some(class) = attrs.get("class") else {
+            return;
+        };
+        let tokens = class
+            .split_whitespace()
+            .filter(|t| !t.contains('$'))
+            .map(String::from);
+        match owner {
+            Some(id) => self
+                .comp_classes
+                .entry(id.to_string())
+                .or_default()
+                .extend(tokens),
+            None => self.page_classes.extend(tokens),
         }
     }
 
@@ -335,6 +366,7 @@ mod head;
 mod pipeline;
 mod predicate;
 pub mod resolve;
+mod utility;
 
 fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
     if template_path.ends_with(".trml") {
@@ -611,6 +643,12 @@ impl Engine {
 
         let mut seen = std::collections::BTreeSet::new();
         let mut blocks = Vec::new();
+        // Design tokens lead the cascade: every `[globals]` key is exposed to
+        // CSS as a custom property (`snake_case` → `--kebab-case`), so projects
+        // never hand-map config values into a `:root` block.
+        if let Some(tokens) = globals_root_block(&self.globals) {
+            blocks.push(tokens);
+        }
         for css in raw {
             let resolved = self.resolve(&css, context);
             let trimmed = resolved.trim().to_string();
@@ -618,6 +656,21 @@ impl Engine {
                 blocks.push(trimmed);
             }
         }
+
+        // Utility classes close the cascade: generated from the same reachable
+        // set as component CSS, ordered after it so a utility on an element
+        // wins ties against the component's own rule.
+        let mut classes = index.page_classes;
+        for id in &reachable {
+            if let Some(set) = index.comp_classes.get(id) {
+                classes.extend(set.iter().cloned());
+            }
+        }
+        let utilities = utility::rules(&classes, &self.globals);
+        if !utilities.is_empty() {
+            blocks.push(utilities.join("\n"));
+        }
+
         context.styles = blocks.join("\n\n");
     }
 
@@ -768,9 +821,10 @@ impl Engine {
                         .map(ONode::raw),
                     "item" => Ok(ONode::empty()),
                     "field" => Ok(ONode::empty()),
-                    pipe @ ("filter" | "sort" | "slice") => {
+                    pipe @ ("filter" | "sort" | "slice" | "tally" | "concat") => {
                         Ok(self.render_pipeline(pipe, attrs, context))
                     }
+                    "replace" => self.render_replace(attrs, context, template_path),
                     "markdownfm" => self
                         .render_markdownfm(attrs, context, template_path)
                         .map(ONode::raw),
@@ -1285,12 +1339,52 @@ impl Engine {
         let over = deref(&attrs.get("over").cloned().unwrap_or_default()).to_string();
         let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
 
-        if let Some(Value::Array(items)) = context.get_value(&over) {
-            if let Some(out) = pipeline::transform(name, items, attrs) {
+        if let Some(Value::Array(mut items)) = context.get_value(&over) {
+            if name == "concat" {
+                // Binary, so it lives here where the second operand can be
+                // resolved against the context: <?concat over="a" with="b"?>.
+                if let Some(with) = attrs.get("with") {
+                    if let Some(Value::Array(more)) = context.get_value(deref(with)) {
+                        items.extend(more);
+                    }
+                }
+                context.set_value(&as_key, Value::Array(items));
+            } else if let Some(out) = pipeline::transform(name, items, attrs) {
                 context.set_value(&as_key, Value::Array(out));
             }
         }
         ONode::empty()
+    }
+
+    /// `<?replace over="path" match="regex" with="replacement" as="name"?>` —
+    /// the string counterpart of the array pipes: a regex endomorphism on a
+    /// string binding. `match` and `with` are taken raw (no `$` resolution),
+    /// so `$1`…`$N` in `with` are capture-group references.
+    fn render_replace(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let over = deref(&attrs.get("over").cloned().unwrap_or_default()).to_string();
+        let as_key = attrs.get("as").cloned().unwrap_or_else(|| over.clone());
+        let pattern = attrs.get("match").map(String::as_str).unwrap_or_default();
+        let replacement = attrs.get("with").map(String::as_str).unwrap_or_default();
+
+        let re = regex::Regex::new(pattern).map_err(|e| {
+            TemplateError::code(
+                TemplateErrorPhase::Render,
+                format!("replace: invalid regex {:?}: {}", pattern, e),
+            )
+            .with_template_path(template_path)
+            .with_directive("replace")
+        })?;
+
+        if let Some(Value::String(s)) = context.get_value(&over) {
+            let out = re.replace_all(&s, replacement).into_owned();
+            context.set_value(&as_key, Value::String(out));
+        }
+        Ok(ONode::empty())
     }
 
     fn render_bind(
@@ -1383,7 +1477,9 @@ impl Engine {
     }
 
     fn eval(&self, condition: &str, context: &Context) -> bool {
-        predicate::eval(condition, &|path| context.get(path))
+        predicate::eval(condition, &|path| {
+            context.get_value(path).map(|v| truthy_str(&v)).unwrap_or_default()
+        })
     }
 
     fn wrap_html(&self, body: ONode) -> String {
@@ -1721,22 +1817,15 @@ impl Context {
             return Some(val.clone());
         }
 
-        let parts: Vec<&str> = key.split('.').collect();
-        if let Some((first, rest)) = parts.split_first() {
-            if let Some(seed) = self.vars.get(*first) {
-                let mut current = seed;
-                for part in rest {
-                    current = current.get(*part)?;
-                }
-                return Some(current.clone());
+        // A var named by the first segment shadows the data root; the rest of
+        // the path projects into it (object fields, numeric array indices).
+        if let Some((first, rest)) = key.split_once('.') {
+            if let Some(seed) = self.vars.get(first) {
+                return project(seed, rest).cloned();
             }
         }
 
-        let mut current = &self.data;
-        for part in parts {
-            current = current.get(part)?;
-        }
-        Some(current.clone())
+        project(&self.data, key).cloned()
     }
 
     fn get(&self, key: &str) -> String {
@@ -1763,6 +1852,46 @@ fn parse_for_expr(expr: &str) -> (String, String) {
         }
     }
     ("item".to_string(), expr.trim().to_string())
+}
+
+/// Walk a dotted path into a value: object fields by name, array elements by
+/// numeric index — the single data-access rule behind `$a.b.0` references,
+/// `sort by="a.b"` projections, and `filter where` lookups.
+fn project<'a>(mut current: &'a Value, path: &str) -> Option<&'a Value> {
+    for part in path.split('.') {
+        current = match (current, part.parse::<usize>()) {
+            (Value::Array(arr), Ok(i)) => arr.get(i)?,
+            (value, _) => value.get(part)?,
+        };
+    }
+    Some(current)
+}
+
+/// Stringify a value for predicate evaluation: falsy values (`false`, `null`,
+/// `[]`) become the empty string, so "truthy" is exactly "non-empty" for
+/// every shape of data.
+fn truthy_str(value: &Value) -> String {
+    match value {
+        Value::Bool(false) | Value::Null => String::new(),
+        Value::Array(arr) if arr.is_empty() => String::new(),
+        other => value_to_string(other),
+    }
+}
+
+/// Render config `[globals]` as a `:root` custom-property block, or `None`
+/// when there are no scalar tokens to emit.
+fn globals_root_block(globals: &Value) -> Option<String> {
+    let map = globals.as_object()?;
+    let vars: String = map
+        .iter()
+        .filter(|(_, v)| !matches!(v, Value::Array(_) | Value::Object(_) | Value::Null))
+        .map(|(k, v)| format!("    --{}: {};\n", k.replace('_', "-"), value_to_string(v)))
+        .collect();
+    if vars.is_empty() {
+        None
+    } else {
+        Some(format!(":root {{\n{}}}", vars))
+    }
 }
 
 fn value_to_string(v: &Value) -> String {

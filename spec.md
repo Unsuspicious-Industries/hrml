@@ -36,6 +36,25 @@ favicon = "/static/favicon.ico"
 - `if` + `else`: conditional rendering
 - `for`: basic loop rendering
 
+### Data pipes
+
+- `data`: load JSON / TOML / MDX / BibTeX into the context
+- `filter` + `sort` + `slice` + `tally` + `concat`: list transforms (`over` → `as`);
+  `filter where` speaks the same predicate language as `if cond`
+- `replace`: regex transform on a string binding (`$1`…`$N` capture refs)
+- Field paths dot through objects and index arrays (`$items.0.title`)
+
+### Styling
+
+- `[globals]` config keys are emitted as `:root` custom properties
+  (`bg_code` → `--bg-code`) ahead of all component CSS
+- Component `<?style?>` blocks are tree-shaken per page
+- Utility classes (Tailwind-flavoured) are generated from the same tokens:
+  `text-muted` → `color: var(--text-muted)`, `bg-accent`, `font-mono`,
+  spacing on the quarter-rem scale (`px-4`, `gap-2`), and layout atoms
+  (`flex`, `items-center`). Only classes present in reachable markup are
+  emitted; unrecognised names are left to component stylesheets.
+
 ### Interaction directives
 
 - `btn`: transforms to interactive button with data attributes
