@@ -1,3 +1,4 @@
+use crate::palette::{scan_static_dir, Palette};
 use crate::validation;
 use std::fs;
 use std::io;
@@ -22,36 +23,47 @@ pub fn create_project(name: &str) -> io::Result<()> {
     setup_project_files(project_path, &config)
 }
 
-pub(crate) fn load_project_config(project_path: &Path) -> Result<Config, String> {
-    let config_path = project_path.join("xrml.toml");
+pub(crate) fn load_project_config(path: &Path, palette: Option<&Palette>) -> Result<Config, String> {
+    let config_path = path.join("xrml.toml");
     if !config_path.exists() {
-        return Err(format!("No xrml.toml found in {}", project_path.display()));
+        return Err(format!("No xrml.toml found in {}", path.display()));
     }
 
-    let content = fs::read_to_string(&config_path)
+    let mut content = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read {}: {}", config_path.display(), e))?;
+
+    if let Some(palette) = palette {
+        content = palette
+            .apply(&content)
+            .map_err(|e| format!("xrml.toml: {e}"))?;
+    }
 
     Config::from_toml(&content).map_err(|e| format!("Failed to load config: {}", e))
 }
 
-pub fn load_project(path: &Path) -> Result<Project, String> {
-    let config = load_project_config(path)?;
+pub fn load_project(path: &Path, palette: Option<&Palette>) -> Result<Project, String> {
+    let config = load_project_config(path, palette)?;
     let templates_path = path.join(&config.templates_path);
 
     let mut project = Project::new(config).with_base_path(path);
-    load_dir_into_project(&mut project, &templates_path, &templates_path)?;
+    load_dir_into_project(&mut project, &templates_path, &templates_path, palette)?;
 
     Ok(project)
 }
 
-fn load_dir_into_project(project: &mut Project, base: &Path, dir: &Path) -> Result<(), String> {
+fn load_dir_into_project(
+    project: &mut Project,
+    base: &Path,
+    dir: &Path,
+    palette: Option<&Palette>,
+) -> Result<(), String> {
     let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read dir: {}", e))?;
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
 
         if path.is_dir() {
-            load_dir_into_project(project, base, &path)?;
+            load_dir_into_project(project, base, &path, palette)?;
         } else if path
             .extension()
             .map(|e| e == "hrml" || e == "trml")
@@ -62,22 +74,34 @@ fn load_dir_into_project(project: &mut Project, base: &Path, dir: &Path) -> Resu
                 .map_err(|e| e.to_string())?
                 .to_string_lossy()
                 .to_string();
-            let content = fs::read_to_string(&path)
+            let mut content = fs::read_to_string(&path)
                 .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+            if let Some(palette) = palette {
+                content = palette
+                    .apply(&content)
+                    .map_err(|e| format!("templates/{}: {e}", rel_path))?;
+            }
             project.add_file(rel_path, content);
         }
     }
     Ok(())
 }
 
-pub(crate) fn validate_project(path: &Path) -> Result<(), String> {
+pub(crate) fn validate_project(path: &Path, palette: Option<&Palette>) -> Result<(), String> {
     let config_path = path.join("xrml.toml");
     if !config_path.exists() {
         return Err(format!("File not found: {}", config_path.display()));
     }
 
-    let content = fs::read_to_string(&config_path)
+    let mut content = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read {}: {}", config_path.display(), e))?;
+
+    if let Some(palette) = palette {
+        content = palette
+            .apply(&content)
+            .map_err(|e| format!("xrml.toml: {e}"))?;
+    }
+
     let config =
         Config::from_toml(&content).map_err(|e| format!("Failed to load xrml.toml: {}", e))?;
 
@@ -111,19 +135,23 @@ pub(crate) fn validate_project(path: &Path) -> Result<(), String> {
     }
 
     let mut project = Project::new(config.clone());
-    load_dir_into_project(&mut project, &templates_path, &templates_path)?;
+    load_dir_into_project(&mut project, &templates_path, &templates_path, palette)?;
 
-    match project.render("pages/index.hrml", &serde_json::json!({})) {
-        Ok(_) => println!("[OK] Index template renders successfully"),
-        Err(e) => eprintln!("[WARNING] Index template failed to render: {}", e),
+    if let Err(e) = project.parse_all() {
+        eprintln!("[WARNING] Templates failed to parse: {}", e);
+    } else {
+        match project.render("pages/index.hrml", &serde_json::json!({})) {
+            Ok(_) => println!("[OK] Index template renders successfully"),
+            Err(e) => eprintln!("[WARNING] Index template failed to render: {}", e),
+        }
     }
 
     println!("[OK] Project validation complete");
     Ok(())
 }
 
-pub fn check_project(path: &Path) -> Result<(), String> {
-    let config = load_project_config(path)?;
+pub fn check_project(path: &Path, palette: Option<&Palette>) -> Result<(), String> {
+    let config = load_project_config(path, palette)?;
     let templates_path = path.join(&config.templates_path);
 
     if !templates_path.exists() {
@@ -140,8 +168,8 @@ pub fn check_project(path: &Path) -> Result<(), String> {
         println!("  {} -> {} ({:?})", route.path, route.template, route.kind);
     }
 
-    let mut project = Project::new(config).with_base_path(path);
-    load_dir_into_project(&mut project, &templates_path, &templates_path)?;
+    let mut project = Project::new(config.clone()).with_base_path(path);
+    load_dir_into_project(&mut project, &templates_path, &templates_path, palette)?;
     project.parse_all().map_err(|e| e.to_string())?;
 
     let mut errors = 0;
@@ -192,6 +220,17 @@ pub fn check_project(path: &Path) -> Result<(), String> {
             errors += failed;
         } else {
             println!("Validation cases: {} passed", records.len());
+        }
+    }
+
+    if let Some(palette) = palette {
+        let static_root = path.join(&config.static_path);
+        match scan_static_dir(&static_root, Some(palette)) {
+            Ok(entries) => println!("Static assets: {} files checked", entries.len()),
+            Err(e) => {
+                eprintln!("[ERROR] {e}");
+                errors += 1;
+            }
         }
     }
 
