@@ -4,6 +4,7 @@ pub mod config;
 pub mod convert;
 pub mod features;
 pub mod generate;
+pub mod lint;
 pub mod oxml;
 pub mod paths;
 pub mod project;

@@ -37,6 +37,25 @@ pub fn build_site(project_path: &Path, log_ast: bool, palette: Option<&Palette>)
         return Err(msg);
     }
 
+    // Fail loud on a colour written as a literal rather than as a token, for
+    // a project that asked for that guarantee. The palette resolution already
+    // rejects a LEFTOVER token; this rejects the bypass, which it cannot see
+    // because `background: white` is valid CSS.
+    if project.config.strict_colors {
+        let literals = &project.style_findings;
+        if !literals.is_empty() {
+            let mut msg =
+                String::from("Colour literal(s) in <?style?> (strict_colors is on):\n");
+            for (file, finding) in literals {
+                msg.push_str(&format!(
+                    "  {}:{}: {}: {} - use a design token, e.g. var(--accent)\n",
+                    file, finding.line, finding.property, finding.literal
+                ));
+            }
+            return Err(msg);
+        }
+    }
+
     // Each page expands to one or more concrete routes: a static page is a single
     // route, while a dynamic `[param]` page fans out over the collection it binds
     // (see `xrml::paths`). Render every concrete route and write it under dist/.

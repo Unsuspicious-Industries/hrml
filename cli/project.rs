@@ -76,6 +76,9 @@ fn load_dir_into_project(
                 .to_string();
             let mut content = fs::read_to_string(&path)
                 .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+            // Lint the source AS WRITTEN. After `palette.apply` a `USI_INK_DIM`
+            // has become a hex and is indistinguishable from a hardcoded one.
+            project.lint_styles(&rel_path, &content);
             if let Some(palette) = palette {
                 content = palette
                     .apply(&content)

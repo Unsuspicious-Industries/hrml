@@ -36,6 +36,15 @@ pub struct Project {
     pub config: Config,
     pub files: BTreeMap<String, HrFile>,
     pub dependency_order: Vec<String>,
+    /// Colour literals found in `<?style?>` blocks, recorded as each file is
+    /// read and *before* any palette substitution.
+    ///
+    /// The order matters. A palette turns `USI_INK_DIM` into `#5a5a5a`, so a
+    /// lint that ran afterwards would report a hex the author never wrote and
+    /// accuse a correctly tokenised stylesheet of hardcoding a colour. Only
+    /// the pre-substitution source can distinguish "asked for a role" from
+    /// "picked a colour".
+    pub style_findings: Vec<(String, crate::lint::Finding)>,
     engine: Engine,
 }
 
@@ -46,6 +55,20 @@ impl Project {
             files: BTreeMap::new(),
             engine: Engine::with_config(&config),
             dependency_order: Vec::new(),
+            style_findings: Vec::new(),
+        }
+    }
+
+    /// Record the colour literals in `source`, which must be the file's text
+    /// as written, before any palette substitution. See `style_findings`.
+    pub fn lint_styles(&mut self, path: &str, source: &str) {
+        for (offset, css) in crate::lint::style_blocks(source) {
+            for mut finding in crate::lint::color_literals(&css) {
+                // `style_blocks` gives the line the block body starts on; the
+                // finding's line is relative to that body.
+                finding.line += offset;
+                self.style_findings.push((path.to_string(), finding));
+            }
         }
     }
 

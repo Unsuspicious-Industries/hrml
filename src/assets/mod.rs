@@ -24,6 +24,7 @@ pub fn default_config(name: &str) -> String {
         default_layout: None,
         auto_imports: Vec::new(),
         component_paths: vec!["components".to_string()],
+        strict_colors: false,
     };
     toml::to_string_pretty(&config).unwrap()
 }
