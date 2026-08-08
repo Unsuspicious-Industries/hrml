@@ -75,6 +75,17 @@ pub struct Config {
     /// `["components"]`. Paths are relative to `templates_path`.
     #[serde(default = "default_component_paths")]
     pub component_paths: Vec<String>,
+
+    /// Reject a colour written as a literal (`white`, `#fff`, `rgba(…)`) in a
+    /// `<?style?>` block, so a project that resolves design tokens cannot have
+    /// them quietly bypassed. Configured as `strict_colors = true`.
+    ///
+    /// Off by default: the check is only meaningful for a project whose
+    /// colours come from tokens in the first place, and turning it on for
+    /// every existing project would fail builds that were never making that
+    /// promise. A tokenised project opts in and gets the guarantee.
+    #[serde(default)]
+    pub strict_colors: bool,
 }
 
 fn default_component_paths() -> Vec<String> {
@@ -101,6 +112,7 @@ struct RawConfig {
     favicon: Option<String>,
     site_url: Option<String>,
     globals: Option<toml::Value>,
+    strict_colors: Option<bool>,
 }
 
 #[derive(Deserialize, Default)]
@@ -149,6 +161,7 @@ impl Default for Config {
             default_layout: None,
             auto_imports: Vec::new(),
             component_paths: default_component_paths(),
+            strict_colors: false,
         }
     }
 }
@@ -236,6 +249,9 @@ impl Config {
         }
         if let Some(globals) = raw.globals {
             config.globals = toml_value_to_json(globals);
+        }
+        if let Some(strict_colors) = raw.strict_colors {
+            config.strict_colors = strict_colors;
         }
 
         Ok(config)
