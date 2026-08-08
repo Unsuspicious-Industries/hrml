@@ -134,66 +134,40 @@ fn literals_in_value(value: &str) -> Vec<String> {
     let mut found = BTreeSet::new();
 
     // Hex: # followed by 3, 4, 6 or 8 hex digits.
-    let bytes: Vec<char> = value.chars().collect();
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == '#' {
-            let digits: String = bytes[i + 1..]
-                .iter()
-                .take_while(|c| c.is_ascii_hexdigit())
-                .collect();
-            if matches!(digits.len(), 3 | 4 | 6 | 8) {
-                found.insert(format!("#{}", digits));
-            }
+    let chars: Vec<char> = value.chars().collect();
+    for (i, c) in chars.iter().enumerate() {
+        if *c != '#' {
+            continue;
         }
-        i += 1;
+        let digits: String = chars[i + 1..]
+            .iter()
+            .take_while(|c| c.is_ascii_hexdigit())
+            .collect();
+        if matches!(digits.len(), 3 | 4 | 6 | 8) {
+            found.insert(format!("#{}", digits));
+        }
     }
 
-    // Functional notation, and bare keywords. Tokenise on anything that
-    // cannot appear in an identifier so `1px solid white` yields `white` and
-    // `var(--ink)` yields `var` and `--ink`, neither of which is a colour.
-    let mut tokens = value
+    // Functional notation and bare keywords. Split on anything that cannot
+    // appear in an identifier, so `1px solid white` yields `white`, and
+    // `var(--ink)` yields `var` and `--ink` - neither of which is a colour.
+    let lowered = value.to_ascii_lowercase();
+    for token in lowered
         .split(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
         .filter(|t| !t.is_empty())
-        .peekable();
-
-    let lowered: Vec<String> = {
-        let mut out = Vec::new();
-        while let Some(t) = tokens.next() {
-            out.push(t.to_ascii_lowercase());
-        }
-        out
-    };
-
-    for (index, token) in lowered.iter().enumerate() {
-        if ALLOWED_KEYWORDS.contains(&token.as_str()) {
+    {
+        // A custom property reference names a token by definition, and a
+        // neutral keyword defers to something else.
+        if token.starts_with("--") || ALLOWED_KEYWORDS.contains(&token) {
             continue;
         }
-        // A custom property reference is a token by definition.
-        if token.starts_with("--") {
-            continue;
-        }
-        if COLOR_FUNCTIONS.contains(&token.as_str()) {
+        if COLOR_FUNCTIONS.contains(&token) {
             // Only a call is a colour; `rgb` as a bare word is not.
-            let call = value
-                .to_ascii_lowercase()
-                .contains(&format!("{}(", token));
-            if call {
+            if lowered.contains(&format!("{}(", token)) {
                 found.insert(format!("{}()", token));
             }
-            continue;
-        }
-        if NAMED_COLORS.contains(&token.as_str()) {
-            // `--ink-dim` tokenises to `ink`/`dim`; skip a named colour that
-            // is really part of a custom property or a longer identifier.
-            let preceded_by_custom_prop = index > 0
-                && lowered
-                    .get(index - 1)
-                    .map(|p| p.starts_with("--"))
-                    .unwrap_or(false);
-            if !preceded_by_custom_prop {
-                found.insert(token.clone());
-            }
+        } else if NAMED_COLORS.contains(&token) {
+            found.insert(token.to_string());
         }
     }
 
