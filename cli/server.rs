@@ -95,6 +95,7 @@ async fn serve_app(
     ));
 
     project.parse_all().map_err(|e| e.to_string())?;
+    validate_index_render(&project)?;
 
     let static_namespace = Arc::new(project.config.static_path.clone());
 
@@ -240,6 +241,7 @@ fn reload_project(project_path: &Path, state: &AppState) -> Result<bool, String>
     let palette = state.palette.as_ref().map(|palette| palette.as_ref());
     let mut new_project = load_project(project_path, palette)?;
     new_project.parse_all().map_err(|e| e.to_string())?;
+    validate_index_render(&new_project)?;
 
     let static_root = project_path.join(&new_project.config.static_path);
     let new_static = scan_static_dir(&static_root, palette)?
@@ -267,6 +269,22 @@ fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
     let endpoints_root = project_path.join(&config.endpoints_path);
     let endpoints_root = endpoints_root.to_string_lossy().into_owned();
     Runtime::new(&endpoints_root)
+}
+
+/// Do not expose a project until its entry page and all loaded templates render.
+/// A git checkout can briefly contain only part of a new tree during reset.
+fn validate_index_render(project: &Project) -> Result<(), String> {
+    for template_path in ["pages/index.trml", "pages/index.hrml", "pages/index.html"] {
+        if project.get_file(template_path).is_some() {
+            project
+                .render(template_path, &serde_json::json!({}))
+                .map(|_| ())
+                .map_err(|error| format!("Index template is not renderable: {}", error))?;
+            return Ok(());
+        }
+    }
+
+    Ok(())
 }
 
 async fn index_handler(State(state): State<AppState>) -> Response {
@@ -562,4 +580,39 @@ async fn hrml_js_handler() -> Response {
         HRML_JS,
     )
         .into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_index_render;
+    use xrml::{config::Config, project::Project};
+
+    fn project_with(index: &str, layout: Option<&str>) -> Project {
+        let mut project = Project::new(Config::default());
+        project.add_file("pages/index.hrml".to_string(), index.to_string());
+        if let Some(layout) = layout {
+            project.add_file("layouts/base.hrml".to_string(), layout.to_string());
+        }
+        project.parse_all().unwrap();
+        project
+    }
+
+    #[test]
+    fn rejects_an_index_with_a_missing_loaded_template() {
+        let project = project_with(r#"<?load file="layouts/base.hrml"?>"#, None);
+
+        let error = validate_index_render(&project).unwrap_err();
+
+        assert!(error.contains("Loaded file not found: layouts/base.hrml"));
+    }
+
+    #[test]
+    fn accepts_a_fully_renderable_index() {
+        let project = project_with(
+            r#"<?load file="layouts/base.hrml"?>"#,
+            Some("<main>ok</main>"),
+        );
+
+        validate_index_render(&project).unwrap();
+    }
 }
