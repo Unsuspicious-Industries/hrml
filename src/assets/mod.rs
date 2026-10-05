@@ -33,58 +33,30 @@ pub fn readme(name: &str) -> String {
     format!(
         r#"# {}
 
-A web application built with HRML - Minimal Web Framework
+Configuration is in `xrml.toml`. Templates are under `templates/pages`,
+`templates/layouts` and `templates/components`; endpoint sources are under
+`endpoints/api`; assets are under `static`.
 
-## Project Structure
+Run from this project directory:
 
-```
-{}/
-├── xrml.toml              # Configuration
-├── templates/             # HTML templates
-│   ├── layouts/          # Layout templates
-│   ├── components/       # Reusable components
-│   └── pages/            # Page templates
-├── endpoints/            # Rust-native endpoint templates
-│   └── api/              # API endpoints
-└── static/               # Static assets
-    ├── css/              # Stylesheets
-    ├── js/               # JavaScript files
-    └── images/           # Images
+```sh
+xrml dev
+xrml serve
+xrml check
+xrml build
 ```
 
-## Development
+`dev` and `serve` run the source project. `build` exports static files to
+`dist`; it does not deploy them. Use `--palette FILE` when the project uses
+palette tokens. Files containing tokens are not automatically assigned a
+palette.
 
-```bash
-# Run development server with auto-reload
-hrml dev
-
-# Or serve from this directory
-hrml serve
-```
-
-## Building for Production
-
-```bash
-# Build static site
-hrml build
-
-# Output will be in the `dist/` directory
-```
-
-## Adding Pages
-
-1. Create a new template in `templates/pages/`
-2. Link to it from navigation in `templates/components/nav.hrml`
-
-## Adding API Endpoints
-
-1. Create a `.hrml`, `.html`, or `.json` file in `endpoints/api/`
-2. Optional actions can be defined as `<name>/<action>.hrml`
-3. Access the endpoint at `/api/<name>/<action>`
-
-See the HRML documentation for more details.
+Add pages under `templates/pages` and navigation links in
+`templates/components/nav.hrml`. Use `xrml help` for command options and the
+[HRML reference](https://github.com/Unsuspicious-Industries/hrml/blob/master/spec.md)
+for template, routing and endpoint contracts.
 "#,
-        name, name
+        name
     )
 }
 
