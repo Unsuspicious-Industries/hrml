@@ -168,22 +168,31 @@ async fn watch_for_changes(project_path: PathBuf, state: AppState) {
 
     println!("   Watching for changes...");
 
-    let mut last_reload = tokio::time::Instant::now();
+    let mut reload_deadline = None;
     const DEBOUNCE_MS: u64 = 500;
 
-    while let Some(res) = rx.recv().await {
-        match res {
-            Ok(event) => {
-                if !is_relevant_change(&event) {
-                    continue;
+    loop {
+        let deadline = reload_deadline;
+        tokio::select! {
+            biased;
+            res = rx.recv() => match res {
+                Some(Ok(event)) => {
+                    if is_relevant_change(&event) {
+                        reload_deadline = Some(
+                            tokio::time::Instant::now() + Duration::from_millis(DEBOUNCE_MS),
+                        );
+                    }
                 }
-
-                let now = tokio::time::Instant::now();
-                if now.duration_since(last_reload) < Duration::from_millis(DEBOUNCE_MS) {
-                    continue;
+                Some(Err(e)) => eprintln!("   Watch error: {}\n", e),
+                None => break,
+            },
+            _ = async move {
+                match deadline {
+                    Some(deadline) => tokio::time::sleep_until(deadline).await,
+                    None => std::future::pending().await,
                 }
-                last_reload = now;
-
+            } => {
+                reload_deadline = None;
                 println!("\n   Change detected, reloading...");
                 match reload_project(&project_path, &state) {
                     Ok(true) => println!("   ✓ Reloaded\n"),
@@ -191,7 +200,6 @@ async fn watch_for_changes(project_path: PathBuf, state: AppState) {
                     Err(e) => eprintln!("   ✗ Reload error: {}\n", e),
                 }
             }
-            Err(e) => eprintln!("   Watch error: {}\n", e),
         }
     }
 }

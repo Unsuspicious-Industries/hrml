@@ -1,8 +1,8 @@
 # XRML
 
 `xrml` is the Rust CLI for HRML sites: HTML-first templates, server-side
-rendering and Python endpoints. HRML names the language and project file
-(`hrml.toml`); XRML names the executable.
+rendering and Python endpoints. HRML names the templating language; XRML names
+the executable. The CLI reads `xrml.toml`.
 
 ## Run from Nix
 
@@ -41,7 +41,7 @@ Use `--debug` for render diagnostics or `--log-ast` for an AST log.
 
 ```text
 myapp/
-├── hrml.toml
+├── xrml.toml
 ├── templates/
 │   ├── layouts/base.hrml
 │   ├── components/
@@ -56,6 +56,10 @@ contracts there rather than repeating them in installation instructions.
 
 For development, run `xrml dev` from the project directory. For source serving,
 run `xrml serve`; for static hosting, publish the output of `xrml build`.
+Source serving reloads after 500 ms without a relevant change. This trailing
+edge prevents a reset burst's first event from being the only reload. Reload
+failures retain the current project; index-render validation does not establish
+validity of every route or an atomic Git snapshot.
 On a NixOS host, declare the package and service rather than copying a binary
 into `/usr/local/bin`.
 
