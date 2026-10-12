@@ -1,0 +1,11 @@
+<?component id="book-card"?>
+<?bind var="slug"?><?bind var="title"?><?bind var="author"?><?bind var="year"?>
+<div class="book-card">
+    <div class="book-card-body">
+        <h3 class="book-card-title"><?get id="title"?></h3>
+        <p class="book-card-author"><?get id="author"?></p>
+        <p class="book-card-year"><?get id="year"?></p>
+    </div>
+    <a href="/book/$slug" class="book-card-link">see inside</a>
+</div>
+<?/component?>

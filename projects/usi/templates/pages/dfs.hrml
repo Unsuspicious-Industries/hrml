@@ -1,0 +1,207 @@
+<?style?>
+.aufbau-section { padding-top: 2rem; }
+.aufbau {
+    max-width: 80rem;
+    margin: 0 auto;
+}
+.aufbau-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    font-weight: 700;
+}
+.aufbau-name {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1;
+    margin: 0.5rem 0 0.5rem;
+    letter-spacing: 0.02em;
+}
+.aufbau-tag {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin: 0 0 2.5rem;
+    max-width: 40rem;
+}
+.aufbau-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+}
+.aufbau-prose p {
+    color: var(--text-default);
+    line-height: 1.75;
+    margin: 0 0 1.1rem;
+}
+.aufbau-prose .highlight { color: var(--accent); font-weight: 600; }
+.aufbau-prose strong { color: var(--text-heading); }
+.aufbau-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+.aufbau-links a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+.aufbau-links a:hover { border-bottom-color: var(--accent); }
+.aufbau-links .meta { color: var(--text-muted); }
+.aufbau-code {
+    background: #111827;
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+}
+.aufbau-code pre { margin: 0; }
+.aufbau-code code {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #e5e7eb;
+    white-space: pre;
+    background: transparent;
+    padding: 0;
+}
+.aufbau-code .c { color: #6b7280; }
+.aufbau-code .k { color: #c4b5fd; }
+.aufbau-install {
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+@media (max-width: 860px) {
+    .aufbau-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .aufbau-name { font-size: 2.25rem; }
+}
+<?/style?>
+
+<?use id="hero-cmp"?>
+    <?label?>Dynamic Formal Systems<?/label?>
+    <?title?>Truth by <span class="highlight">construction</span><?/title?>
+    <?description?>The DFS lab is the main research division at Unusupicious. We bridge formal constructions of the world and it's physical substrate. Trying to close the gap between logic and the unsayable. <?/description?>
+</?use?>
+
+<section class="section aufbau-section">
+    <div class="aufbau">
+        <p class="aufbau-eyebrow">Main developppement product</p>
+        <h2 class="aufbau-name">AUFBAU</h2>
+        <p class="aufbau-tag">A typed prefix-parsing engine for constrained decoding.</p>
+
+        <div class="aufbau-grid">
+            <div class="aufbau-prose">
+                <p>The systems is named after Carnap's <em>Der logische Aufbau der Welt</em>. In the same way he tried to built the whole world on a rather small set of construction rules, AUFBAU makes the wager that LLMs guided by a correct-by-construction constraint layer.  From a dynamically loaded typed grammar it constructs, token by token, only the continuations that keep a partial syntax tree <span class="highlight">well-formed and well-typed</span>.</p>
+                <p>In the technical sense, its a prefix parser for a subset of attribute grammars. </p>
+                <p>The model interface lives in <strong>Proposition 7</strong>, where we use an <em> oracle </em> interface in the generation loop that allows us to verify if a token is a valid continuation of the current input. Validity is not only syntactic derivability but also semantic correctess.</p>
+                <div class="aufbau-links">
+                    <a href="https://github.com/Unsuspicious-Industries/aufbau" target="_blank" rel="noopener">GitHub</a>
+                    <a href="https://pypi.org/project/aufbau-rs" target="_blank" rel="noopener">PyPI</a>
+                    <span class="meta">Rust core · Python bindings (PyO3) · MIT</span>
+                </div>
+            </div>
+
+            <div>
+                <div class="aufbau-code" style="margin-top: -4rem;"><pre>
+                <code>
+
+Variable(var) ::= Identifier[x]
+BaseType ::= Identifier | '(' Type ')'
+AtomicType ::= BaseType | '(' Type ')'
+FunctionType ::= AtomicType '->' Type
+Type ::= AtomicType | FunctionType
+Lambda(lambda) ::= 'λ' Identifier[a] ':' Type[τ] '.' Expression[e]
+AtomicExpression ::= Variable | '(' Expression ')' | Lambda
+Application(app) ::= Expression[l] AtomicExpression[r]
+Expression ::= AtomicExpression |  Application
+
+x ∈ Γ
+----------- (var)
+Γ(x)
+
+Γ[a:τ] ⊢ e : ?B
+--------------------------- (lambda)
+τ → ?B
+
+Γ ⊢ l : ?A → ?B, Γ ⊢ r : ?A
+--------------------------------- (app)
+?B
+                </code></pre></div>
+                <p class="aufbau-install">AUFBAU grammar file format. Install with <code>pip install aufbau-rs</code> and get started with your own grammar files.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Research Focus<?/label?>
+            <?title?>What the lab works on<?/title?>
+            <?subtitle?>Some of our areas of interest.<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?glyph?>⊢<?/glyph?>
+                    <?title?>Constrained generation<?/title?>
+                    <?text?>We are buiding not only an engine but also a genealized theory of completability in context dependent languages. At the frontier between abstract semantics and concrete applications. <?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?glyph?>λ<?/glyph?>
+                    <?title?>Proofs and Programs<?/title?>
+                    <?text?>Applying computer science techniques to logical reasoning, trying to discover the computational basis of intelligence. <?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?glyph?>↓<?/glyph?>
+                    <?title?>Physical formalisms<?/title?>
+                    <?text?>Implementing physical dimensional analysis inside rust's type system with the <a href="https://crates.io/crates/slut" target="_blank" rel="noopener">SLUT crate</a>. Used in simulations and scientific computing.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?glyph?>⊨<?/glyph?>
+                    <?title?>Meta-typed grammars<?/title?>
+                    <?text?>Making the meta-est theory of typed grammars.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?glyph?>∂<?/glyph?>
+                    <?title?>Regex derivatives<?/title?>
+                    <?text?>Brzozowski derivatives for prefix validation: decide in one step whether a partial string can still complete to a match.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?glyph?>≡<?/glyph?>
+                    <?title?>Interaction Nets and Computation graphs<?/title?>
+                    <?text?>Developpping a compute substrate for ML that uses parralelizable interaction nets.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="stats-section"?>
+    <?label?>State of affairs<?/label?>
+    <?title?>What we've been doing<?/title?>
+    <?block slot="content"?>
+        <?use id="stat-item"?><?number?>2<?/number?><?label?>Engines · AUFBAU & P7<?/label?></?use?>
+        <?use id="stat-item"?><?number?>ML &amp; PL<?/number?><?label?>Constraint generation, RL environnements, ...<?/label?></?use?>
+        <?use id="stat-item"?><?number?>MIT<?/number?><?label?>Open Source commitement<?/label?></?use?>
+        <?use id="stat-item"?><?number?>Rust<?/number?><?label?>Type safety in all our projects<?/label?></?use?>
+    </?block?>
+</?use?>
+
+<?use id="cta-section"?>
+    <?title?>Work on the formal core<?/title?>
+    <?subtitle?>We welcome researchers, contributors, and the formally curious.<?/subtitle?>
+    <?primary?>See the code<?/primary?>
+    <?primary-href?>https://github.com/Unsuspicious-Industries/aufbau<?/primary-href?>
+    <?secondary?>Talk to the lab<?/secondary?>
+    <?secondary-href?>/contact<?/secondary-href?>
+</?use?>

@@ -1,0 +1,39 @@
+<?component id="sell-form"?>
+<section class="form-section">
+    <h1 class="form-title">Sell Us a Book</h1>
+    <p class="form-intro">We pay cash. We don't ask questions. We probably already have three copies.</p>
+    <form class="store-form" data-post="/api/books" data-target="#sell-feedback" data-swap="innerHTML">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="what's it called">
+        </div>
+        <div class="form-group">
+            <label for="author">Author</label>
+            <input type="text" id="author" name="author" required placeholder="who wrote it">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="year">Year</label>
+                <input type="number" id="year" name="year" placeholder="when">
+            </div>
+            <div class="form-group">
+                <label for="shelf">Section</label>
+                <select id="shelf" name="shelf">
+                    <option value="echoes">Echoes</option>
+                    <option value="letters-never-sent">Letters Never Sent</option>
+                    <option value="maps-to-nowhere">Maps to Nowhere</option>
+                    <option value="improbable-machines">Instructions for Improbable Machines</option>
+                    <option value="probably-haunted">Probably Haunted</option>
+                    <option value="owners-favorites">The Owner's Actual Favorites</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="description">What's it about?</label>
+            <textarea id="description" name="description" rows="3" placeholder="give us the pitch, we're listening"></textarea>
+        </div>
+        <button type="submit" class="btn">Take my money</button>
+    </form>
+    <div id="sell-feedback"></div>
+</section>
+<?/component?>

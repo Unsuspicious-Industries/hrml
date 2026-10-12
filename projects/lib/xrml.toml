@@ -1,0 +1,24 @@
+host = "127.0.0.1"
+port = 8082
+templates_path = "templates"
+static_path = "static"
+site_name = "Unsuspicious Bookstore"
+site_description = "Used & uncommon books — every member of Unsuspicious gets a discount"
+favicon = "/static/images/favicon.ico"
+
+[templates]
+layout = "layouts/base.hrml"
+
+[globals]
+primary = "#5c3a2e"
+secondary = "#7a523a"
+accent = "#b85c3a"
+text_heading = "#e8d5b7"
+text_default = "#c4aa87"
+text_muted = "#8a7a64"
+border = "#4a3528"
+bg_page = "#1f1812"
+bg_section = "#2a2018"
+font_serif = "'Crimson Text', 'Palatino', 'Georgia', serif"
+font_mono = "'IBM Plex Mono', 'Courier New', monospace"
+font_typewriter = "'Special Elite', 'Courier Prime', monospace"

@@ -1,0 +1,67 @@
+<?use id="hero-cmp"?>
+    <?label?>Services<?/label?>
+    <?title?>Consulting & Collaboration<?/title?>
+    <?description?>We bring a rare mix of vibes and technical skills to the party.<?/description?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?title?>What we offer<?/title?>
+            <?subtitle?>Specialized expertise for complex problems.<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?icon?>brain<?/icon?>
+                    <?title?>Consulting<?/title?>
+                    <?text?>Pretty much anything involving logic, systems, and code. Deploying Formal methods, type theory, compiler design, ML infrastructure, distributed architectures, and whatever else your stack throws at us.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?icon?>flask<?/icon?>
+                    <?title?>Institutional collaboration<?/title?>
+                    <?text?>Co-research and co-development with universities, labs, and cultural institutions. We design experiments, co-author papers, and build the tooling around hard problems. We tackle soft problem with hard methods and the reverse.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>/contact<?/href?>
+                    <?icon?>check<?/icon?>
+                    <?title?>Verification<?/title?>
+                    <?text?>Rigorous verification of software and hardware correctness using theorem provers, model checkers, and custom formal tools built for your specific domain.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Selected work<?/label?>
+            <?title?>Some things we've done<?/title?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>2<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?image?>/static/images/schirn.svg<?/image?>
+                    <?title?>SCHIRN Kunsthalle, Frankfurt<?/title?>
+                    <?text?>Development work for an exhibition at the SCHIRN, built on our <a href="https://github.com/Unsuspicious-Industries/slop"><strong>SLOP</strong></a> experiments. Probing and modelling the latent biases and imagery of diffusion models.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?image?>/static/images/mediapart.svg<?/image?>
+                    <?title?>Mediapart<?/title?>
+                    <?text?>Technical consulting for Mediapart, the independent French investigative newspaper.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="cta-section"?>
+    <?title?>Get in touch<?/title?>
+    <?subtitle?>Tell us about your project, your institution, or your idea.<?/subtitle?>
+    <?primary?>Contact Us<?/primary?>
+    <?primary-href?>/contact<?/primary-href?>
+</?use?>

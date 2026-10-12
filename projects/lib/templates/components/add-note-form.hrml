@@ -1,0 +1,17 @@
+<?component id="add-note-form"?>
+<?bind var="slug"?>
+<div class="add-note">
+    <h3 class="add-note-title">Write a note</h3>
+    <form class="add-note-form" data-post="/api/books/$slug/note" data-target="#notes-wall" data-swap="beforeend">
+        <div class="form-group">
+            <label for="author">Your name</label>
+            <input type="text" id="author" name="author" required placeholder="or leave it blank, we don't care">
+        </div>
+        <div class="form-group">
+            <label for="text">Note</label>
+            <textarea id="text" name="text" rows="2" required placeholder="scribble something on the back of a receipt"></textarea>
+        </div>
+        <button type="submit" class="btn">Pin it</button>
+    </form>
+</div>
+<?/component?>

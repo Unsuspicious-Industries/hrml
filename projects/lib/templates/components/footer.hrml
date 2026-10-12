@@ -1,0 +1,21 @@
+<?component id="footer"?>
+<footer class="store-footer">
+    <div class="footer-inner">
+        <div class="footer-col">
+            <p class="footer-heading">Hours</p>
+            <p class="footer-text">We're here when we're here</p>
+            <p class="footer-text footer-small">Usually after 10am. Call first.</p>
+        </div>
+        <div class="footer-col">
+            <p class="footer-heading">Contact</p>
+            <p class="footer-text">Don't. Just come in.</p>
+            <p class="footer-text footer-small"><a href="https://unsuspicious.org">unsuspicious.org</a></p>
+        </div>
+        <div class="footer-col">
+            <p class="footer-heading">Cat Status</p>
+            <p class="footer-text">Sleeping on the biographies</p>
+            <p class="footer-text footer-small">She's been there all morning</p>
+        </div>
+    </div>
+</footer>
+<?/component?>

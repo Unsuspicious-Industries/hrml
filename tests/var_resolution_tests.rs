@@ -85,7 +85,7 @@ fn no_template_file_contains_nested_quote_directive() {
     // patterns like `href="<?get id="x"?>"` across the repo's templates.
     use std::collections::VecDeque;
     let mut queue: VecDeque<std::path::PathBuf> = VecDeque::new();
-    queue.push_back(std::path::PathBuf::from("usi/templates"));
+    queue.push_back(std::path::PathBuf::from("projects/usi/templates"));
     queue.push_back(std::path::PathBuf::from("validation/cases"));
 
     let mut offenders = Vec::new();

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsuspicious Bookstore</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Special+Elite&display=swap" rel="stylesheet">
+    <script src="/hrml.js"></script>
+    <style>
+:root {
+    --primary: $globals.primary;
+    --secondary: $globals.secondary;
+    --accent: $globals.accent;
+    --text-heading: $globals.text_heading;
+    --text-default: $globals.text_default;
+    --text-muted: $globals.text_muted;
+    --border: $globals.border;
+    --bg-page: $globals.bg_page;
+    --bg-section: $globals.bg_section;
+    --font-serif: $globals.font_serif;
+    --font-mono: $globals.font_mono;
+    --font-typewriter: $globals.font_typewriter;
+}
+</style>
+    <?styles?>
+</head>
+<body>
+    <?use id="nav"?>
+    </?use?>
+
+<main>
+    <?slot id="content"?>
+</main>
+
+    <?use id="footer"?>
+    </?use?>
+</body>
+</html>

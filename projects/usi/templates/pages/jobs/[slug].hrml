@@ -1,0 +1,18 @@
+<?data from="data/jobs/$slug.mdx" as="job"?>
+
+<?style?>
+.hero, .hero *, .prose-shell, .prose-shell * {
+    font-family: var(--font-typewriter) !important;
+}
+<?/style?>
+
+<?use id="prose-page"?>
+    <?label?>Open Role<?/label?>
+    <?title from="$job.title"/?>
+    <?description from="$job.subtitle"/?>
+    <?meta?>$job.team · $job.location · $job.employmentType<?/meta?>
+    <?block slot="content"?>
+        $job.body
+        <p><a class="btn btn-primary" href="$job.applyUrl">Apply for this role</a></p>
+    </?block?>
+</?use?>

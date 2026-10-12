@@ -1,0 +1,58 @@
+<section class="section section-jukebox" id="jukebox-section">
+    <h2 class="section-title">Store Jukebox</h2>
+    <p class="section-desc">Recent spins on the store stereo. You can judge us.</p>
+    <?data from="data/music.json" as="records"?>
+    <?if cond="$records"?>
+    <div class="jukebox">
+        <?for in="record in records"?>
+        <div class="record">
+            <span class="record-label"><?get id="record.status"?></span>
+            <span class="record-title"><?get id="record.artist"?> — <?get id="record.album"?></span>
+            <?if cond="$record.note"?>
+                <span class="record-note"><?get id="record.note"?></span>
+            <?/if?>
+            <form class="record-delete-form" data-post="/api/music" data-target="#jukebox-section" data-swap="outerHTML">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="$record.id">
+                <button type="submit" class="record-delete">✕</button>
+            </form>
+        </div>
+        <?/for?>
+    </div>
+    <?/if?>
+    <details class="jukebox-add">
+        <summary class="jukebox-add-toggle">Add a record</summary>
+        <form class="jukebox-add-form" data-post="/api/music" data-target="#jukebox-section" data-swap="outerHTML">
+            <input type="hidden" name="action" value="add">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add-artist">Artist</label>
+                    <input type="text" id="add-artist" name="artist" required>
+                </div>
+                <div class="form-group">
+                    <label for="add-album">Album</label>
+                    <input type="text" id="add-album" name="album" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add-year">Year</label>
+                    <input type="number" id="add-year" name="year">
+                </div>
+                <div class="form-group">
+                    <label for="add-label">Label</label>
+                    <input type="text" id="add-label" name="label">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="add-note">Note</label>
+                <input type="text" id="add-note" name="note">
+            </div>
+            <div class="form-group">
+                <label for="add-status">Status</label>
+                <input type="text" id="add-status" name="status" placeholder="e.g. staff pick, closing time">
+            </div>
+            <button type="submit" class="btn">Add Record</button>
+        </form>
+    </details>
+</section>
