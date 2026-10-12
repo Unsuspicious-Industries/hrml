@@ -276,7 +276,7 @@ fn reload_project(project_path: &Path, state: &AppState) -> Result<bool, String>
 fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
     let endpoints_root = project_path.join(&config.endpoints_path);
     let endpoints_root = endpoints_root.to_string_lossy().into_owned();
-    Runtime::new(&endpoints_root)
+    Runtime::new(&endpoints_root).with_query_catalog(config.queries.clone(), project_path)
 }
 
 /// Do not expose a project until its entry page and all loaded templates render.

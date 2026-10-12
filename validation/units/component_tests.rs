@@ -722,7 +722,7 @@ fn prose_page_receives_meta_and_body_from_bound_markdown() {
         out
     );
     assert!(
-        out.contains("<h1>Hello</h1>"),
+        out.contains("<h1 id=\"hello\">Hello</h1>"),
         "missing prose body: {}",
         out
     );

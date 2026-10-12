@@ -16,6 +16,7 @@ struct PathCommandOptions {
     palette: Option<PathBuf>,
     host: Option<String>,
     port: Option<u16>,
+    query_fixtures: bool,
 }
 
 fn print_help() {
@@ -39,6 +40,7 @@ fn print_help() {
     println!("  --log-ast           Regenerate ast.log before build/serve/dev");
     println!("  --debug, -d         Enable verbose render diagnostics");
     println!("  --palette <file>    Resolve USI_<ROLE> tokens from a TOML palette file");
+    println!("  --query-fixtures    Build using declared query fixtures only");
     println!("  --host <address>    Override the bind address (serve)");
     println!("  --port <number>     Override the bind port (serve)");
     println!("  version             Show version information");
@@ -60,6 +62,7 @@ fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, Str
     let mut palette = None;
     let mut host = None;
     let mut port = None;
+    let mut query_fixtures = false;
 
     let mut i = 0;
     while i < args.len() {
@@ -67,6 +70,7 @@ fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, Str
         match arg.as_str() {
             "--log-ast" => log_ast = true,
             "--debug" | "-d" => debug = true,
+            "--query-fixtures" => query_fixtures = true,
             "--palette" => {
                 i += 1;
                 let value = args
@@ -102,6 +106,7 @@ fn parse_path_command_options(args: &[String]) -> Result<PathCommandOptions, Str
         palette,
         host,
         port,
+        query_fixtures,
     })
 }
 
@@ -212,7 +217,12 @@ async fn main() {
                     process::exit(1);
                 }
             };
-            if let Err(e) = build::build_site(&options.path, options.log_ast, palette.as_ref()) {
+            if let Err(e) = build::build_site(
+                &options.path,
+                options.log_ast,
+                palette.as_ref(),
+                options.query_fixtures,
+            ) {
                 eprintln!("Build failed: {}", e);
                 process::exit(1);
             }

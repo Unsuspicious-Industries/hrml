@@ -81,7 +81,12 @@ impl Project {
         engine = engine.with_favicon(self.config.favicon.clone());
         engine = engine.with_site_url(self.config.site_url.clone());
         engine = engine.with_globals(self.config.globals.clone());
-        self.engine = engine;
+        self.engine = engine.with_query_catalog(self.config.queries.clone(), path);
+        self
+    }
+
+    pub fn with_query_fixtures_only(mut self) -> Self {
+        self.engine = self.engine.with_query_fixtures_only();
         self
     }
 

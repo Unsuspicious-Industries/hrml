@@ -4,7 +4,7 @@ use xrml::features::{excerpt, render_latex_block, render_latex_inline, render_ma
 fn test_markdown_renders_headings_and_lists() {
     let src = "# Title\n\n- a\n- b\n";
     let html = render_markdown(src);
-    assert!(html.contains("<h1>Title</h1>"));
+    assert!(html.contains("<h1 id=\"title\">Title</h1>"));
     assert!(html.contains("<li>a</li>"));
     assert!(html.contains("<li>b</li>"));
 }

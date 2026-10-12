@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::{Map, Value};
+use std::collections::BTreeMap;
 
 fn default_host() -> String {
     "127.0.0.1".to_string()
@@ -86,6 +87,9 @@ pub struct Config {
     /// promise. A tokenised project opts in and gets the guarantee.
     #[serde(default)]
     pub strict_colors: bool,
+
+    #[serde(default)]
+    pub queries: BTreeMap<String, QueryConfig>,
 }
 
 fn default_component_paths() -> Vec<String> {
@@ -94,6 +98,13 @@ fn default_component_paths() -> Vec<String> {
 
 fn default_globals() -> Value {
     Value::Object(Map::new())
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct QueryConfig {
+    pub sql: String,
+    #[serde(default)]
+    pub fixture: Option<String>,
 }
 
 #[derive(Deserialize, Default)]
@@ -113,6 +124,8 @@ struct RawConfig {
     site_url: Option<String>,
     globals: Option<toml::Value>,
     strict_colors: Option<bool>,
+    #[serde(default)]
+    queries: BTreeMap<String, QueryConfig>,
 }
 
 #[derive(Deserialize, Default)]
@@ -162,6 +175,7 @@ impl Default for Config {
             auto_imports: Vec::new(),
             component_paths: default_component_paths(),
             strict_colors: false,
+            queries: BTreeMap::new(),
         }
     }
 }
@@ -253,6 +267,7 @@ impl Config {
         if let Some(strict_colors) = raw.strict_colors {
             config.strict_colors = strict_colors;
         }
+        config.queries = raw.queries;
 
         Ok(config)
     }

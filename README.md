@@ -1,7 +1,7 @@
 # XRML
 
 `xrml` is the Rust CLI for HRML sites: HTML-first templates, server-side
-rendering and Python endpoints. HRML names the templating language; XRML names
+rendering and filesystem endpoint templates. HRML names the templating language; XRML names
 the executable. The CLI reads `xrml.toml`.
 
 ## Run from Nix
@@ -36,6 +36,9 @@ From a source checkout, `cargo build --release` produces
 Path commands use the current directory when PATH is omitted. `--palette FILE`
 resolves palette tokens; `serve` also accepts `--host ADDRESS` and `--port PORT`.
 Use `--debug` for render diagnostics or `--log-ast` for an AST log.
+Named SQLite queries read a published public extract at runtime; see the
+[query contract](spec.md#sqlite-queries). Static builds require explicit
+`--query-fixtures` when queries are declared.
 
 ## Project contract
 
@@ -51,8 +54,9 @@ myapp/
 ```
 
 [spec.md](spec.md) is the authoritative description of configuration,
-templates, routing, Python endpoints and rendering behavior. Keep those
-contracts there rather than repeating them in installation instructions.
+templates, routing and rendering behavior. Endpoints render HRML templates or
+return file content; they do not execute Python. Keep those contracts there
+rather than repeating them in installation instructions.
 
 For development, run `xrml dev` from the project directory. For source serving,
 run `xrml serve`; for static hosting, publish the output of `xrml build`.

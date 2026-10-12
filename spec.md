@@ -6,7 +6,8 @@ HRML is a Rust-native framework for server-rendered HTML applications with files
 
 ## Configuration
 
-`hrml.toml` supports nested tables and flat fallbacks.
+The CLI reads `xrml.toml`. Nested tables and the existing flat configuration
+keys are supported.
 
 Preferred nested form:
 
@@ -43,6 +44,69 @@ favicon = "/static/favicon.ico"
   `filter where` speaks the same predicate language as `if cond`
 - `replace`: regex transform on a string binding (`$1`…`$N` capture refs)
 - Field paths dot through objects and index arrays (`$items.0.title`)
+
+### SQLite queries
+
+A query binds rows from an owner-published public SQLite extract to the same
+array-of-objects value shape as `data`:
+
+```toml
+[queries.public_people]
+sql = "select name, initials, role, bio, website from public_people order by name"
+fixture = "fixtures/public_people.json"
+```
+
+```hrml
+<?query name="public_people" as="people"?>
+<?map over="people" as="person"?>
+  <h3>$person.name</h3>
+<?/map?>
+```
+
+`USI_DB_PATH` selects an absolute extract path at runtime. The reader opens it
+with `mode=ro&immutable=1` and `query_only=ON`: the publisher must replace a
+complete file atomically, never update that published inode in place. It must
+contain public data only. Read-only access to the private owner's database is
+not a table or row authorization boundary.
+
+Each query opens a fresh connection, so a later request sees a replaced file.
+Multiple queries in one render may observe different published revisions;
+there is no whole-page snapshot guarantee. SQL must be one read-only `SELECT`
+or `WITH` statement. The query defines row order with `ORDER BY`; the renderer
+does not silently sort, discard rows or overwrite duplicate column names.
+
+SQLite `INTEGER` maps to signed i64, finite `REAL` to f64, UTF-8 `TEXT` to a
+string, and `NULL` to null. BLOB columns, non-finite reals, invalid UTF-8 and
+duplicate column names are errors, not substituted values. Transform laws for
+`map`, `filter` and `sort` apply to fixed input values; source reads are effects,
+not a claim that arbitrary queries are pure.
+
+Without `USI_DB_PATH`, the declared fixture supplies an array of column-name
+objects and the renderer identifies it as a fixture. Missing fixtures or an
+unavailable or malformed extract fail visibly; zero rows is a valid empty set.
+A configured extract failure never selects the fixture.
+
+`xrml build` rejects declared queries before reading the environment. Explicit
+`--query-fixtures` selects only source fixtures for a static build; it never
+reads the database. Development shells do not set `USI_DB_PATH`.
+
+The extract's `meta` table has exactly one row: INTEGER `id` equal to 1,
+nonempty TEXT `revision`, positive INTEGER `published_at` in UTC Unix seconds,
+and TEXT `source_digest` containing
+64 lowercase hexadecimal SHA-256 digits. The reader validates those fields and
+logs revision/digest changes; it does not invent missing metadata or recompute
+the producer's digest. Revision is an opaque string to the reader. The producer
+uses a decimal publication counter and hashes the canonical public rows, not
+private store bytes, metadata or SQLite page layout.
+
+Markdown headings retain explicit `{#id}` attributes. Otherwise their IDs use
+HRML's ASCII `slugify` of heading text and inline code, with `-2`, `-3`, … for
+collisions. Empty slugs use the heading's document position, `heading-N`.
+Generated IDs avoid explicit IDs; duplicate explicit IDs remain author-owned.
+These anchors do not change rendered heading text, code or math.
+
+Unknown HRML directives are errors. Ordinary HTML and registered custom tags
+remain distinct from unknown processing directives.
 
 ### Styling
 
@@ -124,6 +188,9 @@ Context passed to `.hrml` endpoint templates:
 Crate exposes:
 
 - library modules (`template`, `backend`, `html`, `native_utils`, etc.)
-- standalone binary target `hrml`
+- standalone binary target `xrml`
 
-`rusqlite` uses `bundled` feature for easier standalone builds.
+The SQLite query reader uses `rusqlite` with bundled SQLite, so the CLI's
+SQLite implementation is selected by its Cargo lock rather than an ambient
+system library. Endpoint runtime remains template/file-based; no Python or
+other process execution is provided.
