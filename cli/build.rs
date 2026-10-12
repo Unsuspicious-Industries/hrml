@@ -5,8 +5,19 @@ use std::fs;
 use std::path::Path;
 use xrml::paths;
 
-pub fn build_site(project_path: &Path, log_ast: bool, palette: Option<&Palette>) -> Result<(), String> {
+pub fn build_site(
+    project_path: &Path,
+    log_ast: bool,
+    palette: Option<&Palette>,
+    query_fixtures: bool,
+) -> Result<(), String> {
     let mut project = load_project(project_path, palette)?;
+    if !project.config.queries.is_empty() && !query_fixtures {
+        return Err("Static builds with [queries.*] require explicit --query-fixtures".to_string());
+    }
+    if query_fixtures {
+        project = project.with_query_fixtures_only();
+    }
 
     if log_ast {
         ast_log::write_ast_log(project_path, &project.config)?;

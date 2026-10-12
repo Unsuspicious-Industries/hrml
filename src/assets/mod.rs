@@ -25,6 +25,7 @@ pub fn default_config(name: &str) -> String {
         auto_imports: Vec::new(),
         component_paths: vec!["components".to_string()],
         strict_colors: false,
+        queries: std::collections::BTreeMap::new(),
     };
     toml::to_string_pretty(&config).unwrap()
 }

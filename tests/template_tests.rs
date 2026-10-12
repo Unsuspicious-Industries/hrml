@@ -419,7 +419,7 @@ fn test_markdown_and_latex_directives() {
 
     let engine = Engine::new(&test_dir);
     let result = engine.render("pages/features.hrml", &json!({})).unwrap();
-    assert!(result.contains("<h1>Hello</h1>"));
+    assert!(result.contains("<h1 id=\"hello\">Hello</h1>"));
     assert!(result.contains("math-inline"));
     assert!(result.contains("math-block"));
     assert!(result.contains("\\[\\int_0^1 x^2 dx\\]"));
@@ -452,7 +452,7 @@ fn test_markdown_frontmatter_and_meta_tag_library() {
     let engine = Engine::new(&test_dir);
     let result = engine.render("pages/taglib.hrml", &json!({})).unwrap();
 
-    assert!(result.contains("<h1>Hello FM</h1>"));
+    assert!(result.contains("<h1 id=\"hello-fm\">Hello FM</h1>"));
     assert!(result.contains("<title>Frontmatter Title</title>"));
     assert!(result.contains("<meta charset=\"UTF-8\">"));
     assert!(result.contains("name=\"viewport\""));

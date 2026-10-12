@@ -65,7 +65,7 @@ fn dynamic_slug_page_renders_with_variable_data() {
     assert!(out.contains("Author Name"), "missing author: {}", out);
     assert!(out.contains("2025-03-01"), "missing date: {}", out);
     assert!(
-        out.contains("<h1>Heading</h1>"),
+        out.contains("<h1 id=\"heading\">Heading</h1>"),
         "missing body heading: {}",
         out
     );
@@ -137,7 +137,7 @@ fn markdownfm_with_inline_var_in_path() {
         out
     );
     assert!(
-        out.contains("<h1>Hello</h1>"),
+        out.contains("<h1 id=\"hello\">Hello</h1>"),
         "missing markdown body: {}",
         out
     );
@@ -208,7 +208,7 @@ fn markdownfm_inside_bind_sets_meta_and_body() {
         out
     );
     assert!(
-        out.contains("<h1>Hello</h1>"),
+        out.contains("<h1 id=\"hello\">Hello</h1>"),
         "missing markdown body: {}",
         out
     );
