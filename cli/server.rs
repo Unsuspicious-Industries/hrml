@@ -1,5 +1,6 @@
 use crate::{
     ast_log,
+    palette::{scan_static_dir, Palette},
     project::{load_project, validate_project},
 };
 use axum::{
@@ -10,14 +11,16 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use xrml::{backend::Runtime, config::Config, project::Project, router::Router as HrmlRouter, template::Engine as HrmlEngine};
+use xrml::{
+    backend::Runtime, config::Config, project::Project, router::Router as HrmlRouter,
+    template::TemplateErrorPhase,
+};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::fs;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use tokio::sync::mpsc;
-use tower_http::services::ServeDir;
 
 const HRML_JS: &str = include_str!("../src/runtime/client.js");
 
@@ -25,39 +28,84 @@ const HRML_JS: &str = include_str!("../src/runtime/client.js");
 struct AppState {
     project: Arc<RwLock<Project>>,
     backend_runtime: Arc<Runtime>,
-    static_path: Arc<PathBuf>,
+    static_files: Arc<RwLock<BTreeMap<String, StaticEntry>>>,
     templates_path: Arc<PathBuf>,
-    project_path: Arc<PathBuf>,
+    static_namespace: Arc<String>,
+    palette: Option<Arc<Palette>>,
 }
 
-pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<(), String> {
+#[derive(Clone)]
+struct StaticEntry {
+    bytes: Vec<u8>,
+    content_type: &'static str,
+}
+
+pub async fn run_dev(
+    project_path: &Path,
+    palette: Option<&Palette>,
+    log_ast: bool,
+    debug: bool,
+) -> Result<(), String> {
+    serve_app(project_path, palette, None, None, log_ast, debug, true).await
+}
+
+pub async fn run_serve(
+    project_path: &Path,
+    palette: Option<&Palette>,
+    host: Option<String>,
+    port: Option<u16>,
+    log_ast: bool,
+) -> Result<(), String> {
+    serve_app(project_path, palette, host, port, log_ast, false, false).await
+}
+
+async fn serve_app(
+    project_path: &Path,
+    palette: Option<&Palette>,
+    host_override: Option<String>,
+    port_override: Option<u16>,
+    log_ast: bool,
+    debug: bool,
+    dev: bool,
+) -> Result<(), String> {
     if debug {
         std::env::set_var("HRML_DEBUG", "1");
     }
-    validate_project(project_path)?;
+    validate_project(project_path, palette)?;
 
-    let mut project = load_project(project_path)?;
+    let mut project = load_project(project_path, palette)?;
 
     if log_ast {
         ast_log::write_ast_log(project_path, &project.config)?;
     }
 
-    let host = project.config.host.clone();
-    let port = project.config.port;
-    let static_path_str = project.config.static_path.clone();
-    let static_path_arc = Arc::new(project_path.join(&static_path_str));
+    let host = host_override.unwrap_or_else(|| project.config.host.clone());
+    let port = port_override.unwrap_or(project.config.port);
     let backend_runtime = Arc::new(build_backend_runtime(project_path, &project.config));
 
-    project.parse_all().map_err(|e| e.to_string())?;
+    let static_root = project_path.join(&project.config.static_path);
+    let static_files = Arc::new(RwLock::new(
+        scan_static_dir(&static_root, palette)?
+            .into_iter()
+            .map(|(rel, bytes)| {
+                let content_type = content_type_for(Path::new(&rel));
+                (rel, StaticEntry { bytes, content_type })
+            })
+            .collect::<BTreeMap<String, StaticEntry>>(),
+    ));
 
-    println!("Starting HRML development server on {}:{}", host, port);
+    project.parse_all().map_err(|e| e.to_string())?;
+    validate_index_render(&project)?;
+
+    let static_namespace = Arc::new(project.config.static_path.clone());
 
     let state = AppState {
         project: Arc::new(RwLock::new(project)),
         backend_runtime,
-        static_path: static_path_arc.clone(),
+        static_files,
         templates_path: Arc::new(project_path.join("templates")),
-        project_path: Arc::new(project_path.to_path_buf()),
+        static_namespace,
+        palette: palette.map(|palette| Arc::new(palette.clone())),
     };
 
     let state_for_watcher = state.clone();
@@ -66,9 +114,8 @@ pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<
         watch_for_changes(project_path_buf, state_for_watcher).await;
     });
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/", get(index_handler))
-        .route("/hrml.js", get(hrml_js_handler))
         .route(
             "/api/*path",
             get(api_get_handler)
@@ -76,9 +123,18 @@ pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<
                 .delete(endpoint_handler),
         )
         .route("/*path", get(page_handler).post(endpoint_handler))
-        .route("/api/music", post(music_handler))
-        .nest_service("/static", ServeDir::new(&*static_path_arc))
         .with_state(state);
+
+    if dev {
+        app = app.route("/hrml.js", get(hrml_js_handler));
+    }
+
+    println!(
+        "Starting HRML {} server on {}:{}",
+        if dev { "development" } else { "production" },
+        host,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
         .await
@@ -91,47 +147,6 @@ pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<
     axum::serve(listener, app)
         .await
         .map_err(|e| format!("Server error: {}", e))
-}
-
-pub async fn serve_static(project_path: &Path, log_ast: bool) -> Result<(), String> {
-    use std::net::SocketAddr;
-
-    let project = load_project(project_path)?;
-
-    if log_ast {
-        ast_log::write_ast_log(project_path, &project.config)?;
-    }
-
-    let dist_path = project_path.join("dist");
-
-    if !dist_path.exists() {
-        return Err(format!(
-            "dist/ not found. Run '{} build' first.",
-            env!("CARGO_BIN_NAME")
-        ));
-    }
-
-    println!(
-        "Serving static files from 'dist/' on http://{}:{}",
-        project.config.host, project.config.port
-    );
-
-    let app = Router::new().fallback_service(ServeDir::new(dist_path));
-
-    let addr: SocketAddr = format!("{}:{}", project.config.host, project.config.port)
-        .parse()
-        .map_err(|e| format!("Invalid address: {}", e))?;
-
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .map_err(|e| format!("Failed to bind: {}", e))?;
-
-    println!("Server running at http://{}", addr);
-    axum::serve(listener, app)
-        .await
-        .map_err(|e| format!("Server error: {}", e))?;
-
-    Ok(())
 }
 
 async fn watch_for_changes(project_path: PathBuf, state: AppState) {
@@ -153,22 +168,31 @@ async fn watch_for_changes(project_path: PathBuf, state: AppState) {
 
     println!("   Watching for changes...");
 
-    let mut last_reload = tokio::time::Instant::now();
+    let mut reload_deadline = None;
     const DEBOUNCE_MS: u64 = 500;
 
-    while let Some(res) = rx.recv().await {
-        match res {
-            Ok(event) => {
-                if !is_relevant_change(&event) {
-                    continue;
+    loop {
+        let deadline = reload_deadline;
+        tokio::select! {
+            biased;
+            res = rx.recv() => match res {
+                Some(Ok(event)) => {
+                    if is_relevant_change(&event) {
+                        reload_deadline = Some(
+                            tokio::time::Instant::now() + Duration::from_millis(DEBOUNCE_MS),
+                        );
+                    }
                 }
-
-                let now = tokio::time::Instant::now();
-                if now.duration_since(last_reload) < Duration::from_millis(DEBOUNCE_MS) {
-                    continue;
+                Some(Err(e)) => eprintln!("   Watch error: {}\n", e),
+                None => break,
+            },
+            _ = async move {
+                match deadline {
+                    Some(deadline) => tokio::time::sleep_until(deadline).await,
+                    None => std::future::pending().await,
                 }
-                last_reload = now;
-
+            } => {
+                reload_deadline = None;
                 println!("\n   Change detected, reloading...");
                 match reload_project(&project_path, &state) {
                     Ok(true) => println!("   ✓ Reloaded\n"),
@@ -176,7 +200,6 @@ async fn watch_for_changes(project_path: PathBuf, state: AppState) {
                     Err(e) => eprintln!("   ✗ Reload error: {}\n", e),
                 }
             }
-            Err(e) => eprintln!("   Watch error: {}\n", e),
         }
     }
 }
@@ -199,28 +222,53 @@ fn is_relevant_change(event: &Event) -> bool {
             continue;
         }
 
-        let ext = match path.extension().and_then(|e| e.to_str()) {
-            Some(e) => e,
-            None => continue,
-        };
-
-        if matches!(ext, "hrml" | "trml" | "html" | "toml") {
-            return true;
+        // Hidden directories (`.git`, editor state) and the `dist/` build
+        // output are not project source; ignore their churn.
+        let mut ignored = false;
+        for component in path.components() {
+            if let Some(name) = component.as_os_str().to_str() {
+                if name == "dist" || (name.starts_with('.') && name != "." && name != "..") {
+                    ignored = true;
+                    break;
+                }
+            }
         }
+        if ignored {
+            continue;
+        }
+
+        // Any project file - template, static asset, data file, config - can
+        // change what the server renders, so any of them triggers a reload.
+        return true;
     }
 
     false
 }
 
 fn reload_project(project_path: &Path, state: &AppState) -> Result<bool, String> {
-    let mut new_project = load_project(project_path)?;
+    let palette = state.palette.as_ref().map(|palette| palette.as_ref());
+    let mut new_project = load_project(project_path, palette)?;
     new_project.parse_all().map_err(|e| e.to_string())?;
+    validate_index_render(&new_project)?;
 
-    let mut project = state.project.write().unwrap();
-    let config_changed = project.config.site_name != new_project.config.site_name
-        || project.config.host != new_project.config.host
-        || project.config.port != new_project.config.port;
-    *project = new_project;
+    let static_root = project_path.join(&new_project.config.static_path);
+    let new_static = scan_static_dir(&static_root, palette)?
+        .into_iter()
+        .map(|(rel, bytes)| {
+            let content_type = content_type_for(Path::new(&rel));
+            (rel, StaticEntry { bytes, content_type })
+        })
+        .collect::<BTreeMap<String, StaticEntry>>();
+
+    let config_changed = {
+        let old = state.project.read().unwrap();
+        new_project.config.site_name != old.config.site_name
+            || new_project.config.host != old.config.host
+            || new_project.config.port != old.config.port
+    };
+
+    *state.project.write().unwrap() = new_project;
+    *state.static_files.write().unwrap() = new_static;
 
     Ok(config_changed)
 }
@@ -228,7 +276,23 @@ fn reload_project(project_path: &Path, state: &AppState) -> Result<bool, String>
 fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
     let endpoints_root = project_path.join(&config.endpoints_path);
     let endpoints_root = endpoints_root.to_string_lossy().into_owned();
-    Runtime::new(&endpoints_root)
+    Runtime::new(&endpoints_root).with_query_catalog(config.queries.clone(), project_path)
+}
+
+/// Do not expose a project until its entry page and all loaded templates render.
+/// A git checkout can briefly contain only part of a new tree during reset.
+fn validate_index_render(project: &Project) -> Result<(), String> {
+    for template_path in ["pages/index.trml", "pages/index.hrml", "pages/index.html"] {
+        if project.get_file(template_path).is_some() {
+            project
+                .render(template_path, &serde_json::json!({}))
+                .map(|_| ())
+                .map_err(|error| format!("Index template is not renderable: {}", error))?;
+            return Ok(());
+        }
+    }
+
+    Ok(())
 }
 
 async fn index_handler(State(state): State<AppState>) -> Response {
@@ -249,7 +313,7 @@ async fn index_handler(State(state): State<AppState>) -> Response {
         }
     }
 
-    if let Some(response) = try_serve_static(&state.static_path, "index.html") {
+    if let Some(response) = try_serve_static(&state, "index.html") {
         response
     } else {
         (StatusCode::NOT_FOUND, "Page not found").into_response()
@@ -265,6 +329,23 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
 
     if normalized.contains("..") {
         return (StatusCode::BAD_REQUEST, "Invalid path").into_response();
+    }
+
+    // The static namespace (default `static/`) is served verbatim, ahead of
+    // any page logic - it is the site's asset directory, not a route space.
+    let namespace_prefix = format!("{}/", state.static_namespace.as_str());
+    if let Some(rel) = normalized.strip_prefix(&namespace_prefix) {
+        return try_serve_static(&state, rel)
+            .unwrap_or_else(|| (StatusCode::NOT_FOUND, "Page not found").into_response());
+    }
+
+    // Clean URLs are canonical for hrml-served sites: `/blog/a-post`, not
+    // `/blog/a-post.html`. A `.html` suffix on a page that exists clean is a
+    // legacy link or a hand-typed URL; send it to the canonical form.
+    if let Some(clean) = normalized.strip_suffix(".html") {
+        if !clean.is_empty() && page_exists(&state, clean) {
+            return axum::response::Redirect::temporary(&format!("/{}", clean)).into_response();
+        }
     }
 
     let template_candidates = [
@@ -284,6 +365,11 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
                     Ok(html) => return Html(html).into_response(),
                     Err(error) => {
                         eprintln!("[ERROR] {}", error);
+                        // A missing data file (blog post, listing) means the
+                        // resource does not exist - 404, not a server fault.
+                        if error.phase == TemplateErrorPhase::Io {
+                            return (StatusCode::NOT_FOUND, "Page not found").into_response();
+                        }
                         return (
                             StatusCode::INTERNAL_SERVER_ERROR,
                             format!("Template error: {}", error),
@@ -308,6 +394,9 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
                 Ok(html) => return Html(html).into_response(),
                 Err(error) => {
                     eprintln!("[ERROR] {}", error);
+                    if error.phase == TemplateErrorPhase::Io {
+                        return (StatusCode::NOT_FOUND, "Page not found").into_response();
+                    }
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         format!("Template error: {}", error),
@@ -334,7 +423,7 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
     ];
 
     for static_path in static_candidates {
-        if let Some(response) = try_serve_static(&state.static_path, &static_path) {
+        if let Some(response) = try_serve_static(&state, &static_path) {
             return response;
         }
     }
@@ -342,16 +431,39 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
     (StatusCode::NOT_FOUND, "Page not found").into_response()
 }
 
-fn try_serve_static(static_root: &Path, rel_path: &str) -> Option<Response> {
-    let candidate = static_root.join(rel_path);
-    if !candidate.exists() || !candidate.is_file() {
-        return None;
+fn try_serve_static(state: &AppState, rel_path: &str) -> Option<Response> {
+    let entry = state.static_files.read().unwrap().get(rel_path)?.clone();
+
+    Some(
+        (
+            StatusCode::OK,
+            [("content-type", entry.content_type)],
+            entry.bytes,
+        )
+            .into_response(),
+    )
+}
+
+/// Whether `normalized` names a page: a template candidate or a dynamic
+/// `[param]` route.
+fn page_exists(state: &AppState, normalized: &str) -> bool {
+    let candidates = [
+        format!("pages/{}.trml", normalized),
+        format!("pages/{}.hrml", normalized),
+        format!("pages/{}.html", normalized),
+        format!("pages/{}/index.trml", normalized),
+        format!("pages/{}/index.hrml", normalized),
+        format!("pages/{}/index.html", normalized),
+    ];
+
+    let project = state.project.read().unwrap();
+    if candidates.iter().any(|candidate| project.get_file(candidate).is_some()) {
+        return true;
     }
 
-    let bytes = fs::read(&candidate).ok()?;
-    let content_type = content_type_for(&candidate);
-
-    Some((StatusCode::OK, [("content-type", content_type)], bytes).into_response())
+    let pages_dir = state.templates_path.join("pages");
+    let router = HrmlRouter::from_pages_dir(&pages_dir);
+    router.resolve(&format!("/{}", normalized)).is_some()
 }
 
 fn content_type_for(path: &Path) -> &'static str {
@@ -478,125 +590,37 @@ async fn hrml_js_handler() -> Response {
         .into_response()
 }
 
-async fn music_handler(
-    State(state): State<AppState>,
-    Json(data): Json<serde_json::Value>,
-) -> Response {
-    let action = data
-        .get("action")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let music_path = state.project_path.join("data").join("music.json");
+#[cfg(test)]
+mod tests {
+    use super::validate_index_render;
+    use xrml::{config::Config, project::Project};
 
-    let result = match action {
-        "add" => add_record(&music_path, &data),
-        "delete" => delete_record(&music_path, &data),
-        _ => return (StatusCode::BAD_REQUEST, "Unknown action").into_response(),
-    };
-
-    if let Err(e) = result {
-        eprintln!("[ERROR] /api/music {}: {}", action, e);
-        return (StatusCode::INTERNAL_SERVER_ERROR, e).into_response();
-    }
-
-    let engine = HrmlEngine::new(&state.project_path.to_string_lossy());
-    match engine.render_fragment("templates/components/jukebox.hrml", &serde_json::json!({})) {
-        Ok(html) => Html(html).into_response(),
-        Err(e) => {
-            eprintln!("[ERROR] /api/music render failed: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Render error: {}", e),
-            )
-                .into_response()
+    fn project_with(index: &str, layout: Option<&str>) -> Project {
+        let mut project = Project::new(Config::default());
+        project.add_file("pages/index.hrml".to_string(), index.to_string());
+        if let Some(layout) = layout {
+            project.add_file("layouts/base.hrml".to_string(), layout.to_string());
         }
-    }
-}
-
-fn add_record(path: &std::path::Path, data: &serde_json::Value) -> Result<(), String> {
-    use serde_json::json;
-
-    let content = fs::read_to_string(path).map_err(|e| format!("Failed to read: {}", e))?;
-    let mut records: Vec<serde_json::Value> =
-        serde_json::from_str(&content).map_err(|e| format!("Invalid JSON: {}", e))?;
-
-    let next_id = records
-        .iter()
-        .filter_map(|r| r.get("id").and_then(|v| v.as_i64()))
-        .max()
-        .unwrap_or(-1)
-        + 1;
-
-    let artist = data
-        .get("artist")
-        .and_then(|v| v.as_str())
-        .unwrap_or("unknown");
-    let album = data
-        .get("album")
-        .and_then(|v| v.as_str())
-        .unwrap_or("unknown");
-    let slug = format!(
-        "{}-{}.mp3",
-        artist.to_lowercase().replace(' ', "-"),
-        album.to_lowercase().replace(' ', "-")
-    );
-
-    let mut record = serde_json::Map::new();
-    record.insert("id".to_string(), json!(next_id));
-    record.insert("artist".to_string(), json!(artist));
-    record.insert("album".to_string(), json!(album));
-    let year_val = data.get("year").and_then(|v| {
-        v.as_i64().map(|n| json!(n))
-            .or_else(|| v.as_str().and_then(|s| s.parse::<i64>().ok()).map(|n| json!(n)))
-            .or_else(|| v.as_str().map(|s| json!(s)))
-    }).unwrap_or(json!(null));
-    record.insert("year".to_string(), year_val);
-    record.insert(
-        "label".to_string(),
-        data.get("label").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("")),
-    );
-    record.insert(
-        "status".to_string(),
-        data.get("status").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("added")),
-    );
-    record.insert(
-        "note".to_string(),
-        data.get("note").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("")),
-    );
-    record.insert("file".to_string(), json!(slug));
-
-    records.push(serde_json::Value::Object(record));
-
-    let json_str =
-        serde_json::to_string_pretty(&records).map_err(|e| format!("Failed to serialize: {}", e))?;
-    fs::write(path, json_str).map_err(|e| format!("Failed to write: {}", e))?;
-
-    Ok(())
-}
-
-fn delete_record(path: &std::path::Path, data: &serde_json::Value) -> Result<(), String> {
-    let content = fs::read_to_string(path).map_err(|e| format!("Failed to read: {}", e))?;
-    let mut records: Vec<serde_json::Value> =
-        serde_json::from_str(&content).map_err(|e| format!("Invalid JSON: {}", e))?;
-
-    let target_id = data
-        .get("id")
-        .and_then(|v| {
-            v.as_i64()
-                .or_else(|| v.as_str().and_then(|s| s.parse::<i64>().ok()))
-        })
-        .ok_or_else(|| "Missing or invalid id".to_string())?;
-
-    let len_before = records.len();
-    records.retain(|r| r.get("id").and_then(|v| v.as_i64()) != Some(target_id));
-
-    if records.len() == len_before {
-        return Err(format!("Record with id {} not found", target_id));
+        project.parse_all().unwrap();
+        project
     }
 
-    let json_str =
-        serde_json::to_string_pretty(&records).map_err(|e| format!("Failed to serialize: {}", e))?;
-    fs::write(path, json_str).map_err(|e| format!("Failed to write: {}", e))?;
+    #[test]
+    fn rejects_an_index_with_a_missing_loaded_template() {
+        let project = project_with(r#"<?load file="layouts/base.hrml"?>"#, None);
 
-    Ok(())
+        let error = validate_index_render(&project).unwrap_err();
+
+        assert!(error.contains("Loaded file not found: layouts/base.hrml"));
+    }
+
+    #[test]
+    fn accepts_a_fully_renderable_index() {
+        let project = project_with(
+            r#"<?load file="layouts/base.hrml"?>"#,
+            Some("<main>ok</main>"),
+        );
+
+        validate_index_render(&project).unwrap();
+    }
 }

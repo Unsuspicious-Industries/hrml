@@ -326,6 +326,7 @@ const USE_SETUP_DIRECTIVES: &[&str] = &[
     "else",
     "set",
     "data",
+    "query",
     "filter",
     "sort",
     "slice",
@@ -393,6 +394,9 @@ pub struct Engine {
     auto_imports: Vec<String>,
     component_paths: Vec<String>,
     tag_registry: crate::features::TagRegistry,
+    queries: std::collections::BTreeMap<String, crate::config::QueryConfig>,
+    query_fixtures_only: bool,
+    query_fixture_base_path: PathBuf,
 }
 
 impl Engine {
@@ -408,6 +412,9 @@ impl Engine {
             auto_imports: Vec::new(),
             component_paths: vec!["components".to_string()],
             tag_registry: crate::features::TagRegistry::new(),
+            queries: std::collections::BTreeMap::new(),
+            query_fixtures_only: false,
+            query_fixture_base_path: PathBuf::from(base_path),
         }
     }
 
@@ -427,7 +434,26 @@ impl Engine {
             auto_imports: config.auto_imports.clone(),
             component_paths: config.component_paths.clone(),
             tag_registry: crate::features::TagRegistry::new(),
+            queries: config.queries.clone(),
+            query_fixtures_only: false,
+            query_fixture_base_path: PathBuf::new(),
         }
+    }
+
+    /// Select declared JSON fixtures without consulting USI_DB_PATH (static build input).
+    pub fn with_query_fixtures_only(mut self) -> Self {
+        self.query_fixtures_only = true;
+        self
+    }
+
+    pub(crate) fn with_query_catalog(
+        mut self,
+        queries: std::collections::BTreeMap<String, crate::config::QueryConfig>,
+        fixture_base_path: &std::path::Path,
+    ) -> Self {
+        self.queries = queries;
+        self.query_fixture_base_path = fixture_base_path.to_path_buf();
+        self
     }
 
     pub fn with_site_name(mut self, site_name: String) -> Self {
@@ -819,6 +845,7 @@ impl Engine {
                     "data" => self
                         .render_data(attrs, context, template_path)
                         .map(ONode::raw),
+                    "query" => self.render_query(attrs, context, template_path),
                     "item" => Ok(ONode::empty()),
                     "field" => Ok(ONode::empty()),
                     pipe @ ("filter" | "sort" | "slice" | "tally" | "concat") => {
@@ -863,7 +890,12 @@ impl Engine {
                             Ok(ONode::empty())
                         }
                     }
-                    _ => Ok(ONode::raw(crate::generate::self_closed(name, attrs))),
+                    _ => Err(TemplateError::code(
+                        TemplateErrorPhase::Render,
+                        format!("Unknown HRML directive '{name}'"),
+                    )
+                    .with_template_path(template_path)
+                    .with_directive(name)),
                 }
             }
             Node::Element {
@@ -984,11 +1016,12 @@ impl Engine {
                             .child(inner)
                             .build())
                     }
-                    _ => {
-                        let inner = self.render_nodes(children, context, template_path)?;
-                        let html = crate::generate::element(name, attrs, &inner.render());
-                        Ok(ONode::raw(html))
-                    }
+                    _ => Err(TemplateError::code(
+                        TemplateErrorPhase::Render,
+                        format!("Unknown HRML directive '{name}'"),
+                    )
+                    .with_template_path(template_path)
+                    .with_directive(name)),
                 }
             }
         }
@@ -1314,6 +1347,35 @@ impl Engine {
         }
 
         Ok(String::new())
+    }
+
+    fn render_query(
+        &self,
+        attrs: &BTreeMap<String, String>,
+        context: &mut Context,
+        template_path: &str,
+    ) -> TemplateResult<ONode> {
+        let name = attrs.get("name").ok_or_else(|| TemplateError::code(
+            TemplateErrorPhase::Render,
+            "query directive requires name attribute",
+        ).with_template_path(template_path).with_directive("query"))?;
+        let target = attrs.get("as").ok_or_else(|| TemplateError::code(
+            TemplateErrorPhase::Render,
+            "query directive requires as attribute",
+        ).with_template_path(template_path).with_directive("query"))?;
+        let config = self.queries.get(name).ok_or_else(|| TemplateError::code(
+            TemplateErrorPhase::Render,
+            format!("Query '{name}' is not declared in xrml.toml"),
+        ).with_template_path(template_path).with_directive("query"))?;
+        let value = crate::features::query::load(
+            name,
+            config,
+            &self.query_fixture_base_path,
+            self.query_fixtures_only,
+        ).map_err(|error| TemplateError::code(TemplateErrorPhase::Render, error)
+            .with_template_path(template_path).with_directive("query"))?;
+        context.set_value(target, value);
+        Ok(ONode::empty())
     }
 
     /// `<?filter over="xs" where="field" as="name"?>`
@@ -1868,6 +1930,20 @@ fn project<'a>(mut current: &'a Value, path: &str) -> Option<&'a Value> {
         };
     }
     Some(current)
+}
+
+#[cfg(test)]
+mod unknown_directive_tests {
+    use super::Engine;
+    use serde_json::Value;
+
+    #[test]
+    fn unknown_hrml_directive_is_an_error() {
+        let error = Engine::new(".")
+            .render_content_fragment("<?mystery?>", "unknown.hrml", &Value::Null)
+            .unwrap_err();
+        assert!(error.to_string().contains("Unknown HRML directive 'mystery'"));
+    }
 }
 
 /// Stringify a value for predicate evaluation: falsy values (`false`, `null`,

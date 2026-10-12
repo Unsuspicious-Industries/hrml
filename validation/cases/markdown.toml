@@ -4,7 +4,7 @@ xrml = '''
 <?markdown file="doc.md"?>
 '''
 expected = '''
-<h1>Hello</h1>
+<h1 id="hello">Hello</h1>
 <p>This is a <em>markdown</em> fixture.</p>
 '''
 

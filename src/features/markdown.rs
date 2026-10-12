@@ -1,16 +1,81 @@
-use pulldown_cmark::{html::push_html, Options, Parser as MdParser};
+use pulldown_cmark::{html::push_html, Event, Options, Parser as MdParser, Tag, TagEnd};
 use serde_json::{Map, Number, Value};
 
 pub fn render_markdown(source: &str) -> String {
+    render_markdown_with_math_tokens(source, &[])
+}
+
+fn render_markdown_with_math_tokens(source: &str, math_tokens: &[(String, String)]) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_TASKLISTS);
+    options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
-    let parser = MdParser::new_ext(source, options);
+    let mut events: Vec<_> = MdParser::new_ext(source, options).collect();
+    let explicit_ids: Vec<String> = events
+        .iter()
+        .filter_map(|event| match event {
+            Event::Start(Tag::Heading { id: Some(id), .. }) => Some(id.to_string()),
+            _ => None,
+        })
+        .collect();
+    let mut generated_ids = Vec::new();
+    let mut heading_number = 0;
+    let mut index = 0;
+    while index < events.len() {
+        let Event::Start(Tag::Heading { id, .. }) = &events[index] else {
+            index += 1;
+            continue;
+        };
+        heading_number += 1;
+        if id.is_none() {
+            let end = events[index + 1..]
+                .iter()
+                .position(|event| matches!(event, Event::End(TagEnd::Heading(_))))
+                .map(|offset| index + 1 + offset)
+                .expect("pulldown-cmark heading events are balanced");
+            let mut text = String::new();
+            for event in &events[index + 1..end] {
+                match event {
+                    Event::Text(value)
+                    | Event::Code(value)
+                    | Event::InlineMath(value)
+                    | Event::DisplayMath(value) => {
+                        let mut value = value.to_string();
+                        for (placeholder, formula) in math_tokens {
+                            value = value.replace(placeholder, formula);
+                        }
+                        text.push_str(&value);
+                    }
+                    Event::SoftBreak | Event::HardBreak => text.push(' '),
+                    _ => {}
+                }
+            }
+            let slug = crate::features::text::slugify(&text);
+            // Empty slugs use heading position, not content-derived data.
+            let base = if slug.is_empty() {
+                format!("heading-{heading_number}")
+            } else {
+                slug
+            };
+            let mut candidate = base.clone();
+            let mut suffix = 2;
+            while explicit_ids.contains(&candidate) || generated_ids.contains(&candidate) {
+                candidate = format!("{base}-{suffix}");
+                suffix += 1;
+            }
+            generated_ids.push(candidate.clone());
+            if let Event::Start(Tag::Heading { id, .. }) = &mut events[index] {
+                *id = Some(candidate.into());
+            }
+        }
+        index += 1;
+    }
+
     let mut html = String::new();
-    push_html(&mut html, parser);
+    push_html(&mut html, events.into_iter());
     html
 }
 
@@ -109,7 +174,7 @@ pub fn render_mdx_with_math(source: &str) -> (Value, String) {
     let meta = parse_frontmatter(frontmatter);
 
     let (protected, math_blocks) = protect_math(body);
-    let html = render_markdown(&protected);
+    let html = render_markdown_with_math_tokens(&protected, &math_blocks);
     let result = restore_math(&html, &math_blocks);
 
     (meta, result)

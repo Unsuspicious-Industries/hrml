@@ -1,11 +1,23 @@
 use crate::ast_log;
+use crate::palette::{scan_static_dir, Palette};
 use crate::project::load_project;
 use std::fs;
 use std::path::Path;
 use xrml::paths;
 
-pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
-    let mut project = load_project(project_path)?;
+pub fn build_site(
+    project_path: &Path,
+    log_ast: bool,
+    palette: Option<&Palette>,
+    query_fixtures: bool,
+) -> Result<(), String> {
+    let mut project = load_project(project_path, palette)?;
+    if !project.config.queries.is_empty() && !query_fixtures {
+        return Err("Static builds with [queries.*] require explicit --query-fixtures".to_string());
+    }
+    if query_fixtures {
+        project = project.with_query_fixtures_only();
+    }
 
     if log_ast {
         ast_log::write_ast_log(project_path, &project.config)?;
@@ -34,6 +46,25 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
             ));
         }
         return Err(msg);
+    }
+
+    // Fail loud on a colour written as a literal rather than as a token, for
+    // a project that asked for that guarantee. The palette resolution already
+    // rejects a LEFTOVER token; this rejects the bypass, which it cannot see
+    // because `background: white` is valid CSS.
+    if project.config.strict_colors {
+        let literals = &project.style_findings;
+        if !literals.is_empty() {
+            let mut msg =
+                String::from("Colour literal(s) in <?style?> (strict_colors is on):\n");
+            for (file, finding) in literals {
+                msg.push_str(&format!(
+                    "  {}:{}: {}: {} - use a design token, e.g. var(--accent)\n",
+                    file, finding.line, finding.property, finding.literal
+                ));
+            }
+            return Err(msg);
+        }
     }
 
     // Each page expands to one or more concrete routes: a static page is a single
@@ -76,37 +107,27 @@ pub fn build_site(project_path: &Path, log_ast: bool) -> Result<(), String> {
         }
     }
 
+    // Static assets are copied verbatim except text files that reference
+    // palette tokens, which are resolved like templates. A leftover token in
+    // either is a hard error - shipping a site with an unresolvable design
+    // token is the same class of bug as an undefined component.
     let static_src = project_path.join(&project.config.static_path);
     let static_dst = dist_path.join(&project.config.static_path);
-    copy_dir_recursive(&static_src, &static_dst)?;
+    let entries = scan_static_dir(&static_src, palette)?;
+    for (rel, bytes) in entries {
+        let out_path = static_dst.join(&rel);
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create {}: {}", parent.display(), e))?;
+        }
+        fs::write(&out_path, &bytes).map_err(|e| format!("Failed to write {}: {}", rel, e))?;
+    }
 
     println!("Done! {} pages rendered to dist/", rendered_count);
     println!(
         "Run '{} serve' to preview the built site.",
         env!("CARGO_BIN_NAME")
     );
-
-    Ok(())
-}
-
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
-    if !src.exists() {
-        return Ok(());
-    }
-
-    fs::create_dir_all(dst).map_err(|e| format!("Failed to create dir: {}", e))?;
-
-    for entry in fs::read_dir(src).map_err(|e| format!("Failed to read dir: {}", e))? {
-        let entry = entry.map_err(|e| format!("Entry error: {}", e))?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-
-        if src_path.is_dir() {
-            copy_dir_recursive(&src_path, &dst_path)?;
-        } else {
-            fs::copy(&src_path, &dst_path).map_err(|e| format!("Failed to copy: {}", e))?;
-        }
-    }
 
     Ok(())
 }

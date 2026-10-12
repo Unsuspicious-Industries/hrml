@@ -80,6 +80,7 @@ fn known_directive(name: &str) -> bool {
             | "link"
             | "form"
             | "data"
+            | "query"
             | "map"
             | "filter"
             | "sort"
@@ -171,27 +172,25 @@ proptest! {
     }
 
     #[test]
-    fn unknown_void_is_html(name in "[a-z]{1,12}") {
+    fn unknown_void_errors(name in "[a-z]{1,12}") {
         prop_assume!(!known_directive(&name));
-        let env = PropEnv::new("unknown_void_html");
+        let env = PropEnv::new("unknown_void_error");
         env.write("pages/test.hrml", &format!("<?{}?>", name));
 
-        let html = env.render("pages/test.hrml").unwrap();
-        let expected = format!("<{} />", name);
-        prop_assert!(html.contains(&expected),
-            "unknown void <?{}?> should render as <{} />, got: {}", name, name, html);
+        let error = env.render("pages/test.hrml").unwrap_err();
+        prop_assert!(error.contains("Unknown HRML directive"), "{}", error);
+        prop_assert!(error.contains(&name), "{}", error);
     }
 
     #[test]
-    fn unknown_elem_is_html(name in "[a-z]{1,12}") {
+    fn unknown_elem_errors(name in "[a-z]{1,12}") {
         prop_assume!(!known_directive(&name));
-        let env = PropEnv::new("unknown_elem_html");
+        let env = PropEnv::new("unknown_elem_error");
         env.write("pages/test.hrml", &format!("<?{0}?><span>X</span></?{0}?>", name));
 
-        let html = env.render("pages/test.hrml").unwrap();
-        assert!(html.contains(&format!("<{}>", name)), "missing open tag for {}", name);
-        assert!(html.contains(&format!("</{}>", name)), "missing close tag for {}", name);
-        assert!(html.contains("<span>X</span>"), "children not preserved in {}", name);
+        let error = env.render("pages/test.hrml").unwrap_err();
+        prop_assert!(error.contains("Unknown HRML directive"), "{}", error);
+        prop_assert!(error.contains(&name), "{}", error);
     }
 
     #[test]
