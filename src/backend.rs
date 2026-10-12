@@ -5,13 +5,27 @@ use std::path::{Path, PathBuf};
 
 pub struct Runtime {
     endpoints_path: PathBuf,
+    queries: std::collections::BTreeMap<String, crate::config::QueryConfig>,
+    query_fixture_base_path: PathBuf,
 }
 
 impl Runtime {
     pub fn new(endpoints_path: &str) -> Self {
         Self {
             endpoints_path: PathBuf::from(endpoints_path),
+            queries: std::collections::BTreeMap::new(),
+            query_fixture_base_path: PathBuf::from(endpoints_path),
         }
+    }
+
+    pub fn with_query_catalog(
+        mut self,
+        queries: std::collections::BTreeMap<String, crate::config::QueryConfig>,
+        fixture_base_path: &Path,
+    ) -> Self {
+        self.queries = queries;
+        self.query_fixture_base_path = fixture_base_path.to_path_buf();
+        self
     }
 
     pub fn call_endpoint(&self, path: &str, data: &Value) -> Result<Value, String> {
@@ -44,7 +58,11 @@ impl Runtime {
                 .strip_prefix(&self.endpoints_path)
                 .map_err(|e| e.to_string())?;
             let rel = rel.to_string_lossy().replace('\\', "/");
-            let rendered = Engine::new(&base)
+            let engine = Engine::new(&base).with_query_catalog(
+                self.queries.clone(),
+                &self.query_fixture_base_path,
+            );
+            let rendered = engine
                 .render_fragment(&rel, &context)
                 .map_err(|e| e.to_string())?;
             return Ok(Value::String(rendered));

@@ -9,7 +9,7 @@ xrml = '''
 expected = '''
 <h1>Bound Post</h1>
 <p>Bound Excerpt</p>
-<h1>Hello</h1>
+<h1 id="hello">Hello</h1>
 <p>Body copy.</p>
 '''
 

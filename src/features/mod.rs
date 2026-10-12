@@ -1,6 +1,7 @@
 pub mod data;
 pub mod latex;
 pub mod markdown;
+pub mod query;
 pub mod tags;
 pub mod text;
 

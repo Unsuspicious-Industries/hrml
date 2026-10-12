@@ -17,7 +17,7 @@
 - [x] Meta tag library (charset, viewport, og, twitter, canonical, etc.)
 - [x] Custom tag registry (extendable void/block handlers)
 
-### Routing (NEW)
+### Routing
 - [x] File-based routing (`pages/about.hrml` → `/about`)
 - [x] Dynamic routes (`pages/blog/[slug].hrml` → `/blog/:slug`)
 - [x] Catch-all routes (`pages/docs/[...rest].hrml` → `/docs/*`)
@@ -25,57 +25,50 @@
 - [x] URL parameter extraction
 - [x] 404 route detection
 
-### Static Site Generation (NEW)
-- [x] `hrml build` command - renders all pages to `dist/`
+### Static Site Generation
+- [x] `xrml build` exports pages to `dist/`
 - [x] Automatic `sitemap.xml` generation
 - [x] Automatic 404 page generation (with fallback)
 - [x] Static asset copying (`static/` → `dist/static/`)
 - [x] Build reports (pages rendered, errors)
 
-### Security (NEW)
+### Security helpers
 - [x] XSS protection (`escape_html`, `escape_attr`, `escape_url`)
 - [x] URL sanitization (blocks `javascript:`, `data:`, `vbscript:` schemes)
 - [x] HTML stripping (`strip_html`)
 - [x] CSRF token generation
 - [x] Nonce validation (timestamp-based)
 
-### Authentication (NEW)
-- [x] PAM authentication via dlopen (no link-time dependency)
-- [x] `hrml auth <user>` command (reads password from stdin)
+### Authentication helpers
+- [x] Library PAM authentication via dlopen (no link-time dependency); the CLI has no `auth` command
 - [x] Group membership checks (`is_user_in_group`)
 - [x] Current user/UID detection
 - [x] Root check
 
 ### CLI
-- [x] `hrml new <name>` - create project
-- [x] `hrml dev [path]` - development server
-- [x] `hrml serve [path]` - serve static dist
-- [x] `hrml build [path]` - build static site
-- [x] `hrml check [path]` - validate templates, routes, HTML structure
-- [x] `hrml auth <user>` - PAM authentication
-- [x] `hrml version` / `hrml help`
+- [x] `xrml new <name>` creates a project
+- [x] `xrml dev [path]` and `xrml serve [path]` serve the source project
+- [x] `xrml build [path]` exports a static site
+- [x] `xrml check [path]` diagnoses template and configuration errors
+- [x] `xrml version` / `xrml help`
+- [x] Source reload after a 500 ms quiet interval; failed reloads retain the current project
+- [x] Named read-only SQLite extract queries with declared fixtures; static builds require `--query-fixtures`
 
-### Validation & Testing
-- [x] 398 tests across 11 test suites
-- [x] 20 formal properties (P1-P20) with executable specifications
-- [x] Comprehensive directive coverage
-- [x] Chain/pipeline tests
-- [x] Stress tests (20 components, 15 compose segments, 30 variables)
-- [x] XSS prevention tests (6 attack vectors)
-- [x] Routing correctness tests
-- [x] Security invariant tests
-- [x] Auth correctness tests
-- [x] SSG correctness tests
+### Validation record
 
-## Still Missing (P1-P3 from original report)
+An earlier report listed 398 tests across 11 suites, 20 executable properties
+(P1-P20), stress cases with 20 components, 15 compose segments and 30 variables,
+and 6 XSS vectors. It recorded neither a source revision nor a test-run result.
+Those counts are not evidence for the current release. Use the checked-in
+validation sources and a recorded command/result for a verification claim.
 
-### P0 - Critical
-- [ ] **Dev server hot reload** - currently requires manual restart
+## Not implemented
 
-### P1 - High
-- [ ] **External data fetching** - no HTTP client for build-time API calls
-- [ ] **Database integration** - no ORM or DB connectivity
-- [ ] **Session management** - no JWT/cookie-based sessions
+### Data and execution
+- [ ] HTTP data fetching
+- [ ] Python or other process-executing endpoints
+- [ ] Live mutable database reads during static builds; deliberately prohibited
+- [ ] Session management
 
 ### P2 - Medium
 - [ ] **RSS/Atom feed generation**
@@ -88,9 +81,9 @@
 - [ ] **Font optimization** - no subsetting or preloading
 - [ ] **CI/CD templates** - GitHub Actions
 
-## Design Philosophy
+## Boundaries
 
-HRML follows Unix philosophy:
-- **Do one thing well**: Template rendering is the core. Everything else is a separate module.
-- **Composability**: Router, SSG, Security, Auth are independent crates that can be used separately.
-- **Text streams**: Templates are text in, HTML is text out. No AST manipulation required.
+The crate contains separate parser, renderer, router, endpoint and native-helper
+modules. Endpoint templates do not execute application code. SQLite queries
+read a published extract; the renderer does not own its schema, credentials,
+publication or mutable records. [spec.md](../spec.md) defines the interfaces.

@@ -52,6 +52,7 @@ pulldown-cmark = "0.12"
 regex = "1"
 libc = "0.2"
 notify = "6"
+rusqlite = { version = "0.32", features = ["bundled"] }
 
 [dev-dependencies]
 proptest = "1"
