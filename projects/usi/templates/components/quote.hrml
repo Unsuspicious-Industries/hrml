@@ -1,0 +1,76 @@
+<?component id="quote-cmp"?>
+<?bind var="text"/?>
+<?bind var="author"/?>
+<?bind var="work"/?>
+<?style?>
+.quote-block {
+    max-width: 80rem;
+    margin: 3rem auto;
+    padding: 2.5rem 2.5rem 2.5rem 3.5rem;
+    border-left: 4px solid var(--accent);
+    background: var(--bg-section);
+    position: relative;
+}
+.quote-block::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.75rem;
+    left: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 6rem;
+    line-height: 1;
+    color: var(--accent);
+    opacity: 0.12;
+    pointer-events: none;
+}
+.quote-block-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.35rem;
+    color: var(--text-heading);
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+}
+.quote-block-attribution {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+.quote-block-author {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--primary);
+}
+.quote-block-work {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+@media (max-width: 768px) {
+    .quote-block {
+        margin: 2rem 1rem;
+        padding: 2rem 1.5rem 1.5rem 2rem;
+    }
+    .quote-block::before {
+        font-size: 4rem;
+        top: -0.5rem;
+        left: 0.25rem;
+    }
+    .quote-block-text {
+        font-size: 1.125rem;
+    }
+}
+<?/style?>
+<figure class="quote-block">
+    <blockquote class="quote-block-text">$text</blockquote>
+    <figcaption class="quote-block-attribution">
+        <?if cond="$author"?>
+            <span class="quote-block-author">$author</span>
+        <?/if?>
+        <?if cond="$work"?>
+            <span class="quote-block-work">$work</span>
+        <?/if?>
+    </figcaption>
+</figure>
+<?/component?>

@@ -4,13 +4,13 @@ use crate::{
 };
 use axum::{
     body::Body,
-    extract::{Path as AxumPath, State},
+    extract::{Json, Path as AxumPath, State},
     http::{Request, StatusCode},
     response::{Html, IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Router,
 };
-use xrml::{backend::Runtime, config::Config, project::Project, router::Router as HrmlRouter};
+use xrml::{backend::Runtime, config::Config, project::Project, router::Router as HrmlRouter, template::Engine as HrmlEngine};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -27,6 +27,7 @@ struct AppState {
     backend_runtime: Arc<Runtime>,
     static_path: Arc<PathBuf>,
     templates_path: Arc<PathBuf>,
+    project_path: Arc<PathBuf>,
 }
 
 pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<(), String> {
@@ -56,6 +57,7 @@ pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<
         backend_runtime,
         static_path: static_path_arc.clone(),
         templates_path: Arc::new(project_path.join("templates")),
+        project_path: Arc::new(project_path.to_path_buf()),
     };
 
     let state_for_watcher = state.clone();
@@ -74,6 +76,7 @@ pub async fn run_dev(project_path: &Path, log_ast: bool, debug: bool) -> Result<
                 .delete(endpoint_handler),
         )
         .route("/*path", get(page_handler).post(endpoint_handler))
+        .route("/api/music", post(music_handler))
         .nest_service("/static", ServeDir::new(&*static_path_arc))
         .with_state(state);
 
@@ -473,4 +476,127 @@ async fn hrml_js_handler() -> Response {
         HRML_JS,
     )
         .into_response()
+}
+
+async fn music_handler(
+    State(state): State<AppState>,
+    Json(data): Json<serde_json::Value>,
+) -> Response {
+    let action = data
+        .get("action")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let music_path = state.project_path.join("data").join("music.json");
+
+    let result = match action {
+        "add" => add_record(&music_path, &data),
+        "delete" => delete_record(&music_path, &data),
+        _ => return (StatusCode::BAD_REQUEST, "Unknown action").into_response(),
+    };
+
+    if let Err(e) = result {
+        eprintln!("[ERROR] /api/music {}: {}", action, e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, e).into_response();
+    }
+
+    let engine = HrmlEngine::new(&state.project_path.to_string_lossy());
+    match engine.render_fragment("templates/components/jukebox.hrml", &serde_json::json!({})) {
+        Ok(html) => Html(html).into_response(),
+        Err(e) => {
+            eprintln!("[ERROR] /api/music render failed: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Render error: {}", e),
+            )
+                .into_response()
+        }
+    }
+}
+
+fn add_record(path: &std::path::Path, data: &serde_json::Value) -> Result<(), String> {
+    use serde_json::json;
+
+    let content = fs::read_to_string(path).map_err(|e| format!("Failed to read: {}", e))?;
+    let mut records: Vec<serde_json::Value> =
+        serde_json::from_str(&content).map_err(|e| format!("Invalid JSON: {}", e))?;
+
+    let next_id = records
+        .iter()
+        .filter_map(|r| r.get("id").and_then(|v| v.as_i64()))
+        .max()
+        .unwrap_or(-1)
+        + 1;
+
+    let artist = data
+        .get("artist")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+    let album = data
+        .get("album")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+    let slug = format!(
+        "{}-{}.mp3",
+        artist.to_lowercase().replace(' ', "-"),
+        album.to_lowercase().replace(' ', "-")
+    );
+
+    let mut record = serde_json::Map::new();
+    record.insert("id".to_string(), json!(next_id));
+    record.insert("artist".to_string(), json!(artist));
+    record.insert("album".to_string(), json!(album));
+    let year_val = data.get("year").and_then(|v| {
+        v.as_i64().map(|n| json!(n))
+            .or_else(|| v.as_str().and_then(|s| s.parse::<i64>().ok()).map(|n| json!(n)))
+            .or_else(|| v.as_str().map(|s| json!(s)))
+    }).unwrap_or(json!(null));
+    record.insert("year".to_string(), year_val);
+    record.insert(
+        "label".to_string(),
+        data.get("label").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("")),
+    );
+    record.insert(
+        "status".to_string(),
+        data.get("status").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("added")),
+    );
+    record.insert(
+        "note".to_string(),
+        data.get("note").and_then(|v| v.as_str()).map(|s| json!(s)).unwrap_or(json!("")),
+    );
+    record.insert("file".to_string(), json!(slug));
+
+    records.push(serde_json::Value::Object(record));
+
+    let json_str =
+        serde_json::to_string_pretty(&records).map_err(|e| format!("Failed to serialize: {}", e))?;
+    fs::write(path, json_str).map_err(|e| format!("Failed to write: {}", e))?;
+
+    Ok(())
+}
+
+fn delete_record(path: &std::path::Path, data: &serde_json::Value) -> Result<(), String> {
+    let content = fs::read_to_string(path).map_err(|e| format!("Failed to read: {}", e))?;
+    let mut records: Vec<serde_json::Value> =
+        serde_json::from_str(&content).map_err(|e| format!("Invalid JSON: {}", e))?;
+
+    let target_id = data
+        .get("id")
+        .and_then(|v| {
+            v.as_i64()
+                .or_else(|| v.as_str().and_then(|s| s.parse::<i64>().ok()))
+        })
+        .ok_or_else(|| "Missing or invalid id".to_string())?;
+
+    let len_before = records.len();
+    records.retain(|r| r.get("id").and_then(|v| v.as_i64()) != Some(target_id));
+
+    if records.len() == len_before {
+        return Err(format!("Record with id {} not found", target_id));
+    }
+
+    let json_str =
+        serde_json::to_string_pretty(&records).map_err(|e| format!("Failed to serialize: {}", e))?;
+    fs::write(path, json_str).map_err(|e| format!("Failed to write: {}", e))?;
+
+    Ok(())
 }

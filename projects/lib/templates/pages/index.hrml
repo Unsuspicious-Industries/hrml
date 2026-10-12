@@ -1,0 +1,83 @@
+<section class="hero-store">
+    <div class="hero-inner">
+        <h1 class="hero-title">Unsuspicious Bookstore</h1>
+        <p class="hero-subtitle">used, rare, and slightly suspicious</p>
+        <p class="hero-description">Tucked between a laundromat and a maybe-legal pawn shop. If you know, you know. Members get the discount — everyone else pays list.</p>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Echoes</h2>
+    <p class="section-desc">Books that reverberate. You read them once and they follow you home. They show up in dreams months later. Certain paragraphs live in your head rent-free.</p>
+    <p class="section-empty">Nothing here yet. The shelves are listening.</p>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Letters Never Sent</h2>
+    <p class="section-desc">Confessions, diaries, things written in hotel rooms at 3am. Epistles addressed to no one. The kind of book you'd be embarrassed to be caught reading on the train — but you can't put it down.</p>
+    <p class="section-empty">No letters have arrived. The mailbox is empty.</p>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Maps to Nowhere</h2>
+    <p class="section-desc">Travelogues to places that don't exist. Journeys inward. Expeditions that returned with nothing but a better sense of being lost. For people who ask "where are we going?" and mean it existentially.</p>
+    <p class="section-empty">No maps yet. You are here.</p>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Instructions for Improbable Machines</h2>
+    <p class="section-desc">DIY for things that shouldn't work. Schematics for perpetual motion. Recipes for invisible ink. Grammars for languages with no speakers. A section for the mechanically inclined and the spiritually curious.</p>
+    <p class="section-empty">The machine is not yet built. The instructions are still being written.</p>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Probably Haunted</h2>
+    <p class="section-desc">Books that feel like they're watching you. Gothic, eerie, the ones you check the locks after reading. Sold as-is. No returns. No refunds. You were warned.</p>
+    <p class="section-empty">The coast is clear. For now.</p>
+</section>
+
+<section class="section">
+    <h2 class="section-title">The Owner's Actual Favorites</h2>
+    <p class="section-desc">The stuff the person behind the counter will absolutely try to sell you while you're just trying to browse. "Oh, you'd like this. No, really. Just read the first page. Okay the first chapter. Fine, take it, it's a gift."</p>
+    <p class="section-empty">The owner hasn't decided what their favorites are yet. They're still thinking about it. Possibly overthinking.</p>
+</section>
+
+<?load file="components/jukebox.hrml"?>
+
+<section class="section section-scraps">
+    <h2 class="section-title">Found on the Floor</h2>
+    <p class="section-desc">Things people left in books. Receipts, bus tickets, concert stubs, photos, pressed flowers, to-do lists in someone else's handwriting. A small museum of forgotten pocket contents.</p>
+
+    <div class="scraps-wall">
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text photocopied">ticket stub &mdash; The Velvet Underground &mdash; 1967 &mdash; 2.50 &mdash; someone wrote "life changing" on the back</p>
+            <span class="scrap-date">found 2024</span>
+        </div>
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text handwritten">setlist &mdash; "play the sad one" "which one" "all of them"</p>
+            <span class="scrap-date">found 2024</span>
+        </div>
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text photocopied">receipt &mdash; 7.50 &mdash; one used copy of "The Castle" &mdash; paid in quarters</p>
+            <span class="scrap-date">found 2024</span>
+        </div>
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text handwritten">note on a napkin: "the answer is not in this book but keep looking"</p>
+            <span class="scrap-date">found 2024</span>
+        </div>
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text photocopied">photograph &mdash; a cat sitting on a copy of Being and Time &mdash; overexposed</p>
+            <span class="scrap-date">found 2023</span>
+        </div>
+        <div class="scrap">
+            <div class="scrap-pin"></div>
+            <p class="scrap-text handwritten">mix CD case &mdash; track 3: "Books and the Melancholy of the Infinite" &mdash; no other tracks listed</p>
+            <span class="scrap-date">found 2023</span>
+        </div>
+    </div>
+</section>

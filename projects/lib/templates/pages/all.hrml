@@ -1,0 +1,24 @@
+<section class="page-section">
+    <h1 class="page-title">Full Inventory</h1>
+    <p class="page-subtitle">Everything we've got, more or less</p>
+
+    <?data from="data/books" as="books"?>
+    <?sort over="books" by="title" as="books"?>
+
+    <div class="book-grid">
+        <?for in="book in books"?>
+            <?use id="book-card"?>
+                <?slug?><?get id="book.slug"?><?/slug?>
+                <?title?><?get id="book.title"?><?/title?>
+                <?author?><?get id="book.author"?><?/author?>
+                <?year?><?get id="book.year"?><?/year?>
+                <?shelf?><?get id="book.shelf"?><?/shelf?>
+            </?use?>
+        <?/for?>
+    </div>
+
+    <?if cond="$books"?>
+    <?else?>
+        <p class="section-empty">Nobody's sold us anything yet. Come on, unload your junk.</p>
+    <?/if?>
+</section>

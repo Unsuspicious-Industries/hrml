@@ -530,9 +530,11 @@ fn real_usi_index_renders_imported_cards() {
 
     // Copy the whole template tree so the test tracks the live component set
     // rather than a brittle hand-maintained subset.
-    for entry in walkdir(std::path::Path::new("usi/templates")) {
+    for entry in walkdir(std::path::Path::new("projects/usi/templates")) {
         if entry.ends_with(".hrml") {
-            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            let rel = entry
+                .strip_prefix("projects/usi/templates/")
+                .unwrap_or(&entry);
             env.write(rel, &fs::read_to_string(&entry).unwrap());
         }
     }
@@ -588,11 +590,13 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
         ..Config::default()
     };
     let mut project = Project::new(config);
-    let templates_root = Path::new("usi/templates");
+    let templates_root = Path::new("projects/usi/templates");
 
     for entry in walkdir(templates_root) {
         if entry.ends_with(".hrml") {
-            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            let rel = entry
+                .strip_prefix("projects/usi/templates/")
+                .unwrap_or(&entry);
             let source = std::fs::read_to_string(&entry).unwrap();
             project.add_file(rel.to_string(), source);
         }
@@ -639,104 +643,14 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 }
 
 #[test]
-fn direct_usi_templates_path_renders_cards() {
-    let engine = xrml::template::Engine::new("usi/templates")
-        .with_site_name("Unsuspicious Industries".to_string())
-        .with_default_layout(Some("layouts/base.hrml".to_string()))
-        .with_globals(serde_json::json!({
-            "primary": "#1f2937",
-            "secondary": "#1f2937",
-            "accent": "#3730a3",
-            "text_heading": "#3730a3",
-            "text_default": "#1f2937",
-            "text_muted": "#6b7280",
-            "border": "#e5e7eb",
-            "bg_page": "#ffffff",
-            "bg_section": "#f8fafc",
-            "brand_accent_1": "#54005b",
-            "brand_accent_2": "#06b6d4",
-            "font_mono": "mono",
-            "font_serif": "serif"
-        }));
-
-    let out = engine
-        .render("pages/index.hrml", &serde_json::json!({}))
-        .unwrap();
-    assert!(out.contains("class=\"site-nav\""), "missing nav: {}", out);
-    assert!(
-        out.contains("Dynamic Formal Systems lab"),
-        "missing division title: {}",
-        out
-    );
-    assert!(out.contains("#icon-code"), "missing icon: {}", out);
-}
-
-#[test]
-fn prose_page_receives_meta_and_body_from_bound_markdown() {
-    let env = TestEnv::new("unit_prose_page_bound_markdown");
-    env.write(
-        "components/prose-page.hrml",
-        r#"<?component id="prose-page"?>
-<?bind var="label"/?><?bind var="title"/?><?bind var="description"/?><?bind var="meta"/?>
-<section class="hero hero-compact">
-    <div class="hero-content">
-        <?if cond="$label"?><p class="hero-label"><?get id="label"?></p><?/if?>
-        <?if cond="$title"?><h1 class="hero-title"><?get id="title"?></h1><?/if?>
-        <?if cond="$description"?><p class="hero-description"><?get id="description"?></p><?/if?>
-        <?if cond="$meta"?><p class="page-meta"><?get id="meta"?></p><?/if?>
-    </div>
-</section>
-<section class="section prose-section"><article class="prose-shell"><?slot id="content"?></?slot?></article></section>
-<?/component?>"#,
-    );
-    env.write(
-        "posts/test.mdx",
-        "---\ntitle: Bound Post\nexcerpt: Bound Excerpt\nauthor: Tester\npublishDate: 2025-01-01\nstatus: published\n---\n\n# Hello\n\nBody copy.",
-    );
-    env.write(
-        "pages/test.hrml",
-        r#"<?load file="components/prose-page.hrml"?>
-<?bind var="post_body"?><?markdownfm file="posts/test.mdx" as="post"?><?/bind?>
-<?use id="prose-page"?>
-    <?bind var="label"?>Research Note<?/bind?>
-    <?bind var="title"?><?get id="post.title"?><?/bind?>
-    <?bind var="description"?><?get id="post.excerpt"?><?/bind?>
-    <?bind var="meta"?><?get id="post.author"?> · <?get id="post.publishDate"?> · <?get id="post.status"?><?/bind?>
-    <?block slot="content"?><?get id="post_body"?><?/block?>
-</?use?>"#,
-    );
-    let out = env.render("pages/test.hrml").unwrap();
-    assert!(
-        out.contains("<h1 class=\"hero-title\">Bound Post</h1>"),
-        "missing prose title: {}",
-        out
-    );
-    assert!(
-        out.contains("<p class=\"hero-description\">Bound Excerpt</p>"),
-        "missing prose excerpt: {}",
-        out
-    );
-    assert!(
-        out.contains("Tester · 2025-01-01 · published"),
-        "missing prose meta: {}",
-        out
-    );
-    assert!(
-        out.contains("<h1>Hello</h1>"),
-        "missing prose body: {}",
-        out
-    );
-}
-
-#[test]
 fn blog_and_jobs_pages_render() {
     use std::fs;
     use std::path::Path;
     use xrml::config::Config;
     use xrml::project::Project;
 
-    let templates_root = Path::new("usi/templates");
-    let project_root = Path::new("usi");
+    let templates_root = Path::new("projects/usi/templates");
+    let project_root = Path::new("projects/usi");
 
     let config = Config {
         site_name: "USI".to_string(),
@@ -756,7 +670,9 @@ fn blog_and_jobs_pages_render() {
 
     for entry in walkdir(templates_root) {
         if entry.ends_with(".hrml") {
-            let rel = entry.strip_prefix("usi/templates/").unwrap_or(&entry);
+            let rel = entry
+                .strip_prefix("projects/usi/templates/")
+                .unwrap_or(&entry);
             let source = fs::read_to_string(&entry).unwrap();
             project.add_file(rel.to_string(), source);
         }

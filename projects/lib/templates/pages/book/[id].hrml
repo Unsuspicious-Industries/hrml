@@ -1,0 +1,16 @@
+<?data from="data/books/$id.json" as="book"?>
+
+<section class="book-detail">
+    <a href="/" class="back-link">&larr; Back to the store</a>
+
+    <div class="book-detail-header">
+        <h1 class="book-detail-title"><?get id="book.title"?></h1>
+        <p class="book-detail-author"><?get id="book.author"?></p>
+        <p class="book-detail-year"><?get id="book.year"?></p>
+        <p class="book-detail-shelf">Section: <?get id="book.shelf"?></p>
+    </div>
+
+    <div class="book-detail-info">
+        <p class="book-detail-description"><?get id="book.description"?></p>
+    </div>
+</section>

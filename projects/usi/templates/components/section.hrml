@@ -1,0 +1,24 @@
+<?component id="section-cmp"?>
+<?bind var="modifier"/?>
+<?style?>
+.section {
+    padding: 4rem 2rem;
+    max-width: 100rem;
+    margin: 0 auto;
+}
+@media (max-width: 768px) {
+    .section {
+        padding: 2rem 1rem;
+    }
+}
+<?/style?>
+<?if cond="$modifier"?>
+<section class="section $modifier">
+    <?slot id="content"?>
+</section>
+<?else?>
+<section class="section">
+    <?slot id="content"?>
+</section>
+<?/if?>
+<?/component?>

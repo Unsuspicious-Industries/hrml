@@ -1,0 +1,13 @@
+<?component?>
+<?bind var="title"?><?bind var="author"?><?bind var="year"?><?bind var="shelf"?><?bind var="description"?>
+
+<?if cond="$title"?>
+    <div class="feedback ok">
+        <p>We'll take <strong><?get id="title"?></strong>. The owner's nephew will price it eventually.</p>
+    </div>
+<?else?>
+    <div class="feedback err">
+        <p>We need at least a title, friend.</p>
+    </div>
+<?/if?>
+<?/component?>

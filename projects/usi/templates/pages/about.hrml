@@ -1,0 +1,127 @@
+<?style?>
+.team-sub {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+}
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.member {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    background: white;
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.member-mono {
+    flex-shrink: 0;
+    width: 3.25rem;
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-section);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--accent);
+}
+.member-name { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 700; color: var(--text-heading); margin: 0; }
+.member-role { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0.15rem 0 0.6rem; }
+.member-bio { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin: 0; }
+.member-link { display: inline-block; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+.member-link:hover { border-bottom-color: var(--accent); }
+@media (max-width: 768px) { .team-grid { grid-template-columns: 1fr; } }
+<?/style?>
+
+<?use id="hero-cmp"?>
+    <?title?>About Us<?/title?>
+    <?description?>We are an open multidisciplinary research collective focusing on computer science, mathematics, arts and everything else.<?/description?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?title?>Our Mission<?/title?>
+            <?subtitle?>Advancing human knowledge through stochastic epistemology (intellectual wandering ?)<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?title?>Open Research<?/title?>
+                    <?text?>All our research is open and freely accessible. We believe in the power of open science.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>Multidisciplinary<?/title?>
+                    <?text?>We bring together researchers from diverse backgrounds to tackle complex problems.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?title?>Formal Methods<?/title?>
+                    <?text?>We pursue fundamental questions in type systems, proof synthesis, and computational limits of knowability.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="short-quote-cmp"?>
+    <?text?>Not all who wander are lost<?/text?>
+    <?author?>J.R.R. Tolkien<?/author?>
+    <?work?>The Fellowship of the Ring<?/work?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>The people<?/label?>
+            <?title?>Who we are<?/title?>
+            <?subtitle?>A small collective. You talk to the people doing the work.<?/subtitle?>
+        </?use?>
+
+        <p class="team-sub">Institute Leadership</p>
+        <div class="team-grid">
+            <article class="member">
+                <div class="member-mono">CRN</div>
+                <div class="member-info">
+                    <h3 class="member-name">CRN</h3>
+                    <p class="member-role">Leadership</p>
+                    <p class="member-bio">Former technology entrepreneur with expertise in edge markets and emergent commercialization.</p>
+                </div>
+            </article>
+            <article class="member">
+                <div class="member-mono">PKD</div>
+                <div class="member-info">
+                    <h3 class="member-name">PKD</h3>
+                    <p class="member-role">Research Director</p>
+                    <p class="member-bio">Specializing in computational systems, artificial intelligence, and mathematical modeling.</p>
+                    <a class="member-link" href="https://pkd.unsuspicious.org" target="_blank" rel="noopener">pkd.unsuspicious.org →</a>
+                </div>
+            </article>
+        </div>
+
+        <p class="team-sub">Research Faculty &amp; Staff</p>
+        <div class="team-grid">
+            <article class="member">
+                <div class="member-mono">TC</div>
+                <div class="member-info">
+                    <h3 class="member-name">Thomas C.</h3>
+                    <p class="member-role">Research Assistant, Computational Engineering</p>
+                    <p class="member-bio">Engineering student.</p>
+                </div>
+            </article>
+        </div>
+    </?block?>
+</?use?>

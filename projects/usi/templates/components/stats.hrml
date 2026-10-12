@@ -1,0 +1,95 @@
+<?component id="stats-section"?>
+<?bind var="label"/?>
+<?bind var="title"/?>
+<?style?>
+.stats-section {
+    background: var(--bg-page);
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    text-align: center;
+    max-width: 90rem;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+.stat-icon .icon-md {
+    color: var(--primary);
+    display: block;
+    margin: 0 auto 1rem;
+}
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 1rem;
+    }
+}
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+<?/style?>
+<section class="section stats-section">
+    <?use id="section-header"?>
+        <?label from="$label"/?>
+        <?title from="$title"/?>
+    </?use?>
+    <div class="stats-grid">
+        <?slot id="content"?>
+    </div>
+</section>
+<?/component?>
+
+<?component id="stat-item"?>
+<?bind var="icon"/?>
+<?bind var="number"/?>
+<?bind var="label"/?>
+<?bind var="size"/?>
+<?style?>
+.stat-item {
+    padding: 1.5rem;
+}
+.stat-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0 auto 1rem;
+    color: var(--primary);
+}
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+.stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+@media (max-width: 768px) {
+    .stat-item {
+        padding: 1rem;
+    }
+    .stat-number {
+        font-size: 2.25rem;
+    }
+}
+<?/style?>
+<div class="stat-item">
+    <?if cond="$icon"?>
+    <div class="stat-icon">
+        <svg class="icon-$size"><use href="#icon-$icon"/></svg>
+    </div>
+    <?/if?>
+    <?if cond="$number"?>
+    <div class="stat-number">$number</div>
+    <?/if?>
+    <?if cond="$label"?>
+    <div class="stat-label">$label</div>
+    <?/if?>
+</div>
+<?/component?>

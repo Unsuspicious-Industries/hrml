@@ -1,0 +1,19 @@
+<?component id="nav"?>
+<header class="store-header">
+    <div class="header-inner">
+        <a href="/" class="store-logo">
+            <span class="logo-text">Unsuspicious Bookstore</span>
+            <span class="logo-tagline">used &amp; uncommon</span>
+        </a>
+        <nav class="store-nav">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/all" class="nav-link">Inventory</a>
+            <a href="/add" class="nav-link">Sell a Book</a>
+        </nav>
+    </div>
+    <div class="header-now">
+        <span class="now-label">now playing:</span>
+        <span class="now-text">Miles Davis — Kind of Blue (side A, again)</span>
+    </div>
+</header>
+<?/component?>

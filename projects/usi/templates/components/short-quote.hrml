@@ -1,0 +1,56 @@
+<?component id="short-quote-cmp"?>
+<?bind var="text"/?>
+<?bind var="author"/?>
+<?bind var="work"/?>
+<?style?>
+.short-quote {
+    margin: 3rem auto;
+    max-width: 80rem;
+    padding: 2rem 2rem 2rem 2.5rem;
+    border-radius: 12px;
+    background: rgba(84, 0, 91, 0.06);
+    position: relative;
+}
+.short-quote::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.5rem;
+    left: 1rem;
+    font-family: var(--font-serif);
+    font-size: 4rem;
+    line-height: 1;
+    color: var(--brand-accent-1);
+    opacity: 0.35;
+    pointer-events: none;
+}
+.short-quote-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.125rem;
+    color: var(--text-heading);
+    line-height: 1.65;
+    margin: 0 0 0.75rem;
+}
+.short-quote-meta {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+.short-quote-meta strong { color: var(--primary); }
+.short-quote-meta em { font-style: italic; }
+@media (max-width: 768px) {
+    .short-quote { margin: 2rem 1rem; padding: 1.5rem 1.25rem 1.25rem 1.5rem; }
+    .short-quote::before { font-size: 3rem; top: -0.25rem; left: 0.5rem; }
+}
+<?/style?>
+<blockquote class="short-quote">
+    <p class="short-quote-text">$text</p>
+    <p class="short-quote-meta">
+        <?if cond="$author"?><strong>$author</strong><?/if?>
+        <?if cond="$work"?> · <em>$work</em><?/if?>
+    </p>
+</blockquote>
+<?/component?>

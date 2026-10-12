@@ -1,0 +1,160 @@
+<?style?>
+.prod-feature {
+    display: flex;
+    gap: 1.75rem;
+    align-items: flex-start;
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+.prod-feature-mark { flex-shrink: 0; color: var(--accent); }
+.prod-feature-mark svg { width: 2.5rem; height: 2.5rem; }
+.prod-feature-flag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    font-weight: 700;
+}
+.prod-feature-title {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin: 0.2rem 0 0.6rem;
+}
+.prod-feature-text { color: var(--text-muted); line-height: 1.7; margin: 0 0 1rem; max-width: 48rem; }
+.prod-feature-text strong { color: var(--text-heading); }
+.prod-feature-links { display: flex; flex-wrap: wrap; gap: 1.25rem; font-family: var(--font-mono); font-size: 0.8rem; }
+.prod-feature-links a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+.prod-feature-links a:hover { border-bottom-color: var(--accent); }
+@media (max-width: 768px) {
+    .prod-feature { flex-direction: column; gap: 1rem; padding: 1.5rem; }
+}
+<?/style?>
+
+<?use id="hero-cmp"?>
+    <?label?>Products<?/label?>
+    <?title?>Open Source Research Tools<?/title?>
+    <?description?>We build tools that we use in our own research, and release them for anyone to use.<?/description?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Constraint Generation<?/label?>
+            <?title?>The constraint stack<?/title?>
+            <?subtitle?>A typed engine, and the system-agnostic interface built on top of it.<?/subtitle?>
+        </?use?>
+        <div class="prod-feature">
+            <div class="prod-feature-mark"><svg><use href="#icon-code"/></svg></div>
+            <div class="prod-feature-body">
+                <p class="prod-feature-flag">Flagship engine</p>
+                <h3 class="prod-feature-title">AUFBAU</h3>
+                <p class="prod-feature-text">A typed prefix-parsing engine for constrained decoding. Generalized Earley-style prefix parsing with an added constraint domain. Rust core with Python bindings (PyO3), MIT-licensed.</p>
+                <div class="prod-feature-links">
+                    <a href="https://github.com/Unsuspicious-Industries/aufbau" target="_blank" rel="noopener">GitHub →</a>
+                    <a href="/dfs">Details →</a>
+                </div>
+            </div>
+        </div>
+        <div class="prod-feature">
+            <div class="prod-feature-mark"><svg><use href="#icon-cpu"/></svg></div>
+            <div class="prod-feature-body">
+                <p class="prod-feature-flag">Built on AUFBAU</p>
+                <h3 class="prod-feature-title">Proposition 7</h3>
+                <p class="prod-feature-text">System-agnostic, formally constrained generation for LLMs using AUFBAU. Type-aware constrained decoding, a benchmark runner, and built-in typed grammars for STLC, ML, and imperative fragments. Named for the last line of the <em>Tractatus</em>.</p>
+                <div class="prod-feature-links">
+                    <a href="https://github.com/Unsuspicious-Industries/p7" target="_blank" rel="noopener">GitHub →</a>
+                    <a href="/blog/proposition-7">Blog post →</a>
+                </div>
+            </div>
+        </div>
+        <?use id="short-quote-cmp"?>
+            <?text?>Wovon man nicht sprechen kann, darüber muß man schweigen.<?/text?>
+            <?author?>L. Wittgenstein<?/author?>
+            <?work?>Tractatus Logico-Philosophicus, 7<?/work?>
+        </?use>
+    </?block?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Tooling<?/label?>
+            <?title?>Research Software<?/title?>
+            <?subtitle?>Open source tools built for and alongside our research.<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>2<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?href?>https://github.com/Unsuspicious-Industries/slop</?href?>
+                    <?icon?>brain<?/icon?>
+                    <?title?>SLOP<?/title?>
+                    <?text?>Infrastructure for low-budget comparative study of AI slop and colonial imagery. Custom difusion models implementations for field probing and latent space exploration.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>https://crates.io/crates/slut</?href?>
+                    <?icon?>flask<?/icon?>
+                    <?title?>SLUT<?/title?>
+                    <?text?>Static Linear Untiful Tensors. A Rust crate for working with vectors and matrices with physical dimensions. Basically <code>uom</code> but in a vector space. Zero-runtime code, fully compile-time.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>https://github.com/Unsuspicious-Industries/hrml</?href?>
+                    <?icon?>code<?/icon?>
+                    <?title?>HRML<?/title?>
+                    <?text?>The markup language and framework used to build this website. A custom templating engine with component hoisting, MDX support, and static site generation.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?href?>https://github.com/Unsuspicious-Industries/political-alignement</?href?>
+                    <?icon?>chart-line<?/icon?>
+                    <?title?>Political Alignment<?/title?>
+                    <?text?>Tools to study LLM political alignment. Automated political bias evaluation on a political compass, and embedding space analysis to measure political distances between concepts.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="section-cmp"?>
+    <?block slot="content"?>
+        <?use id="section-header"?>
+            <?label?>Open Source<?/label?>
+            <?title?>Committed to Open Research<?/title?>
+            <?subtitle?>We believe research tools should be free, accessible, and reproducible.<?/subtitle?>
+        </?use?>
+        <?use id="card-grid"?>
+            <?cols?>3<?/cols?>
+            <?block slot="content"?>
+                <?use id="card-cmp"?>
+                    <?icon?>book<?/icon?>
+                    <?title?>Open by Default<?/title?>
+                    <?text?>Every project we release is open source under MIT. Our research code, tools, and benchmarks are available for anyone to inspect, fork, and build upon.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?icon?>users<?/icon?>
+                    <?title?>Community Driven<?/title?>
+                    <?text?>We welcome contributions, issues, and discussions. Our repositories are open for collaboration with researchers, engineers, and anyone curious about formal methods.<?/text?>
+                </?use?>
+                <?use id="card-cmp"?>
+                    <?icon?>coffee<?/icon?>
+                    <?title?>Reproducible Science<?/title?>
+                    <?text?>Benchmarks come with configs, Docker artifacts, and detailed reproduction instructions. If we published a result, you should be able to verify it.<?/text?>
+                </?use?>
+            </?block?>
+        </?use?>
+    </?block?>
+</?use?>
+
+<?use id="cta-section"?>
+    <?title?>Get Involved<?/title?>
+    <?subtitle?>Explore our work, open an issue, or start a conversation.<?/subtitle?>
+    <?primary?>View on GitHub<?/primary?>
+    <?primary-href?>https://github.com/Unsuspicious-Industries<?/primary-href?>
+    <?secondary?>Contact Us<?/secondary?>
+    <?secondary-href?>/contact<?/secondary-href?>
+</?use?>

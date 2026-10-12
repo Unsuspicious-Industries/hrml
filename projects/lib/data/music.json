@@ -1,0 +1,112 @@
+[
+  {
+    "album": "Kind of Blue",
+    "artist": "Miles Davis",
+    "file": "miles-davis-kind-of-blue.mp3",
+    "id": 0,
+    "label": "Columbia",
+    "note": "Side A, again. We know.",
+    "status": "now playing",
+    "year": 1959
+  },
+  {
+    "album": "Heaven or Las Vegas",
+    "artist": "Cocteau Twins",
+    "file": "cocteau-twins-heaven-or-las-vegas.mp3",
+    "id": 1,
+    "label": "4AD",
+    "note": "Someone left this in the CD player. We didn't change it.",
+    "status": "earlier",
+    "year": 1990
+  },
+  {
+    "album": "A Love Supreme",
+    "artist": "John Coltrane",
+    "file": "john-coltrane-a-love-supreme.mp3",
+    "id": 2,
+    "label": "Impulse!",
+    "note": "Sunday opening ritual.",
+    "status": "morning",
+    "year": 1965
+  },
+  {
+    "album": "Rain Dogs",
+    "artist": "Tom Waits",
+    "file": "tom-waits-rain-dogs.mp3",
+    "id": 3,
+    "label": "Island",
+    "note": "A customer complained. We turned it up.",
+    "status": "yesterday afternoon",
+    "year": 1985
+  },
+  {
+    "album": "Journey in Satchidananda",
+    "artist": "Alice Coltrane",
+    "file": "alice-coltrane-journey-in-satchidananda.mp3",
+    "id": 4,
+    "label": "Impulse!",
+    "note": "For sweeping the floor and thinking about things.",
+    "status": "closing time",
+    "year": 1971
+  },
+  {
+    "album": "The Lemon of Pink",
+    "artist": "The Books",
+    "file": "the-books-the-lemon-of-pink.mp3",
+    "id": 5,
+    "label": "Tomlab",
+    "note": "A band called The Books. We had to.",
+    "status": "staff pick",
+    "year": 2003
+  },
+  {
+    "album": "The Pearl",
+    "artist": "Harold Budd / Brian Eno",
+    "file": "budd-eno-the-pearl.mp3",
+    "id": 6,
+    "label": "EG",
+    "note": "For when the light through the window does that thing.",
+    "status": "rainy day",
+    "year": 1984
+  },
+  {
+    "album": "The Velvet Underground & Nico",
+    "artist": "The Velvet Underground",
+    "file": "velvet-underground-nico.mp3",
+    "id": 7,
+    "label": "Verve",
+    "note": "The banana peel was still inside the sleeve.",
+    "status": "found in a used copy",
+    "year": 1967
+  },
+  {
+    "album": "Les Métaphores Fromagères",
+    "artist": "Sköne",
+    "file": "skone-metaphores-fromageres.mp3",
+    "id": 8,
+    "label": "Bandcamp self-release",
+    "note": "Outre-acid tekno from Montpellier. The melody hits like a fever dream.",
+    "status": "after hours",
+    "year": 2019
+  },
+  {
+    "album": "Nuit Polaires",
+    "artist": "Nuit Polaires",
+    "file": "nuit-polaires.mp3",
+    "id": 9,
+    "label": "self-released",
+    "note": "For when the streetlights hum and nobody's left but you.",
+    "status": "closing time",
+    "year": 2024
+  },
+  {
+    "album": "Ça Va Ensemble (Alpha Wann Remix)",
+    "artist": "Veridis Project",
+    "file": "veridis-project-ca-va-ensemble.mp3",
+    "id": 10,
+    "label": "white label",
+    "note": "Someone played this three times in a row. We let them.",
+    "status": "staff pick",
+    "year": 2024
+  }
+]

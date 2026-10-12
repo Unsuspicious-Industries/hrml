@@ -18,6 +18,6 @@ HRML/xrml is a declarative, functional web framework (template engine + SSG + de
 
 **Directives** live in `render_node` (`src/template.rs`); the `<head>` family is factored into the composable `src/template/head.rs`.
 
-**Determinism check:** `cargo run --bin xrml -- build usi` then md5 `usi/dist/*.html`; stable hash = 03d7e9eca33eb4138a6f73a9a62ca302 as of this writing.
+**Determinism check:** `cargo run --bin xrml -- build projects/usi` then md5 `projects/usi/dist/*.html`; stable hash = 03d7e9eca33eb4138a6f73a9a62ca302 as of this writing.
 
 Binary name is `xrml` (not `hrml`). Tests: `cargo test` (unit + validation + prop).

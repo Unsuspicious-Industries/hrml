@@ -13,5 +13,5 @@ Always write in the "Unsuspicious Industries" style: **formal methods with infor
 - Doc comments frame constructs in their real CS lineage: W-types/sum-of-products (Pierce TAPL), capture-avoiding substitution, Kleisli composition, signature-functor coproducts (data types à la carte). See `src/template.rs` module header, `src/template/resolve.rs`, `src/template/head.rs`.
 - Prefer hierarchical, composable components over flat `do_thing_like_this` methods. The user explicitly wants fewer underscored functions.
 - Everything declarative; no imperative scripting in templates.
-- Determinism is non-negotiable: output must be a byte-stable function of the tree (BTreeMap everywhere, verified by rebuilding `usi/` and diffing md5). See [[hrml-architecture]].
+- Determinism is non-negotiable: output must be a byte-stable function of the tree (BTreeMap everywhere, verified by rebuilding `projects/usi/` and diffing md5). See [[hrml-architecture]].
 - Users should write the least, most meaningful code: global configs, tools that wrap verbose layout/styling boilerplate.
