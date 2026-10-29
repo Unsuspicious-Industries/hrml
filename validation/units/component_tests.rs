@@ -644,7 +644,7 @@ fn real_usi_index_renders_imported_cards_via_project_api() {
 
 #[test]
 fn direct_usi_templates_path_renders_cards() {
-    let engine = xrml::template::Engine::new("usi/templates")
+    let engine = xrml::template::Engine::new("projects/usi/templates")
         .with_site_name("Unsuspicious Industries".to_string())
         .with_default_layout(Some("layouts/base.hrml".to_string()))
         .with_globals(serde_json::json!({
