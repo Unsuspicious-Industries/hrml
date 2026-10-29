@@ -34,8 +34,7 @@ fn print_help() {
     println!("  serve [path]        Run production server from the project source");
     println!("  build [path]        Build static site for deployment");
     println!("  check [path]        Validate templates and configuration");
-    println!("  convert [file]      Convert .hrml to .trml syntax");
-    println!();
+      println!();
     println!("Options:");
     println!("  --log-ast           Regenerate ast.log before build/serve/dev");
     println!("  --debug, -d         Enable verbose render diagnostics");
@@ -261,15 +260,6 @@ async fn main() {
             if let Err(e) = project::check_project(&options.path, palette.as_ref()) {
                 eprintln!("Check failed: {}", e);
                 process::exit(1);
-            }
-        }
-        "convert" => {
-            let path = args.get(2).map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
-            let source = std::fs::read_to_string(&path)
-                .unwrap_or_else(|e| { eprintln!("Read error: {e}"); process::exit(1); });
-            match xrml::convert::to_trml(&source) {
-                Ok(trml) => println!("{trml}"),
-                Err(e) => { eprintln!("Convert error: {e}"); process::exit(1); }
             }
         }
         _ => {

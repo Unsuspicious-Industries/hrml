@@ -66,7 +66,7 @@ fn load_dir_into_project(
             load_dir_into_project(project, base, &path, palette)?;
         } else if path
             .extension()
-            .map(|e| e == "hrml" || e == "trml")
+            .map(|e| e == "hrml")
             .unwrap_or(false)
         {
             let rel_path = path

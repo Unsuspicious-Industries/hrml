@@ -291,7 +291,7 @@ impl StyleIndex {
     }
 }
 
-/// Recursively list `.hrml`/`.trml` files under `dir`, sorted by path so the
+/// Recursively list `.hrml` files under `dir`, sorted by path so the
 /// resulting component-registration order is deterministic.
 fn template_files_under(dir: &std::path::Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
@@ -302,7 +302,7 @@ fn template_files_under(dir: &std::path::Path) -> Vec<PathBuf> {
                 out.extend(template_files_under(&path));
             } else if path
                 .extension()
-                .map(|e| e == "hrml" || e == "trml")
+                .map(|e| e == "hrml")
                 .unwrap_or(false)
             {
                 out.push(path);
@@ -370,11 +370,7 @@ pub mod resolve;
 mod utility;
 
 fn parse_with_extension(source: &str, template_path: &str) -> TemplateResult<Vec<Node>> {
-    if template_path.ends_with(".trml") {
-        parser::tparser::TParser.parse(source, Some(template_path))
-    } else {
-        parser::hparser::HParser.parse(source, Some(template_path))
-    }
+    parser::hparser::HParser.parse(source, Some(template_path))
 }
 
 pub use ast::{Node, TemplateAst};

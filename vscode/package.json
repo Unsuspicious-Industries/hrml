@@ -1,7 +1,7 @@
 {
   "name": "xrml-syntax",
   "displayName": "XRML Syntax Highlighting",
-  "description": "Syntax highlighting for XRML template files (.hrml and .trml) — XRML = eXtensible Rust Markup Language",
+  "description": "Syntax highlighting for XRML template files (.hrml) — XRML = eXtensible Rust Markup Language",
   "version": "0.2.0",
   "publisher": "unsuspicious",
   "license": "MIT",
@@ -12,19 +12,20 @@
   "engines": {
     "vscode": "^1.60.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": [
+    "Programming Languages"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "hrml",
-        "aliases": ["HRML", "hrml"],
-        "extensions": [".hrml"],
-        "configuration": "./language-configuration.json"
-      },
-      {
-        "id": "trml",
-        "aliases": ["TRML", "trml"],
-        "extensions": [".trml"],
+        "aliases": [
+          "HRML",
+          "hrml"
+        ],
+        "extensions": [
+          ".hrml"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -40,19 +41,11 @@
         }
       },
       {
-        "language": "trml",
-        "scopeName": "text.html.trml",
-        "path": "./syntaxes/trml.tmLanguage.json",
-        "embeddedLanguages": {
-          "text.html": "html",
-          "source.css": "css",
-          "source.js": "javascript"
-        }
-      },
-      {
         "scopeName": "text.html.hrml.injection",
         "path": "./syntaxes/hrml-html-injection.tmLanguage.json",
-        "injectTo": ["text.html.basic"]
+        "injectTo": [
+          "text.html.basic"
+        ]
       }
     ]
   }

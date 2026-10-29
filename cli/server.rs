@@ -282,7 +282,7 @@ fn build_backend_runtime(project_path: &Path, config: &Config) -> Runtime {
 /// Do not expose a project until its entry page and all loaded templates render.
 /// A git checkout can briefly contain only part of a new tree during reset.
 fn validate_index_render(project: &Project) -> Result<(), String> {
-    for template_path in ["pages/index.trml", "pages/index.hrml", "pages/index.html"] {
+    for template_path in ["pages/index.hrml", "pages/index.html"] {
         if project.get_file(template_path).is_some() {
             project
                 .render(template_path, &serde_json::json!({}))
@@ -297,7 +297,7 @@ fn validate_index_render(project: &Project) -> Result<(), String> {
 
 async fn index_handler(State(state): State<AppState>) -> Response {
     let project = state.project.read().unwrap();
-    for template_path in ["pages/index.trml", "pages/index.hrml", "pages/index.html"] {
+    for template_path in ["pages/index.hrml", "pages/index.html"] {
         if project.get_file(template_path).is_some() {
             match project.render(template_path, &serde_json::json!({})) {
                 Ok(html) => return Html(html).into_response(),
@@ -349,10 +349,8 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
     }
 
     let template_candidates = [
-        format!("pages/{}.trml", normalized),
         format!("pages/{}.hrml", normalized),
         format!("pages/{}.html", normalized),
-        format!("pages/{}/index.trml", normalized),
         format!("pages/{}/index.hrml", normalized),
         format!("pages/{}/index.html", normalized),
     ];
@@ -409,7 +407,7 @@ async fn page_handler(State(state): State<AppState>, AxumPath(path): AxumPath<St
 
     {
         let project = state.project.read().unwrap();
-        for err_page in &["pages/404.trml", "pages/404.hrml"] {
+        for err_page in &["pages/404.hrml"] {
             if let Ok(html) = project.render(err_page, &serde_json::json!({})) {
                 return (StatusCode::NOT_FOUND, Html(html)).into_response();
             }
@@ -448,10 +446,8 @@ fn try_serve_static(state: &AppState, rel_path: &str) -> Option<Response> {
 /// `[param]` route.
 fn page_exists(state: &AppState, normalized: &str) -> bool {
     let candidates = [
-        format!("pages/{}.trml", normalized),
         format!("pages/{}.hrml", normalized),
         format!("pages/{}.html", normalized),
-        format!("pages/{}/index.trml", normalized),
         format!("pages/{}/index.hrml", normalized),
         format!("pages/{}/index.html", normalized),
     ];
