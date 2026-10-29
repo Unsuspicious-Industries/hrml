@@ -101,7 +101,7 @@ fn no_template_file_contains_nested_quote_directive() {
                 continue;
             }
             let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-            if !matches!(ext, "hrml" | "trml" | "toml") {
+            if !matches!(ext, "hrml" | "toml") {
                 continue;
             }
             let body = fs::read_to_string(&path).unwrap_or_default();

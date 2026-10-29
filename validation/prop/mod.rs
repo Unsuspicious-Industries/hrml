@@ -281,18 +281,6 @@ proptest! {
             "expected self-closing form, got: {}", html);
     }
 
-    #[test]
-    fn hrml_trml_equiv(text in safe_text()) {
-        let body = if text.is_empty() { "x".to_string() } else { text };
-        let hrml = format!("<div class=\"box\"><p>{}</p></div>", body);
-        let trml = xrml::convert::to_trml(&hrml).unwrap();
-        let env = PropEnv::new("hrml_trml_equiv");
-        env.write("pages/h.hrml", &hrml);
-        env.write("pages/t.trml", &trml);
-        let html_a = env.render("pages/h.hrml").unwrap();
-        let html_b = env.render("pages/t.trml").unwrap();
-        prop_assert_eq!(strip_ws(&html_a), strip_ws(&html_b));
-    }
 
     #[test]
     fn map_order(values in proptest::collection::vec("[a-z]{1,8}", 1..6)) {
@@ -426,24 +414,7 @@ proptest! {
             "second bind not applied: {}", html);
     }
 
-    #[test]
-    fn trml_total(s in ".{0,200}") {
-        let env = PropEnv::new("trml_total");
-        env.write("pages/test.trml", &s);
-        let _ = env.render("pages/test.trml");
-    }
 
-    #[test]
-    fn convert_matches(text in "[a-z]{1,10}") {
-        let src = format!("<section><h1>{}</h1></section>", text);
-        let trml = xrml::convert::to_trml(&src).unwrap();
-        let env = PropEnv::new("convert_match");
-        env.write("pages/s.hrml", &src);
-        env.write("pages/t.trml", &trml);
-        let a = env.render("pages/s.hrml").unwrap();
-        let b = env.render("pages/t.trml").unwrap();
-        prop_assert_eq!(strip_ws(&a), strip_ws(&b));
-    }
 
     #[test]
     fn special_chars_safe(text in r#"[a-zA-Z0-9 &<>/\-]{0,30}"#) {

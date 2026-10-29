@@ -303,7 +303,7 @@ impl Project {
     pub fn pages(&self) -> impl Iterator<Item = &str> {
         self.files
             .keys()
-            .filter(|p| p.ends_with(".hrml") || p.ends_with(".trml"))
+            .filter(|p| p.ends_with(".hrml"))
             .map(|s| s.as_str())
     }
 }

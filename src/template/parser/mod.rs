@@ -5,4 +5,3 @@ pub trait ParseTree {
 }
 
 pub mod hparser;
-pub mod tparser;

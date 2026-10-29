@@ -29,7 +29,6 @@ From a source checkout, `cargo build --release` produces
 | `xrml serve [PATH]` | Serve the project's source |
 | `xrml build [PATH]` | Export a static site into `dist` |
 | `xrml check [PATH]` | Diagnose template and configuration errors |
-| `xrml convert [FILE]` | Convert HRML syntax to TRML syntax |
 | `xrml version` | Report the executable's version |
 | `xrml help` | Show options and usage |
 

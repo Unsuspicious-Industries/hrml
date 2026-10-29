@@ -67,19 +67,6 @@ impl TestEnv {
             .map_err(|e| e.to_string())
     }
 
-    pub(crate) fn assert_trml_equivalent(&self, name: &str, hrml: &str, trml: &str) {
-        let hrml_path = format!("{}.hrml", name);
-        let trml_path = format!("{}.trml", name);
-        self.write(&hrml_path, hrml);
-        self.write(&trml_path, trml);
-        let hrml_out = self.render(&hrml_path).unwrap();
-        let trml_out = self.render(&trml_path).unwrap();
-        assert_eq!(
-            hrml_out, trml_out,
-            "TRML ≠ HRML for {name}\n=== HRML ===\n{hrml_out}\n=== TRML ===\n{trml_out}"
-        );
-    }
-
 }
 
 impl Drop for TestEnv {

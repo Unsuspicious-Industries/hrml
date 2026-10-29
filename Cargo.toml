@@ -2,7 +2,7 @@
 name = "xrml"
 version = "0.1.0"
 edition = "2021"
-description = "eXtensible Rust Markup Language — recursive acronym: HRML (HRML Markup Language) and TRML (TOML-like Markup Language)"
+description = "eXtensible Rust Markup Language — HRML templates"
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.rs/xrml"
@@ -29,10 +29,6 @@ path = "validation/unit_tests.rs"
 [[test]]
 name = "prop_tests"
 path = "validation/prop/mod.rs"
-
-[[test]]
-name = "trml_equivalence"
-path = "validation/trml_equivalence.rs"
 
 
 

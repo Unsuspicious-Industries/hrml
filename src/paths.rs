@@ -120,7 +120,6 @@ pub fn output_path(template_path: &str, binding: &Binding) -> String {
         .strip_prefix("pages/")
         .unwrap_or(template_path)
         .trim_end_matches(".hrml")
-        .trim_end_matches(".trml")
         .to_string();
     for (param, value) in binding {
         stem = stem
